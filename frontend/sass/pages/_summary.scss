@@ -1,0 +1,426 @@
+@use '../sass-utils/variables' as *;
+
+.ds-page {
+  min-height: 100vh;
+  background: $light-gray;
+  padding: $spacing-xxxl $container-padding;
+
+  @media (max-width: $breakpoint-md) {
+    padding: $spacing-xl $container-padding-sm;
+  }
+
+  &__container {
+    max-width: $container-max-width;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+.ds-header {
+  margin-bottom: $spacing-xxxl;
+  text-align: center;
+
+  @media (max-width: $breakpoint-md) {
+    margin-bottom: $spacing-xl;
+  }
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    background: $white;
+    border: 1px solid $border-color;
+    box-shadow: 6px 6px 0 0 rgba(0, 0, 0, 0.1);
+    margin-bottom: $spacing-lg;
+  }
+
+  &__title {
+    font-size: 3rem;
+    font-weight: $font-weight-extra-bold;
+    font-family: $font-family-gliker;
+    color: $text-color;
+    margin-bottom: $spacing-md;
+
+    @media (max-width: $breakpoint-md) {
+      font-size: 2rem;
+    }
+  }
+
+  &__subtitle {
+    font-size: $font-size-lg;
+    color: $text-light;
+    margin-bottom: $spacing-md;
+
+    @media (max-width: $breakpoint-md) {
+      font-size: $font-size-base;
+    }
+  }
+
+  &__date {
+    display: inline-block;
+    background: $white;
+    border: 1px solid $border-color;
+    padding: $spacing-xs $spacing-lg;
+    
+    span {
+      font-size: $font-size-sm;
+      font-weight: $font-weight-semibold;
+      color: #28a745;
+    }
+  }
+}
+
+.ds-card {
+  background: $white;
+  border-radius: 0;
+  box-shadow: 8px 8px 0 0 rgba(0, 0, 0, 0.1);
+  margin-bottom: $spacing-xxxl;
+  overflow: hidden;
+  position: relative;
+  padding: 3px;
+  
+  &__gradient-border {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      90deg,
+      #4285f4,
+      #ea4335,
+      #fbbc04,
+      #34a853,
+      #4285f4,
+      #ea4335,
+      #fbbc04,
+      #34a853
+    );
+    background-size: 300% 300%;
+    animation: dsGradientMove 4s ease infinite;
+    z-index: 0;
+  }
+  
+  &__inner {
+    background: $white;
+    position: relative;
+    z-index: 1;
+    height: 100%;
+  }
+
+  @media (max-width: $breakpoint-md) {
+    margin-bottom: $spacing-xl;
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: $spacing-lg $spacing-xxl;
+    background: $light-gray;
+    border-bottom: 1px solid $border-color;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+
+    @media (max-width: $breakpoint-md) {
+      padding: $spacing-lg;
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+
+  &__badge {
+    background: #28a745;
+    padding: $spacing-xs $spacing-lg;
+    color: $white;
+    
+    span {
+      color: $white;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-semibold;
+      font-family: $font-family-gliker;
+    }
+  }
+
+  &__stats {
+    display: flex;
+    gap: $spacing-xl;
+
+    @media (max-width: $breakpoint-md) {
+      gap: $spacing-lg;
+    }
+  }
+
+  &__stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-xs;
+
+    &-number {
+      font-size: 1.5rem;
+      font-weight: $font-weight-bold;
+      font-family: $font-family-gliker;
+      color: #28a745;
+    }
+
+    &-label {
+      font-size: $font-size-xs;
+      color: $text-light;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+  }
+
+  &__content {
+    padding: $spacing-xxl;
+
+    @media (max-width: $breakpoint-md) {
+      padding: $spacing-lg;
+    }
+  }
+}
+
+@keyframes dsGradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.ds-summary-text {
+  font-size: $font-size-lg;
+  line-height: 1.8;
+  color: $text-color;
+  font-family: $font-family-base;
+
+  @media (max-width: $breakpoint-md) {
+    font-size: $font-size-base;
+    line-height: 1.6;
+  }
+
+  span {
+    font-size: inherit;
+    line-height: inherit;
+    color: inherit;
+  }
+}
+
+.ds-citation-button {
+  display: inline-block;
+  background: #d4edda;
+  border: none;
+  padding: 0 $spacing-xs;
+  margin: 0 2px;
+  cursor: pointer;
+  font-size: $font-size-base;
+  font-weight: $font-weight-bold;
+  color: #28a745;
+  font-family: $font-family-gliker;
+
+  @media (max-width: $breakpoint-md) {
+    font-size: $font-size-sm;
+    padding: 0 3px;
+  }
+}
+
+.ds-info {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $spacing-xl;
+
+  @media (max-width: $breakpoint-md) {
+    grid-template-columns: 1fr;
+    gap: $spacing-md;
+  }
+}
+
+.ds-info-card {
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: 0;
+  box-shadow: 6px 6px 0 0 #28a745;
+  padding: $spacing-xl;
+  text-align: center;
+
+  &__icon {
+    font-size: 2.5rem;
+    margin-bottom: $spacing-md;
+  }
+
+  &__title {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    font-family: $font-family-gliker;
+    color: $text-color;
+    margin-bottom: $spacing-sm;
+
+    @media (max-width: $breakpoint-md) {
+      font-size: $font-size-base;
+    }
+  }
+
+  &__description {
+    font-size: $font-size-sm;
+    color: $text-light;
+    line-height: $line-height-base;
+    margin: 0;
+  }
+}
+
+.ds-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: $spacing-xl;
+
+  @media (max-width: $breakpoint-md) {
+    padding: $spacing-md;
+  }
+}
+
+.ds-email-modal {
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: 0;
+  box-shadow: 12px 12px 0 0 #28a745;
+  width: 100%;
+  max-width: 550px;
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: $spacing-xl;
+    background: $light-gray;
+    border-bottom: 1px solid $border-color;
+
+    @media (max-width: $breakpoint-md) {
+      padding: $spacing-lg;
+    }
+  }
+
+  &__title {
+    font-size: 1.5rem;
+    font-weight: $font-weight-bold;
+    font-family: $font-family-gliker;
+    color: $text-color;
+    margin: 0;
+
+    @media (max-width: $breakpoint-md) {
+      font-size: 1.25rem;
+    }
+  }
+
+  &__close {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    span {
+      font-size: 1.5rem;
+      color: $text-light;
+    }
+  }
+
+  &__content {
+    padding: $spacing-xl;
+    max-height: 400px;
+    overflow-y: auto;
+
+    @media (max-width: $breakpoint-md) {
+      padding: $spacing-lg;
+      max-height: 300px;
+    }
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-md;
+    padding: $spacing-xl;
+    background: $light-gray;
+    border-top: 1px solid $border-color;
+
+    @media (max-width: $breakpoint-md) {
+      padding: $spacing-lg;
+    }
+  }
+
+  &__cancel-btn {
+    background: transparent;
+    border: 2px solid $border-color;
+    padding: $spacing-sm $spacing-xl;
+    cursor: pointer;
+    font-family: $font-family-gliker;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $text-light;
+  }
+
+  &__open-btn {
+    background: #28a745;
+    border: none;
+    padding: $spacing-sm $spacing-xl;
+    cursor: pointer;
+    font-family: $font-family-gliker;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $white;
+    box-shadow: 3px 3px 0 0 rgba(0, 0, 0, 0.1);
+  }
+}
+
+.ds-email-field {
+  margin-bottom: $spacing-xl;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &__label {
+    display: block;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $text-light;
+    margin-bottom: $spacing-xs;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  &__value {
+    font-size: $font-size-base;
+    color: $text-color;
+    margin: 0;
+    line-height: 1.5;
+    word-wrap: break-word;
+
+    &--preview {
+      background: $light-gray;
+      padding: $spacing-md;
+      font-size: $font-size-sm;
+      color: $text-light;
+      font-style: italic;
+    }
+  }
+}

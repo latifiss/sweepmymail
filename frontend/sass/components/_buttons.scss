@@ -1,0 +1,237 @@
+@use '../sass-utils/variables' as *;
+@use '../sass-utils/functions' as *;
+@use '../sass-utils/mixins' as *;
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  height: 2.5rem;
+  text-align: center;
+  text-decoration: none;
+  border: 2px solid transparent;
+  border-radius: 6.188rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+.btn-primary {
+  background-color: #0066cc;
+  color: #fff;
+  border: 1.5px solid #012040;
+  box-shadow: 0px 3px 0 rgba(1, 32, 64, 1);
+  transform: translateZ(0);
+
+  &:hover {
+    background-color: #0052a3;
+  }
+
+  &:focus {
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.25);
+  }
+}
+
+.btn-google {
+  background-color: #fff;
+  color: #fff;
+  width: 100%;
+  gap: 0.5rem;
+  border: 1.5px solid #EA4335;
+  box-shadow: 0px 3px 0 rgba(234, 67, 53, 1)
+;
+  transform: translateZ(0);
+
+  &:hover {
+    background-color: #EA4335;
+  }
+
+  &:focus {
+    box-shadow: 0 0 0 3px rgba(234, 67, 53, 0.25)
+;
+  }
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: #fff;
+
+  &:hover {
+    background-color: #5a6268;
+  }
+
+  &:focus {
+    box-shadow: 0 0 0 3px rgba(108, 117, 125, 0.25);
+  }
+}
+
+.btn-success {
+  background-color: #28a745;
+  color: #fff;
+
+  &:hover {
+    background-color: #218838;
+  }
+
+  &:focus {
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.25);
+  }
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: #fff;
+
+  &:hover {
+    background-color: #c82333;
+  }
+
+  &:focus {
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.25);
+  }
+}
+
+.btn-outline {
+  background-color: transparent;
+  border-color: #0066cc;
+  color: #0066cc;
+
+  &:hover {
+    background-color: #0066cc;
+    color: #fff;
+  }
+}
+
+.btn-ghost {
+  background-color: transparent;
+  border-color: transparent;
+  color: #6b7280;
+
+  &:hover {
+    background-color: #f3f4f6;
+    color: #374151;
+
+    @media (prefers-color-scheme: dark) {
+      background-color: rgba(55, 65, 81, 0.5);
+      color: #f9fafb;
+    }
+  }
+
+  &:focus {
+    box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.25);
+  }
+}
+
+.btn-lg {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+}
+
+.btn-md {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  width: 116px;
+  border: 0.1px solid #e0e0e0;
+  border-radius: 9999px;
+  padding: 0.2rem 0.25rem;
+  background-color: #fbfbfb;
+  gap: 0.25rem;
+  box-shadow: 0px 4px 0 rgba(0, 0, 0, 0.85);
+  transform: translateZ(0);
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: $font-family-gliker;
+  text-align: center;
+
+  &--delete {
+    background-color: #dc3545;
+    color: #fff;
+    border-color: #bd2130;
+
+    &:hover {
+      background-color: #c82333;
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  &--edit {
+    background-color: #fdfdfd;
+    color: #000;
+    border-color: #e0e0e0;
+
+    &:hover {
+      background-color: #f9f9f9;
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background-color: rgba(31, 41, 55, 0.5);
+      color: #f9fafb;
+      border-color: rgba(75, 85, 99, 0.5);
+
+      &:hover {
+        background-color: rgba(55, 65, 81, 0.5);
+      }
+    }
+  }
+
+  &__icon {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+
+  &__text {
+    font-size: 0.875rem;
+    margin-left: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.google-text {
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: $font-family-gliker;
+  text-align: center;
+  color: $black;
+}

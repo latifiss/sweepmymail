@@ -1,0 +1,306 @@
+@use '../sass-utils/variables' as *;
+@use '../sass-utils/functions' as *;
+@use '../sass-utils/mixins' as *;
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form {
+  max-width: 600px;
+
+  &__group {
+    margin-bottom: $spacing-lg;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &__label {
+    display: block;
+    margin-bottom: $spacing-xs;
+    font-weight: $font-weight-bold;
+    color: $text-color;
+    font-size: $font-size-sm;
+  }
+
+  &__dropdown {
+    position: relative;
+    width: 310px;
+
+    &__button {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: $spacing-xs;
+      width: 100%;
+      padding: $spacing-sm $spacing-md;
+      border: $border-width solid $border-color;
+      border-radius: $border-radius-md;
+      background-color: $white;
+      color: $text-color;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-bold;
+      transition: all $transition-base;
+      cursor: pointer;
+
+      &:focus {
+        outline: none;
+        border-color: $success-color;
+        border-width: 2px;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        background-color: rgba(31, 41, 55, 0.5);
+        border-color: rgba(75, 85, 99, 0.5);
+        color: $text-white;
+      }
+
+      &__text {
+        flex: 1;
+        text-align: left;
+      }
+
+      &__icon {
+        width: 1rem;
+        height: 1rem;
+        transition: transform $transition-base;
+        color: $gray-dark;
+
+        @media (prefers-color-scheme: dark) {
+          color: $text-light;
+        }
+
+        &--open {
+          transform: rotate(180deg);
+        }
+      }
+    }
+
+    &__menu {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: $spacing-xs;
+      width: 100%;
+      background-color: $white;
+      border: $border-width solid $border-color;
+      border-radius: $border-radius-lg;
+      box-shadow: $shadow-md;
+      overflow: hidden;
+      z-index: $z-index-dropdown;
+      animation: fade-in 0.2s ease-out;
+      animation-fill-mode: forwards;
+
+      @media (prefers-color-scheme: dark) {
+        background-color: $dark;
+        border-color: $gray-dark;
+      }
+    }
+
+    &__option {
+      width: 100%;
+      padding: $spacing-sm $spacing-md;
+      text-align: left;
+      background: transparent;
+      border: none;
+      color: $text-color;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-bold;
+      cursor: pointer;
+      transition: all $transition-base;
+
+      &:hover {
+        background-color: $light-gray;
+
+        @media (prefers-color-scheme: dark) {
+          background-color: rgba(55, 65, 81, 0.5);
+          color: $text-white;
+        }
+      }
+
+      &--active {
+        background-color: $gray;
+
+        @media (prefers-color-scheme: dark) {
+          background-color: rgba(55, 65, 81, 0.5);
+        }
+      }
+
+      @media (prefers-color-scheme: dark) {
+        color: $text-light;
+      }
+    }
+  }
+
+  &__textarea-wrapper,
+  &__icon-input-wrapper,
+  &__input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
+    background-color: $white;
+    transition: all $transition-base;
+    width: 100%;
+
+    &:focus-within {
+      border-color: $black;
+      border-width: 2px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background-color: rgba(31, 41, 55, 0.5);
+      border-color: rgba(75, 85, 99, 0.5);
+    }
+
+    .form__textarea,
+    .form__input {
+      flex: 1;
+      outline: none;
+      background: transparent;
+      border: none;
+      font-weight: $font-weight-normal;
+      font-size: $font-size-sm;
+      color: $text-color;
+
+      &::placeholder {
+        color: $text-light;
+        font-weight: $font-weight-normal;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        color: $text-white;
+
+        &::placeholder {
+          color: $gray-dark;
+        }
+      }
+    }
+
+    .form__textarea {
+      resize: vertical;
+      min-height: 150px;
+    }
+
+    &__icon {
+      width: 1rem;
+      height: 1rem;
+      color: $gray-dark;
+      flex-shrink: 0;
+
+      @media (prefers-color-scheme: dark) {
+        color: $text-light;
+      }
+    }
+  }
+
+  &__textarea,
+  &__select {
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
+    font-weight: $font-weight-normal;
+    font-size: $font-size-base;
+    transition: all $transition-base;
+
+    &:focus {
+      outline: none;
+      border-color: $black;
+      box-shadow: 0 0 0 3px rgba($black, 0.1);
+    }
+
+    &:disabled {
+      background-color: $light-gray;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    &.is-invalid {
+      border-color: $danger-color;
+
+      &:focus {
+        box-shadow: 0 0 0 3px rgba($danger-color, 0.1);
+      }
+    }
+  }
+
+  &__select {
+    cursor: pointer;
+  }
+
+  &__help {
+    display: block;
+    margin-top: $spacing-xs;
+    font-size: $font-size-sm;
+    color: $text-light;
+  }
+
+  &__error {
+    display: block;
+    margin-top: $spacing-xs;
+    font-size: $font-size-sm;
+    color: $danger-color;
+  }
+
+  &__checkbox,
+  &__radio {
+    display: flex;
+    gap: $spacing-md;
+    align-items: center;
+    margin-bottom: $spacing-md;
+
+    input {
+      cursor: pointer;
+    }
+
+    label {
+      margin-bottom: 0;
+      cursor: pointer;
+      font-weight: $font-weight-normal;
+    }
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: $spacing-lg;
+  }
+
+  &__actions {
+    display: flex;
+    gap: $spacing-md;
+    margin-top: $spacing-xl;
+  }
+}
+
+.required::after {
+  content: ' *';
+  color: $danger-color;
+}
+
+.form-valid {
+  border-color: $black;
+
+  &:focus {
+    box-shadow: 0 0 0 3px rgba($success-color, 0.1);
+  }
+}
+
+.form-invalid {
+  border-color: $danger-color;
+
+  &:focus {
+    box-shadow: 0 0 0 3px rgba($danger-color, 0.1);
+  }
+}

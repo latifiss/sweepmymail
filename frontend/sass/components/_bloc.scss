@@ -1,0 +1,118 @@
+@use '../sass-utils/variables' as *;
+@use '../sass-utils/functions' as *;
+@use '../sass-utils/mixins' as *;
+
+a, a:hover, a:focus, a:active, a:visited {
+  text-decoration: none !important;
+}
+
+.bloc {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 4px;
+  width: 500px;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none !important;
+  color: inherit;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+    text-decoration: none !important;
+  }
+
+  &:focus {
+    text-decoration: none !important;
+    outline: none;
+  }
+
+  &:active {
+    text-decoration: none !important;
+  }
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+
+    &__center {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+      
+      &__title {
+        font-size: 0.875rem;
+        font-weight: $font-weight-semibold;
+        font-family: $font-family-gliker;
+        color: $text-color;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-decoration: none !important;
+      }
+
+      &__caption {
+        font-size: 0.875rem;
+        font-weight: $font-weight-normal;
+        color: $text-lighter;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-decoration: none !important;
+      }
+    }
+  }
+
+  &__right {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .bloc {
+    border-bottom-color: #2c2c2c;
+    
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    &__left {
+      &__center {
+        &__title {
+          color: #f3f4f6;
+        }
+        
+        &__caption {
+          color: #9ca3af;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .bloc {
+    width: 100%; 
+
+    &__left {
+      &__center {
+        &__title,
+        &__caption {
+          white-space: normal;
+          word-break: break-word;
+        }
+      }
+    }
+  }
+}

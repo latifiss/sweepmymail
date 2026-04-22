@@ -1,0 +1,108 @@
+// =============================================================================
+// PROGRESS BAR
+// =============================================================================
+// Progress bar component styles
+
+.progress {
+  width: 100%;
+  height: 0.5rem;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+
+  @media (prefers-color-scheme: dark) {
+    background-color: rgba(55, 65, 81, 0.5);
+  }
+
+  &__bar {
+    height: 100%;
+    background: linear-gradient(90deg, #0066cc 0%, #0099ff 100%);
+    border-radius: 9999px;
+    transition: width 0.3s ease;
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 100%
+      );
+      animation: shimmer 2s infinite;
+    }
+  }
+
+  &--success &__bar {
+    background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+  }
+
+  &--warning &__bar {
+    background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 100%);
+  }
+
+  &--error &__bar {
+    background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+  }
+
+  &--striped &__bar {
+    background-image: linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.15) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255, 255, 255, 0.15) 50%,
+      rgba(255, 255, 255, 0.15) 75%,
+      transparent 75%,
+      transparent
+    );
+    background-size: 1rem 1rem;
+    animation: progress-stripes 1s linear infinite;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes progress-stripes {
+  0% {
+    background-position: 1rem 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
+// Progress with label
+.progress-with-label {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  .progress {
+    flex: 1;
+  }
+
+  &__label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6b7280;
+    min-width: 3rem;
+    text-align: right;
+
+    @media (prefers-color-scheme: dark) {
+      color: #9ca3af;
+    }
+  }
+}

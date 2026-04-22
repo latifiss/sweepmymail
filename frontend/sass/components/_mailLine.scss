@@ -1,0 +1,40 @@
+@use '../sass-utils/variables' as *;
+@use '../sass-utils/functions' as *;
+@use '../sass-utils/mixins' as *;
+
+.mail {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: 100%;
+  gap: 0.75rem;
+  padding: 0.5rem;
+
+  &__date {
+    color: $black;
+    font-size: 0.813rem;
+    font-weight: $font-weight-normal;
+    font-family: $font-family-gliker;
+    line-height: 1;
+    text-align: left;
+    margin: 0;
+    padding: 0;
+    width: 5.625rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  &__content {
+    color: $text-light;
+    font-size: 0.813rem;
+    font-weight: $font-weight-medium;
+    line-height: 1.25;
+    text-align: left;
+    margin: 0;
+    padding: 0;
+    white-space: normal;
+    word-break: break-word;
+    flex: 1 1 auto;
+  }
+}

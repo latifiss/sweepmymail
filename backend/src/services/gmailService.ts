@@ -1,8 +1,14 @@
 import { google } from "googleapis";
-import { env } from "../config/env.js";
-import User, { IUser } from "../models/user";
-import Email, { IEmail } from "../models/email";
-import mongoose from "mongoose";
+import { env } from "../config/env";
+import {
+  DbUser,
+  deleteEmailsForUserByMessageIds,
+  getEmailsForUser,
+  getUserById,
+  markEmailsArchived,
+  upsertEmail,
+  updateUserTokens,
+} from "../repositories/dataRepository";
 
 const { OAuth2 } = google.auth;
 
@@ -13,24 +19,67 @@ function getOauthClient() {
 /**
  * Build an authenticated gmail client for a stored user
  */
-async function getGmailForUser(user: IUser) {
+async function getGmailForUser(user: DbUser) {
   const oauth2Client = getOauthClient();
-  // set refresh token so google lib will auto-refresh access token
-  oauth2Client.setCredentials({
-    refresh_token: user.refreshToken,
-  });
+  
+  // Set credentials - use refresh token if available, otherwise use access token
+  const credentials: any = {};
+  if (user.refresh_token) {
+    credentials.refresh_token = user.refresh_token;
+  }
+  if (user.access_token) {
+    credentials.access_token = user.access_token;
+  }
+  
+  oauth2Client.setCredentials(credentials);
 
-  // ensure we have a fresh access token (optional: google lib will refresh as needed)
-  try {
-    const res = await oauth2Client.getAccessToken();
-    if (res.token) {
-      oauth2Client.setCredentials({ access_token: res.token });
+  // Try to get a fresh access token if we have a refresh token
+  if (user.refresh_token) {
+    try {
+      const res = await oauth2Client.getAccessToken();
+      if (res.token) {
+        oauth2Client.setCredentials({ access_token: res.token });
+        // Update user's access token in DB if it changed
+        if (res.token !== user.access_token) {
+          await updateUserTokens(user.id, { access_token: res.token });
+        }
+      }
+    } catch (err) {
+      // If refresh fails, try using the existing access token
+      console.warn("Failed to refresh access token, using existing token");
     }
-  } catch (err) {
-    // ignore - next calls may still refresh automatically
   }
 
   return google.gmail({ version: "v1", auth: oauth2Client });
+}
+
+function sanitizeGmailLabelName(name: string) {
+  // Gmail label name max length is 225 characters.
+  // Also avoid slashes creating nested labels unexpectedly.
+  return name.replace(/\//g, " ").trim().slice(0, 225) || "Rolled up";
+}
+
+export async function ensureLabelForUser(userId: string, labelName: string) {
+  const user = await getUserById(userId);
+  if (!user) throw new Error("User not found");
+  const gmail = await getGmailForUser(user);
+
+  const desired = sanitizeGmailLabelName(labelName);
+  const existing = await gmail.users.labels.list({ userId: "me" });
+  const match = (existing.data.labels || []).find((l) => l.name === desired);
+  if (match?.id) return { labelId: match.id, labelName: desired };
+
+  const created = await gmail.users.labels.create({
+    userId: "me",
+    requestBody: {
+      name: desired,
+      labelListVisibility: "labelShow",
+      messageListVisibility: "show",
+    },
+  });
+
+  if (!created.data.id) throw new Error("Failed to create label");
+  return { labelId: created.data.id, labelName: desired };
 }
 
 /**
@@ -38,7 +87,7 @@ async function getGmailForUser(user: IUser) {
  * Also optionally persist into Emails collection.
  */
 export async function fetchGmailMessagesAndSave(userId: string, persist = true) {
-  const user = await User.findById(userId);
+  const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
 
   const gmail = await getGmailForUser(user);
@@ -49,7 +98,7 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true) 
   });
 
   const messages = list.data.messages || [];
-  const results: Array<Partial<IEmail>> = [];
+  const results: Array<Record<string, unknown>> = [];
 
   for (const m of messages) {
     try {
@@ -69,13 +118,13 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true) 
       const snippet = details.data.snippet || "";
 
       const item = {
-        user: user._id as mongoose.Types.ObjectId,
+        user_id: user.id,
         sender: from,
         subject,
         snippet,
-        date: internalDate,
-        unsubscribeLink: listUnsub || undefined,
-        messageId,
+        date: internalDate.toISOString(),
+        unsubscribe_link: listUnsub || null,
+        message_id: messageId,
       };
 
       results.push(item);
@@ -83,7 +132,7 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true) 
       if (persist) {
         try {
           // upsert avoid duplicates
-          await Email.updateOne({ messageId }, { $set: item }, { upsert: true });
+          await upsertEmail(item);
         } catch (err) {
           // ignore duplicates or save errors
         }
@@ -102,7 +151,7 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true) 
  */
 export async function batchDeleteMessagesForUser(userId: string, messageIds: string[]) {
   if (!messageIds.length) return { deleted: 0 };
-  const user = await User.findById(userId);
+  const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
   const gmail = await getGmailForUser(user);
 
@@ -115,7 +164,7 @@ export async function batchDeleteMessagesForUser(userId: string, messageIds: str
     });
 
     // also remove from our DB
-    await Email.deleteMany({ messageId: { $in: messageIds }, user: user._id });
+    await deleteEmailsForUserByMessageIds(user.id, messageIds);
 
     return { deleted: messageIds.length };
   } catch (err) {
@@ -129,7 +178,7 @@ export async function batchDeleteMessagesForUser(userId: string, messageIds: str
  * labelsToRemove: array of labelIds to remove
  */
 export async function modifyMessagesForUser(userId: string, messageIds: string[], labelsToAdd: string[] = [], labelsToRemove: string[] = []) {
-  const user = await User.findById(userId);
+  const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
   const gmail = await getGmailForUser(user);
 
@@ -153,78 +202,42 @@ export async function modifyMessagesForUser(userId: string, messageIds: string[]
  * returns array of { key, count, examples: [...first few messages] }
  */
 export async function getGroupedEmails(userId: string, limit = 100) {
-  // we group by normalized sender (extract domain or email)
-  const pipeline = [
-    { $match: { user: (await User.findById(userId))?._id } },
-    {
-      $project: {
-        subject: 1,
-        snippet: 1,
-        sender: 1,
-        messageId: 1,
-        date: 1,
-        // try to extract domain from sender
-        domain: {
-          $toLower: {
-            $trim: {
-              input: {
-                $arrayElemAt: [
-                  { $split: [{ $arrayElemAt: [{ $split: ["$sender", "<"] }, 1] }, ">"] },
-                  0,
-                ],
-              },
-            },
-          },
-        },
-      },
-    },
-    {
-      $addFields: {
-        domain2: {
-          $cond: [
-            { $eq: [{ $type: "$domain" }, "string"] },
-            {
-              $let: {
-                vars: {
-                  parts: { $split: ["$domain", "@"] },
-                },
-                in: { $arrayElemAt: ["$$parts", 1] },
-              },
-            },
-            "unknown",
-          ],
-        },
-      },
-    },
-    {
-      $group: {
-        _id: { sender: "$sender", domain: "$domain2" },
-        count: { $sum: 1 },
-        examples: { $push: { subject: "$subject", snippet: "$snippet", messageId: "$messageId", date: "$date" } },
-      },
-    },
-    { $sort: { count: -1 as const } },
-    { $limit: limit },
-    {
-      $project: {
-        key: { $ifNull: ["$_id.domain", "$_id.sender"] },
-        sender: "$_id.sender",
-        count: 1,
-        examples: { $slice: ["$examples", 5] },
-      },
-    },
-  ];
+  const emails = await getEmailsForUser(userId);
+  const grouped = new Map<string, { key: string; sender: string; count: number; examples: any[] }>();
 
-  // run aggregation on Email collection
-  const agg = await Email.aggregate(pipeline).allowDiskUse(true);
-  return agg;
+  for (const email of emails) {
+    const sender = email.sender || "unknown";
+    const domainMatch = sender.match(/<([^>]+)>/);
+    const senderAddress = (domainMatch?.[1] || sender).toLowerCase();
+    const domain = senderAddress.includes("@") ? senderAddress.split("@")[1] : senderAddress;
+    const key = domain || sender;
+
+    if (!grouped.has(key)) {
+      grouped.set(key, { key, sender, count: 0, examples: [] });
+    }
+
+    const current = grouped.get(key)!;
+    current.count += 1;
+    if (current.examples.length < 5) {
+      current.examples.push({
+        subject: email.subject,
+        snippet: email.snippet,
+        messageId: email.message_id,
+        date: email.date,
+      });
+    }
+  }
+
+  return Array.from(grouped.values())
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
 }
 
 /**
  * Helper: fetch all messages ids for a given sender (by domain or full sender string)
  */
 export async function getMessageIdsForSender(userId: string, senderMatch: string) {
-  const user = await User.findById(userId);
+  const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
   const gmail = await getGmailForUser(user);
 
@@ -241,4 +254,6 @@ export default {
   modifyMessagesForUser,
   getGroupedEmails,
   getMessageIdsForSender,
+  ensureLabelForUser,
+  markEmailsArchived,
 };

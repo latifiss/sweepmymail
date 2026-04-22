@@ -1,0 +1,352 @@
+// =============================================================================
+// TABS
+// =============================================================================
+// Tab component styles
+
+.tabs {
+  display: inline-flex;
+  align-items: center;
+  border: 0.1px solid #e0e0e0;
+  border-radius: 9999px;
+  padding: 0.25rem;
+  background-color: #fbfbfb;
+  gap: 0.25rem;
+  box-shadow: 0px 4px 0 rgba(0, 0, 0, 0.85);
+  transform: translateZ(0);
+
+  @media (prefers-color-scheme: dark) {
+    background-color: rgba(31, 41, 55, 0.5);
+    border-color: rgba(75, 85, 99, 0.5);
+  }
+
+  &__bottom {
+  display: inline-flex;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+
+  align-items: center;
+  gap: 0.5rem;
+
+  padding: 0.4rem 0.5rem;
+  border: 0.1px solid #e0e0e0;
+  border-radius: 9999px;
+  background-color: #fbfbfb;
+
+  box-shadow: 0px 4px 0 rgba(0, 0, 0, 0.85);
+
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+
+  white-space: nowrap;      // 🔒 no wrapping
+  overflow: hidden;         // prevents spill
+  text-overflow: ellipsis;  // safety
+
+  @media (prefers-color-scheme: dark) {
+    background-color: rgba(31, 41, 55, 0.5);
+    border-color: rgba(75, 85, 99, 0.5);
+  }
+
+  /* mobile only */
+  @media (min-width: 768px) {
+    display: none;
+  }
+}
+
+
+
+  &__tab {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #374151;
+
+    @media (prefers-color-scheme: dark) {
+      color: #d1d5db;
+    }
+
+    &:hover {
+      background-color: #f3f4f6;
+
+      @media (prefers-color-scheme: dark) {
+        background-color: rgba(55, 65, 81, 0.5);
+      }
+    }
+
+    &--active {
+      background-color: #ebe8e8;
+      color: #6b7280;
+      border: 1px solid #e0e0e0;
+
+      @media (prefers-color-scheme: dark) {
+        background-color: rgba(55, 65, 81, 0.5);
+        border-color: rgba(75, 85, 99, 0.5);
+        color: #9ca3af;
+      }
+    }
+
+    &__icon {
+      width: 1.25rem;
+      height: 1.25rem;
+      color: #6b7280;
+
+      @media (prefers-color-scheme: dark) {
+        color: #9ca3af;
+      }
+    }
+
+    &__label {
+      font-size: 0.875rem;
+    }
+  }
+}
+
+// Menu tab styles (for menutab component)
+.menu-tabs {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+
+  &__item {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-decoration: none;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background-color: #f3f4f6;
+      color: #374151;
+
+      @media (prefers-color-scheme: dark) {
+        background-color: rgba(55, 65, 81, 0.5);
+        color: #f9fafb;
+      }
+    }
+
+    &--active {
+      background-color: #0066cc;
+      color: #fff;
+
+      &:hover {
+        background-color: #0052a3;
+      }
+    }
+  }
+
+  &__popup {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 0.5rem;
+    width: max-content;
+    min-width: 200px;
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    z-index: 50;
+    animation: fade-in 0.2s ease-out;
+    animation-fill-mode: forwards;
+
+    @media (prefers-color-scheme: dark) {
+      background-color: #111827;
+      border-color: #374151;
+    }
+  }
+
+  &__popup-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    color: #374151;
+    transition: all 0.3s ease;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #f9fafb;
+
+      @media (prefers-color-scheme: dark) {
+        background-color: rgba(55, 65, 81, 0.5);
+        color: #f9fafb;
+      }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: #d1d5db;
+    }
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Mobile menu tabs (for tabviewMobile component)
+.mobile-menu {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #e0e0e0;
+  border-radius: 9999px;
+  padding: 0.25rem;
+  background-color: #fbfbfb;
+
+  @media (prefers-color-scheme: dark) {
+    background-color: rgba(31, 41, 55, 0.5);
+    border-color: rgba(75, 85, 99, 0.5);
+  }
+
+  &__button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #6b7280;
+
+    @media (prefers-color-scheme: dark) {
+      color: #9ca3af;
+    }
+
+    &:hover {
+      background-color: #f3f4f6;
+
+      @media (prefers-color-scheme: dark) {
+        background-color: rgba(55, 65, 81, 0.5);
+      }
+    }
+
+    &--active {
+      background-color: #f3f4f6;
+
+      @media (prefers-color-scheme: dark) {
+        background-color: rgba(55, 65, 81, 0.5);
+      }
+    }
+
+    &__icon {
+      width: 1.25rem;
+      height: 1.25rem;
+      color: #6b7280;
+
+      @media (prefers-color-scheme: dark) {
+        color: #9ca3af;
+      }
+    }
+
+    &__label {
+      font-size: 0.875rem;
+    }
+  }
+
+  &__separator {
+    width: 1px;
+    height: 1.5rem;
+    background-color: #d1d5db;
+
+    @media (prefers-color-scheme: dark) {
+      background-color: #4b5563;
+    }
+  }
+
+  &__popup {
+    position: absolute;
+    top: 100%;
+    margin-top: -315px;
+    width: max-content;
+    min-width: 200px;
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    z-index: 50;
+    animation: fade-in 0.2s ease-out;
+    animation-fill-mode: forwards;
+    padding: 0.25rem;
+
+    @media (prefers-color-scheme: dark) {
+      background-color: #111827;
+      border-color: #374151;
+    }
+  }
+
+  &__popup-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    width: 100%;
+    border-radius: 0.5rem;
+    text-align: left;
+    background: transparent;
+    border: none;
+    color: #374151;
+    height: 2.5rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #f9fafb;
+
+      @media (prefers-color-scheme: dark) {
+        background-color: rgba(55, 65, 81, 0.5);
+        color: #f9fafb;
+      }
+    }
+
+    &--active {
+      background-color: #f3f4f6;
+
+      @media (prefers-color-scheme: dark) {
+        background-color: rgba(55, 65, 81, 0.5);
+      }
+    }
+
+    &__icon {
+      width: 1rem;
+      height: 1rem;
+      color: #6b7280;
+
+      @media (prefers-color-scheme: dark) {
+        color: #9ca3af;
+      }
+    }
+
+    &__label {
+      font-size: 0.875rem;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      color: #d1d5db;
+    }
+  }
+}

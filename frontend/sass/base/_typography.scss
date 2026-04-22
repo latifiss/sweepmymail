@@ -1,0 +1,142 @@
+// =============================================================================
+// TYPOGRAPHY
+// =============================================================================
+@use '../sass-utils/variables' as *;
+
+// Typography rules and text styles
+
+// Headings
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+  color: #1a1a1a;
+}
+
+h1 {
+  font-size: 2.5rem;
+  letter-spacing: -0.5px;
+}
+
+h2 {
+  font-size: 2rem;
+  letter-spacing: -0.3px;
+}
+
+h3 {
+  font-size: 1.75rem;
+}
+
+h4 {
+  font-size: 1.5rem;
+}
+
+h5 {
+  font-size: 1.25rem;
+}
+
+h6 {
+  font-size: 1rem;
+}
+
+// Paragraphs
+p {
+  margin-bottom: 1rem;
+  color: $text-light;
+}
+
+// Links
+a {
+  color: $primary-color;
+  text-decoration: none;
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: $primary-dark;
+    text-decoration: underline;
+  }
+
+  &:focus {
+    outline: 2px solid $primary-color;
+    outline-offset: 2px;
+  }
+}
+
+// Text utilities
+strong,
+b {
+  font-weight: 700;
+}
+
+em,
+i {
+  font-style: italic;
+}
+
+small {
+  font-size: 0.875rem;
+}
+
+// Code
+code,
+kbd,
+samp {
+  font-family: $font-family-mono;
+  background-color: $light-gray;
+  padding: 0.2rem 0.4rem;
+  border-radius: $border-radius-sm;
+  font-size: 0.9rem;
+}
+
+pre {
+  background-color: $light-gray;
+  padding: 1rem;
+  border-radius: $border-radius-lg;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+
+  code {
+    background-color: transparent;
+    padding: 0;
+  }
+}
+
+// Lists
+ul,
+ol {
+  margin-bottom: 1rem;
+  padding-left: 2rem;
+}
+
+li {
+  margin-bottom: 0.5rem;
+}
+
+dl {
+  margin-bottom: 1rem;
+}
+
+dt {
+  font-weight: 700;
+  margin-top: 0.5rem;
+}
+
+dd {
+  margin-left: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+// Blockquote
+blockquote {
+  border-left: 4px solid #0066cc;
+  padding-left: 1rem;
+  margin-left: 0;
+  margin-bottom: 1rem;
+  color: #777;
+  font-style: italic;
+}

@@ -1,0 +1,185 @@
+@use '../sass-utils/variables' as *;
+
+.login-page {
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-x: hidden;
+
+  &__background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: $white;
+    z-index: 0;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      background-repeat: repeat;
+      opacity: 0.3;
+    }
+  }
+
+  &__container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 450px;
+    padding: $spacing-xl;
+    margin: $spacing-xl;
+
+    @media (max-width: $breakpoint-md) {
+      padding: $spacing-lg;
+      margin: $spacing-md;
+    }
+  }
+}
+
+.login-card {
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: 0;
+  box-shadow: 12px 12px 0 0 rgba(0, 0, 0, 1);
+  overflow: hidden;
+  width: 100%;
+
+  @media (max-width: $breakpoint-md) {
+    box-shadow: 8px 8px 0 0 rgba(0, 0, 0, 1);
+  }
+
+  &__header {
+    text-align: center;
+    padding: $spacing-xxxl $spacing-xl $spacing-xl;
+    background: linear-gradient(135deg, $primary-light 0%, $white 100%);
+    border-bottom: 1px solid $border-color;
+
+    @media (max-width: $breakpoint-md) {
+      padding: $spacing-xxl $spacing-lg $spacing-lg;
+    }
+  }
+
+  &__logo-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    img {
+      filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.1));
+    }
+  }
+
+  &__title {
+    font-size: 2rem;
+    font-weight: $font-weight-extra-bold;
+    font-family: $font-family-gliker;
+    color: $text-color;
+    margin-bottom: $spacing-sm;
+    letter-spacing: -0.5px;
+
+    @media (max-width: $breakpoint-md) {
+      font-size: 1.75rem;
+    }
+  }
+
+  &__subtitle {
+    font-size: $font-size-base;
+    color: $text-light;
+    margin: 0;
+  }
+
+  &__content {
+    padding: $spacing-xxl $spacing-xl $spacing-xl;
+
+    @media (max-width: $breakpoint-md) {
+      padding: $spacing-xl $spacing-lg $spacing-lg;
+    }
+  }
+
+  &__google-btn {
+    width: 100%;
+    background: $white;
+    border: 2px solid $border-color;
+    border-radius: 0;
+    padding: $spacing-md $spacing-xl;
+    cursor: pointer;
+    margin-bottom: $spacing-xl;
+
+    &__content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: $spacing-md;
+      
+      span {
+        font-family: $font-family-gliker;
+        font-size: $font-size-base;
+        font-weight: $font-weight-semibold;
+        color: $text-color;
+      }
+    }
+  }
+
+  &__divider {
+    text-align: center;
+    margin: $spacing-xl 0;
+    position: relative;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      background: $border-color;
+    }
+    
+    span {
+      position: relative;
+      background: $white;
+      padding: 0 $spacing-md;
+      font-size: $font-size-xs;
+      color: $text-light;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+  }
+
+  &__note {
+    font-size: $font-size-xs;
+    color: $text-lighter;
+    text-align: center;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  &__footer {
+    padding: $spacing-lg $spacing-xl;
+    background: $light-gray;
+    border-top: 1px solid $border-color;
+    text-align: center;
+    
+    p {
+      font-size: $font-size-xs;
+      color: $text-light;
+      margin: 0;
+    }
+  }
+}

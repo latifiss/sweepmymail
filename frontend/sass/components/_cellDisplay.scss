@@ -1,0 +1,227 @@
+// cell-display.scss
+@use '../sass-utils/variables' as *;
+
+.cell-display {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.75rem;
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: 0;
+  overflow: hidden;
+
+  @media (max-width: $breakpoint-md) {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  &--open {
+    .cell-display__arrow {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__side {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    padding: 1.5rem 0 1.5rem 1rem;
+
+    @media (max-width: $breakpoint-md) {
+      padding: 0.75rem;
+      width: 100%;
+      justify-content: flex-start;
+      border-bottom: 1px solid $border-color;
+    }
+  }
+
+  &__toggle-placeholder {
+    display: flex;
+    align-items: center;
+  }
+
+  &__arrow {
+    transition: transform 0.25s ease;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 0.5rem;
+    padding: $spacing-lg $spacing-lg $spacing-xs 0;
+
+    @media (max-width: $breakpoint-md) {
+      padding: $spacing-md;
+    }
+  }
+
+  &__info {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    gap: 1rem;
+
+    @media (max-width: $breakpoint-md) {
+      flex-direction: row;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      flex-direction: column;
+      gap: 0.5rem;
+      text-align: center;
+    }
+  }
+
+  &__right {
+    display: flex;
+    flex-direction: column;
+    width: fit-content;
+    align-items: center;
+
+    &__count {
+      color: $black;
+      font-size: 2.188rem;
+      font-weight: $font-weight-semibold;
+      font-family: $font-family-gliker;
+      line-height: 1;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+
+      @media (max-width: $breakpoint-md) {
+        font-size: 1.75rem;
+      }
+    }
+
+    &__text {
+      color: $black;
+      font-size: 0.875rem;
+      font-weight: $font-weight-normal;
+      line-height: 1;
+      text-align: center;
+      width: fit-content;
+      margin: 0;
+      padding: 0;
+    }
+  }
+
+  &__wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    width: 100%;
+
+    @media (max-width: $breakpoint-md) {
+      align-items: flex-start;
+      text-align: left;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      align-items: center;
+      text-align: center;
+    }
+  }
+
+  &__top {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    width: 100%;
+    flex-wrap: wrap;
+
+    @media (max-width: $breakpoint-md) {
+      justify-content: flex-start;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      justify-content: center;
+    }
+
+    &__info {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 0.5rem;
+      width: fit-content;
+
+      &__text {
+        color: $black;
+        font-size: 1.125rem;
+        font-weight: $font-weight-semibold;
+        font-family: $font-family-gliker;
+        line-height: 1;
+        text-align: left;
+        margin: 0;
+        padding: 0;
+
+        @media (max-width: $breakpoint-md) {
+          font-size: 1rem;
+        }
+      }
+    }
+  }
+
+  &__bottom {
+    color: $text-light;
+    font-size: 0.875rem;
+    font-weight: $font-weight-normal;
+    line-height: 1;
+    text-align: left;
+    width: fit-content;
+    margin: 0;
+    padding: 0;
+
+    @media (max-width: $breakpoint-md) {
+      text-align: left;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      text-align: center;
+      width: 100%;
+    }
+  }
+
+  &__dropdown {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    border-top: 1px solid $border-color;
+    padding: 0;
+    max-height: 500px;
+    opacity: 1;
+    transform: translateY(0);
+
+    > * {
+      padding: $spacing-md;
+      border-bottom: 1px solid $border-color;
+      width: 100%;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      @media (max-width: $breakpoint-md) {
+        padding: $spacing-sm;
+      }
+    }
+  }
+
+  &__dropdown_inner {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 0.75rem;
+  }
+}

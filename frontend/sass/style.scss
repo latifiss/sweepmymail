@@ -1,0 +1,192 @@
+// =============================================================================
+// MAIN STYLESHEET
+// =============================================================================
+// Entry point for all Sass files - imports everything in correct order
+
+// ---- 1. SASS UTILITIES (must come first) ----
+// Fonts should be loaded before variables so the variables can use them
+@use 'sass-utils/fonts' as *;
+// Variables, functions, and mixins must be imported after fonts so they can
+// respect any font-related variables provided by the fonts module.
+@use 'sass-utils/variables' as *;
+@use 'sass-utils/functions' as *;
+@use 'sass-utils/mixins' as *;
+@use 'sass-utils/helpers' as *;
+
+// ---- 2. VENDOR IMPORTS ----
+// Third-party frameworks (Bootstrap, jQuery UI, etc.)
+@use 'vendors/bootstrap' as *;
+@use 'vendors/jquery-ui' as *;
+
+// ---- 3. BASE STYLES ----
+// Reset, normalize, and typography
+@use 'base/reset' as *;
+@use 'base/typography' as *;
+
+// ---- 4. LAYOUT ----
+// Structural components
+@use 'layout/navigation' as *;
+@use 'layout/grid' as *;
+@use 'layout/header' as *;
+@use 'layout/footer' as *;
+@use 'layout/sidebar' as *;
+@use 'layout/forms' as *;
+
+// ---- 5. COMPONENTS ----
+// Reusable UI components
+@use 'components/actionsRow' as *;
+@use 'components/pricingPopup' as *;
+@use 'components/unread' as *;
+@use 'components/spot' as *;
+@use 'components/mailLine' as *;
+@use 'components/cell' as *;
+@use 'components/cellDisplay' as *;
+@use 'components/buttons' as *;
+@use 'components/guide' as *;
+@use 'components/carousel' as *;
+@use 'components/cover' as *;
+@use 'components/dropdown' as *;
+@use 'components/cards' as *;
+@use 'components/tabs' as *;
+@use 'components/bloc' as *;
+@use 'components/loader' as *;
+@use 'components/progress' as *;
+@use 'components/font-example' as *;
+
+// ---- 6. PAGES ----
+// Page-specific styles
+@use 'pages/home' as *;
+@use 'pages/profile' as *;
+@use 'pages/categorization' as *;
+@use 'pages/summary' as *;
+@use 'pages/priority' as *;
+@use 'pages/contact' as *;
+@use 'pages/info' as *;
+@use 'pages/login' as *;
+@use 'pages/emails' as *;
+@use 'pages/subscriptions' as *;
+
+// =============================================================================
+// CUSTOM STYLES
+// =============================================================================
+// Add any additional global styles below
+
+// Example: Custom scrollbar
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 5px;
+
+  &:hover {
+    background: #555;
+  }
+}
+
+// Example: Global transitions
+* {
+  &,
+  &::before,
+  &::after {
+    transition: background-color $transition-base, color $transition-base, border-color $transition-base;
+  }
+}
+
+// Example: Focus visible for accessibility
+:focus-visible {
+  outline: 2px solid $primary-color;
+  outline-offset: 2px;
+}
+
+// Example: Print styles
+@media print {
+  * {
+    background: transparent !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  a,
+  a:visited {
+    text-decoration: underline;
+  }
+
+  a[href]::after {
+    content: ' (' attr(href) ')';
+  }
+
+  img {
+    max-width: 100% !important;
+  }
+
+  @page {
+    margin: 0.5cm;
+  }
+
+  h1,
+  h2,
+  h3 {
+    page-break-after: avoid;
+  }
+
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+}
+
+// =============================================================================
+// THEMING EXAMPLE
+// =============================================================================
+// Example: Dark mode support
+@media (prefers-color-scheme: dark) {
+  :root {
+    // Define dark mode colors
+    --bg-color: #1a1a1a;
+    --text-color: #e0e0e0;
+    --border-color: #333;
+  }
+
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+  }
+
+  a {
+    color: #66b3ff;
+  }
+}
+
+// =============================================================================
+// BREAKPOINT EXAMPLES
+// =============================================================================
+// Example: Responsive design
+
+@include respond-to('sm') {
+  // Mobile styles (768px and below)
+  body {
+    font-size: 0.95rem;
+  }
+}
+
+@include respond-to('md') {
+  // Tablet styles (1024px and below)
+  body {
+    font-size: 0.98rem;
+  }
+}
+
+@include respond-to('lg') {
+  // Desktop styles (1200px and below)
+  body {
+    font-size: 1rem;
+  }
+}

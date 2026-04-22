@@ -1,0 +1,197 @@
+@use '../sass-utils/variables' as *;
+
+.loading-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: $z-index-modal;
+  opacity: 0;
+  transition: opacity $transition-base;
+  pointer-events: none;
+
+  &--open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.loading-modal {
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: 0;
+  box-shadow: 12px 12px 0 0 var(--shadow-color, #0066cc);
+  width: 400px;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: scale(0.95);
+  transition: transform $transition-base;
+
+  .loading-modal-overlay--open & {
+    transform: scale(1);
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    width: 150px;
+    height: 150px;
+    box-shadow: 6px 6px 0 0 var(--shadow-color, #0066cc);
+  }
+
+  &__content {
+    text-align: center;
+    padding: $spacing-xl;
+
+    @media (max-width: $breakpoint-sm) {
+      padding: $spacing-md;
+    }
+  }
+
+  &__message {
+    font-family: $font-family-gliker;
+    font-size: $font-size-base;
+    color: $text-color;
+    margin-top: $spacing-xl;
+    font-weight: $font-weight-medium;
+    
+    @media (max-width: $breakpoint-sm) {
+      font-size: $font-size-sm;
+      margin-top: $spacing-md;
+    }
+  }
+}
+
+.loading-animation {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  &__square {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    border: 10px solid $border-color;
+    background: transparent;
+    
+    @media (max-width: $breakpoint-sm) {
+      width: 60px;
+      height: 60px;
+      border-width: 6px;
+    }
+  }
+
+  &__snake {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: var(--loading-color, #0066cc);
+    border-radius: 1px;
+    
+    @media (max-width: $breakpoint-sm) {
+      width: 6px;
+      height: 6px;
+    }
+    
+    animation: snakeMoveOnBorder 2s linear infinite;
+  }
+}
+
+@keyframes snakeMoveOnBorder {
+  0% {
+    top: -10px;
+    left: -10px;
+  }
+  12.5% {
+    top: -10px;
+    left: calc(100% - 0px);
+  }
+  25% {
+    top: calc(100% - 0px);
+    left: calc(100% - 0px);
+  }
+  37.5% {
+    top: calc(100% - 0px);
+    left: -10px;
+  }
+  50% {
+    top: -10px;
+    left: -10px;
+  }
+  62.5% {
+    top: -10px;
+    left: calc(100% - 0px);
+  }
+  75% {
+    top: calc(100% - 0px);
+    left: calc(100% - 0px);
+  }
+  87.5% {
+    top: calc(100% - 0px);
+    left: -10px;
+  }
+  100% {
+    top: -10px;
+    left: -10px;
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  @keyframes snakeMoveOnBorder {
+    0% {
+      top: -6px;
+      left: -6px;
+    }
+    12.5% {
+      top: -6px;
+      left: calc(100% - 0px);
+    }
+    25% {
+      top: calc(100% - 0px);
+      left: calc(100% - 0px);
+    }
+    37.5% {
+      top: calc(100% - 0px);
+      left: -6px;
+    }
+    50% {
+      top: -6px;
+      left: -6px;
+    }
+    62.5% {
+      top: -6px;
+      left: calc(100% - 0px);
+    }
+    75% {
+      top: calc(100% - 0px);
+      left: calc(100% - 0px);
+    }
+    87.5% {
+      top: calc(100% - 0px);
+      left: -6px;
+    }
+    100% {
+      top: -6px;
+      left: -6px;
+    }
+  }
+}
+
+body:has(.loading-modal-overlay--open) {
+  overflow: hidden !important;
+}
+
+.loading-modal-overlay--open {
+  pointer-events: auto;
+}
+
+body.loading-modal-open {
+  overflow: hidden !important;
+  position: fixed;
+  width: 100%;
+}

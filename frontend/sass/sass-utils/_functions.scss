@@ -1,0 +1,74 @@
+@use "sass:map";
+
+@function lighten-color($color, $amount) {
+  @return lighten($color, $amount);
+}
+
+@function darken-color($color, $amount) {
+  @return darken($color, $amount);
+}
+
+@function mix-colors($color1, $color2, $weight: 50%) {
+  @return mix($color1, $color2, $weight);
+}
+
+@function text-contrast($bg-color) {
+  $luminance: (red($bg-color) * 0.299 + green($bg-color) * 0.587 + blue($bg-color) * 0.114) / 255;
+
+  @if $luminance > 0.5 {
+    @return #000000;
+  }
+
+  @return #ffffff;
+}
+
+@function rem($pixels, $base: 16) {
+  @return ($pixels / $base) * 1rem;
+}
+
+@function em($pixels, $base: 16) {
+  @return ($pixels / $base) * 1em;
+}
+
+@function aspect-ratio($width, $height) {
+  @return ($height / $width) * 100%;
+}
+
+@function space($scale) {
+  $sizes: (
+    0: 0,
+    1: 0.25rem,
+    2: 0.5rem,
+    3: 1rem,
+    4: 1.5rem,
+    5: 2rem,
+    6: 3rem,
+    7: 4rem,
+    8: 6rem,
+    9: 8rem,
+    10: 12rem,
+  );
+
+  @return map.get($sizes, $scale);
+}
+
+@function is-light($color) {
+  $luminance: (red($color) * 0.299 + green($color) * 0.587 + blue($color) * 0.114) / 255;
+  @return $luminance > 0.5;
+}
+
+@function strip-unit($number) {
+  @if type-of($number) == "number" and not unitless($number) {
+    @return $number / ($number * 0 + 1);
+  }
+
+  @return $number;
+}
+
+@function list-last($list) {
+  @return nth($list, length($list));
+}
+
+@function list-contains($list, $value) {
+  @return index($list, $value) != null;
+}

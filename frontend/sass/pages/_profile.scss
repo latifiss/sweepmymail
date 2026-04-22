@@ -1,0 +1,425 @@
+@use '../sass-utils/variables' as *;
+
+.profile-page {
+  min-height: 100vh;
+  background: $light-gray;
+  padding: $spacing-xxxl $container-padding;
+
+  @media (max-width: $breakpoint-md) {
+    padding: $spacing-xl $container-padding-sm;
+  }
+
+  &__container {
+    max-width: $container-max-width;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+.profile-header {
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: 0;
+  box-shadow: 8px 8px 0 0 rgba(0, 0, 0, 0.1);
+  margin-bottom: $spacing-xxxl;
+  padding: $spacing-xxxl;
+  text-align: center;
+
+  @media (max-width: $breakpoint-md) {
+    padding: $spacing-xl;
+    margin-bottom: $spacing-xl;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  &__avatar {
+    margin-bottom: $spacing-lg;
+    
+    &-inner {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      img {
+        border-radius: 50%;
+      }
+    }
+  }
+
+  &__name {
+    font-size: 2rem;
+    font-weight: $font-weight-bold;
+    font-family: $font-family-gliker;
+    color: $text-color;
+    margin-bottom: $spacing-xs;
+
+    @media (max-width: $breakpoint-md) {
+      font-size: 1.5rem;
+    }
+  }
+
+  &__email {
+    font-size: $font-size-base;
+    color: $text-light;
+    margin-bottom: $spacing-md;
+  }
+
+  &__plan-badge {
+    display: inline-block;
+    background: $gradient-primary;
+    padding: $spacing-xs $spacing-lg;
+    
+    span {
+      color: $white;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-semibold;
+      font-family: $font-family-gliker;
+    }
+  }
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $spacing-xl;
+  margin-bottom: $spacing-xxxl;
+
+  @media (max-width: $breakpoint-md) {
+    grid-template-columns: 1fr;
+    gap: $spacing-md;
+    margin-bottom: $spacing-xl;
+  }
+
+  .stat-card {
+    background: $white;
+    border: 1px solid $border-color;
+    border-radius: 0;
+    box-shadow: 6px 6px 0 0 rgba(0, 0, 0, 0.1);
+    padding: $spacing-xl;
+    text-align: center;
+
+    &__number {
+      font-size: 2.5rem;
+      font-weight: $font-weight-extra-bold;
+      font-family: $font-family-gliker;
+      color: $primary-color;
+      margin-bottom: $spacing-sm;
+
+      @media (max-width: $breakpoint-md) {
+        font-size: 2rem;
+      }
+    }
+
+    &__label {
+      font-size: $font-size-sm;
+      color: $text-light;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+  }
+}
+
+.profile-sections {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xxxl;
+
+  @media (max-width: $breakpoint-md) {
+    gap: $spacing-xl;
+  }
+}
+
+.profile-section {
+  background: $white;
+  border: 1px solid $border-color;
+  border-radius: 0;
+  box-shadow: 6px 6px 0 0 rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+
+  &--danger {
+    border-left: 4px solid $danger-color;
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: $spacing-xl $spacing-xxl;
+    background: $light-gray;
+    border-bottom: 1px solid $border-color;
+
+    @media (max-width: $breakpoint-md) {
+      padding: $spacing-lg;
+      flex-direction: column;
+      gap: $spacing-md;
+    }
+  }
+
+  &__head {
+    font-size: 1.5rem;
+    font-weight: $font-weight-bold;
+    font-family: $font-family-gliker;
+    color: $text-color;
+    margin: $spacing-base $spacing-lg 0 0;
+
+    @media (max-width: $breakpoint-md) {
+      font-size: 1.25rem;
+    }
+  }
+
+  &__title {
+    font-size: 1.5rem;
+    font-weight: $font-weight-bold;
+    font-family: $font-family-gliker;
+    color: $text-color;
+    margin: $spacing-base $spacing-lg 0 $spacing-lg;
+
+    @media (max-width: $breakpoint-md) {
+      font-size: 1.25rem;
+    }
+  }
+
+  &__edit-btn {
+    background: $white;
+    border: 2px solid $primary-color;
+    padding: $spacing-sm $spacing-xl;
+    cursor: pointer;
+    font-family: $font-family-gliker;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $primary-color;
+  }
+
+  &__save-btn {
+    background: $gradient-primary;
+    border: none;
+    padding: $spacing-sm $spacing-xl;
+    cursor: pointer;
+    font-family: $font-family-gliker;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $white;
+  }
+
+  &__content {
+    padding: $spacing-xxl;
+
+    @media (max-width: $breakpoint-md) {
+      padding: $spacing-lg;
+    }
+  }
+}
+
+.profile-field {
+  margin-bottom: $spacing-xl;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &__label {
+    display: block;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $text-light;
+    margin-bottom: $spacing-xs;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  &__value {
+    font-size: $font-size-lg;
+    font-family: $font-family-gliker;
+    color: $text-color;
+    margin: 0;
+    padding: $spacing-sm 0;
+  }
+
+  &__input {
+    width: 100%;
+    padding: $spacing-md;
+    border: 2px solid $border-color;
+    border-radius: 0;
+    font-size: $font-size-base;
+    font-family: $font-family-gliker;
+    background: $white;
+    
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+    }
+  }
+
+  &__select {
+    width: 100%;
+    padding: $spacing-md;
+    border: 2px solid $border-color;
+    border-radius: 0;
+    font-size: $font-size-base;
+    font-family: $font-family-gliker;
+    background: $white;
+    cursor: pointer;
+    
+    &:focus {
+      outline: none;
+      border-color: $primary-color;
+    }
+  }
+}
+
+.connected-account {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-lg;
+  border: 1px solid $border-color;
+  margin-bottom: $spacing-md;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &__info {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+  }
+
+  &__icon {
+    width: 48px;
+    height: 48px;
+    background: $light-gray;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__details {
+    p {
+      margin: 0;
+    }
+  }
+
+  &__name {
+    font-weight: $font-weight-semibold;
+    color: $text-color;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__email {
+    font-size: $font-size-sm;
+    color: $text-light;
+  }
+
+  &__status {
+    padding: $spacing-xs $spacing-lg;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    width: fit-content;
+    
+    &--connected {
+      background: $success-light;
+      color: $success-color;
+    }
+  }
+}
+
+.preference-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-lg 0;
+  border-bottom: 1px solid $border-color;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &__info {
+    flex: 1;
+  }
+
+  &__title {
+    font-weight: $font-weight-semibold;
+    color: $text-color;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__description {
+    font-size: $font-size-sm;
+    color: $text-light;
+    margin: 0;
+  }
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+  cursor: pointer;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  &__slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: $gray;
+    transition: 0.3s;
+    
+    &::before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 4px;
+      bottom: 4px;
+      background-color: $white;
+      transition: 0.3s;
+    }
+  }
+
+  input:checked + &__slider {
+    background-color: $primary-color;
+  }
+
+  input:checked + &__slider::before {
+    transform: translateX(24px);
+  }
+}
+
+.btn-logout {
+  background: transparent;
+  border: 2px solid $danger-color;
+  padding: $spacing-md $spacing-xl;
+  cursor: pointer;
+  width: 100%;
+  
+  &__content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-md;
+    
+    span {
+      font-family: $font-family-gliker;
+      font-size: $font-size-base;
+      font-weight: $font-weight-semibold;
+      color: $danger-color;
+    }
+  }
+}

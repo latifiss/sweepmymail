@@ -1,0 +1,91 @@
+@use '../sass-utils/variables' as *;
+
+.info-page {
+  background: #fff7ec;
+  min-height: 100vh;
+  color: #0a3d2c;
+  font-family: $font-family-gliker;
+  padding-bottom: 3.125rem;
+  padding-top: 1rem;
+}
+
+.info-content {
+  padding: 0 1.25rem 2rem;
+}
+
+.info-title {
+  font-size: 1.5rem;
+  font-weight: 900;
+  margin-bottom: 0.5rem;
+}
+
+.info-intro {
+  font-size: 1rem;
+  color: #4b6b5f;
+  margin-bottom: 1.5rem;
+}
+
+.info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  margin-bottom: 2rem;
+}
+
+.info-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+
+  p {
+    font-size: 0.95rem;
+    line-height: 1.45;
+  }
+}
+
+.info-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #0a6f50;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.info-icon--delete {
+  background: #e5533d;
+}
+
+.info-icon--keep {
+  background: #f2c94c;
+  color: #000;
+}
+
+.info-icon--unsubscribe {
+  background: #5c6ac4;
+}
+
+.info-icon--bulk {
+  background: #00a870;
+}
+
+.info-icon--safe {
+  background: #1b7fbd;
+}
+
+.info-icon--step {
+  background: #ffffff;
+  color: #0a3d2c;
+  border: 2px solid #0a3d2c;
+  font-weight: 900;
+}
+
+.info-subtitle {
+  font-size: 1.25rem;
+  font-weight: 900;
+  margin-bottom: 1rem;
+}

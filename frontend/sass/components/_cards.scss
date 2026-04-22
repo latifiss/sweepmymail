@@ -1,0 +1,145 @@
+// =============================================================================
+// CARDS
+// =============================================================================
+// Card component styles
+
+.card {
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+  }
+
+  // Dark mode support
+  @media (prefers-color-scheme: dark) {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+
+  // Card variants
+  &--article {
+    width: 310px;
+    min-height: 120px;
+
+    .card__category {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #6b7280;
+      margin-bottom: 0.25rem;
+
+      @media (prefers-color-scheme: dark) {
+        color: #9ca3af;
+      }
+    }
+
+    .card__content {
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 0.75rem;
+
+      @media (prefers-color-scheme: dark) {
+        color: #f9fafb;
+      }
+    }
+
+    .card__footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.875rem;
+    }
+
+    .card__status {
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.75rem;
+      font-weight: 700;
+      font-size: 0.75rem;
+
+      &--published {
+        background-color: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
+      }
+
+      &--draft {
+        background-color: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+      }
+
+      &--scheduled {
+        background-color: rgba(147, 51, 234, 0.1);
+        color: #9333ea;
+      }
+    }
+
+    .card__date {
+      color: #6b7280;
+
+      @media (prefers-color-scheme: dark) {
+        color: #9ca3af;
+      }
+    }
+  }
+
+  &--dashboard {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 112px; // 7rem = 112px
+
+    .card__header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #4b5563;
+
+      @media (prefers-color-scheme: dark) {
+        color: #9ca3af;
+      }
+
+      .card__dot {
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+
+        &--blue {
+          background-color: #3b82f6;
+        }
+
+        &--green {
+          background-color: #10b981;
+        }
+
+        &--red {
+          background-color: #ef4444;
+        }
+
+        &--yellow {
+          background-color: #f59e0b;
+        }
+
+        &--purple {
+          background-color: #8b5cf6;
+        }
+      }
+    }
+
+    .card__count {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #111827;
+      margin-top: 0.5rem;
+
+      @media (prefers-color-scheme: dark) {
+        color: #f9fafb;
+      }
+    }
+  }
+}

@@ -1,5 +1,4 @@
 import express from 'express';
-import { connectDB, isDBConnected } from './config/db';
 import { env } from './config/env';
 import morgan from 'morgan';
 import cors from 'cors';
@@ -17,7 +16,8 @@ if (isNaN(PORT) || PORT < 0 || PORT > 65535) {
 
 const allowedOrigins = [
   'http://localhost:4000',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  'http://localhost:3001'
 ];
 
 app.use(express.json({ limit: '50mb' }));
@@ -65,24 +65,11 @@ app.use(function onError(err: any, req: express.Request, res: express.Response, 
 
 async function startServer() {
   try {
-    const server = app.listen(PORT, '0.0.0.0', async () => {
+    app.listen(PORT, '0.0.0.0', async () => {
       console.clear();
       console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode`);
       console.log(`Listening on port ${PORT}`);
-
-      try {
-        await connectDB();
-
-        if (isDBConnected()) {
-          console.log('✅ MongoDB connection successful');
-        } else {
-          console.error('❌ MongoDB connection not established');
-          process.exit(1);
-        }
-      } catch (dbErr) {
-        console.error('❌ Failed to connect to MongoDB:', dbErr);
-        process.exit(1);
-      }
+      console.log('✅ Supabase connection configured via environment variables');
     });
   } catch (err) {
     console.error('Server startup failed:', err);

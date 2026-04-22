@@ -1,9 +1,43 @@
 // src/controllers/emailController.ts
 import { Request, Response } from "express";
-import gmailService from "../services/gmailService.js";
+import gmailService from "../services/gmailService";
 import { unsubscribeFromLink } from "../services/unsubscribeService";
-import Email from "../models/email";
-import Subscription from "../models/subscription";
+import {
+  getEmailByMessageId,
+  getEmailsBySenderLike,
+  markEmailsArchived,
+  upsertSubscription,
+} from "../repositories/dataRepository";
+
+function toApiError(err: any) {
+  const details = err?.response?.data || err?.errors || err?.stack || undefined;
+  const rawMessage = err?.message || String(err);
+  const detailsText = typeof details === "string" ? details : JSON.stringify(details || {});
+  const combined = `${rawMessage} ${detailsText}`.toLowerCase();
+
+  if (combined.includes("insufficientpermissions") || combined.includes("insufficient permissions")) {
+    return {
+      status: 403,
+      error:
+        "Gmail permission missing. Please sign in with Google again to grant mail.google.com access, then retry.",
+      details,
+    };
+  }
+
+  if (combined.includes("invalid label name")) {
+    return {
+      status: 400,
+      error: "Invalid Gmail label name generated for sender.",
+      details,
+    };
+  }
+
+  return {
+    status: 500,
+    error: rawMessage,
+    details,
+  };
+}
 
 /**
  * GET /emails
@@ -46,12 +80,21 @@ export const unsubscribe = async (req: Request, res: Response) => {
   try {
     let link = unsubscribeLink;
     if (!link && messageId) {
-      const msg = await Email.findOne({ messageId, user: (req as any).user.id });
-      link = msg?.unsubscribeLink;
+      const msg = await getEmailByMessageId((req as any).user.id, messageId);
+      link = msg?.unsubscribe_link || undefined;
+    }
+
+    if (!link && sender) {
+      const msgs = await getEmailsBySenderLike(userId, sender, 50);
+      const withUnsub = msgs.find((m) => !!m.unsubscribe_link);
+      link = withUnsub?.unsubscribe_link || undefined;
     }
 
     if (!link && !sender) {
       return res.status(400).json({ ok: false, error: "Provide unsubscribeLink, messageId or sender" });
+    }
+    if (!link) {
+      return res.status(404).json({ ok: false, error: "No unsubscribe link found for this sender" });
     }
 
     // determine user email for mail-from (we store user as JWT payload id only; fetch user from Subscription/User collection if needed)
@@ -64,11 +107,12 @@ export const unsubscribe = async (req: Request, res: Response) => {
 
     // store subscription record for sender if provided
     if (sender) {
-      await Subscription.updateOne(
-        { user: (req as any).user.id, sender },
-        { $set: { unsubscribed: result.success, unsubscribedAt: result.success ? new Date() : undefined } },
-        { upsert: true }
-      );
+      await upsertSubscription({
+        user_id: (req as any).user.id,
+        sender,
+        unsubscribed: result.success,
+        unsubscribed_at: result.success ? new Date().toISOString() : null,
+      });
     }
 
     res.json({ ok: true, result });
@@ -93,24 +137,28 @@ export const rollup = async (req: Request, res: Response) => {
 
   try {
     // upsert subscription rule
-    await Subscription.updateOne(
-      { user: userId, sender },
-      { $set: { rolledUp: true, rolledUpAt: new Date() } },
-      { upsert: true }
-    );
+    await upsertSubscription({
+      user_id: userId,
+      sender,
+      rolled_up: true,
+      rolled_up_at: new Date().toISOString(),
+    });
 
-    // find messages for sender, archive (remove INBOX label). We'll search via gmailService.
+    const { labelId, labelName } = await gmailService.ensureLabelForUser(userId, sender);
+
+    // find messages for sender, label them, and archive (remove INBOX label). We'll search via gmailService.
     const ids = await gmailService.getMessageIdsForSender(userId, sender);
     if (ids.length) {
       // Gmail label for INBOX is "INBOX" to remove
-      await gmailService.modifyMessagesForUser(userId, ids, [], ["INBOX"]);
+      await gmailService.modifyMessagesForUser(userId, ids, [labelId], ["INBOX"]);
       // optionally update our DB record to reflect they're archived (we can remove or flag)
-      await Email.updateMany({ messageId: { $in: ids }, user: (req as any).user.id }, { $set: { archived: true } });
+      await markEmailsArchived((req as any).user.id, ids);
     }
 
-    res.json({ ok: true, rolledUp: true, archivedCount: ids.length });
+    res.json({ ok: true, rolledUp: true, labelName, labeledCount: ids.length, archivedCount: ids.length });
   } catch (err: any) {
-    res.status(500).json({ ok: false, error: err.message || err });
+    const parsed = toApiError(err);
+    res.status(parsed.status).json({ ok: false, error: parsed.error, details: parsed.details });
   }
 };
 
@@ -129,7 +177,8 @@ export const batchDelete = async (req: Request, res: Response) => {
     const result = await gmailService.batchDeleteMessagesForUser(userId, messageIds);
     res.json({ ok: true, result });
   } catch (err: any) {
-    res.status(500).json({ ok: false, error: err.message || err });
+    const parsed = toApiError(err);
+    res.status(parsed.status).json({ ok: false, error: parsed.error, details: parsed.details });
   }
 };
 
@@ -143,10 +192,7 @@ export const getBySender = async (req: Request, res: Response) => {
 
   const userId = (req as any).user.id;
   try {
-    const msgs = await Email.find({ user: (req as any).user.id, sender: { $regex: sender, $options: "i" } })
-      .sort({ date: -1 })
-      .limit(200)
-      .lean();
+    const msgs = await getEmailsBySenderLike((req as any).user.id, sender, 200);
     res.json({ ok: true, count: msgs.length, messages: msgs });
   } catch (err: any) {
     res.status(500).json({ ok: false, error: err.message || err });
