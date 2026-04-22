@@ -1,7 +1,9 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
+import { useAppSelector } from '@/store/app/hooks'
+import { selectAuthToken } from '@/store/features/auth/authSlice'
 
 interface Category {
   id: string
@@ -12,36 +14,12 @@ interface Category {
 }
 
 export default function CategorizationPage() {
-  const [categories, setCategories] = useState<Category[]>([
-    {
-      id: '1',
-      label: 'Primary',
-      description: 'Important personal and work-related emails',
-      createdAt: '2024-01-15',
-      emailCount: 1247
-    },
-    {
-      id: '2',
-      label: 'Social',
-      description: 'Social media notifications and updates',
-      createdAt: '2024-01-15',
-      emailCount: 342
-    },
-    {
-      id: '3',
-      label: 'Promotions',
-      description: 'Marketing emails and special offers',
-      createdAt: '2024-01-15',
-      emailCount: 892
-    },
-    {
-      id: '4',
-      label: 'Updates',
-      description: 'App notifications and system updates',
-      createdAt: '2024-01-15',
-      emailCount: 156
-    }
-  ])
+  const token = useAppSelector(selectAuthToken)
+  const backendBaseUrl = useMemo(
+    () => process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000',
+    []
+  )
+  const [categories, setCategories] = useState<Category[]>([])
   
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
@@ -51,20 +29,76 @@ export default function CategorizationPage() {
     description: ''
   })
 
-  const handleCreateCategory = () => {
-    if (!newCategory.label.trim()) return
-    
-    const category: Category = {
-      id: Date.now().toString(),
-      label: newCategory.label,
-      description: newCategory.description || 'No description provided',
-      createdAt: new Date().toISOString().split('T')[0],
-      emailCount: 0
+  const loadCategories = useCallback(async () => {
+    if (!token) return
+    const response = await fetch(`${backendBaseUrl}/emails/categories`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to load categories (${response.status})`)
     }
-    
-    setCategories([...categories, category])
-    setNewCategory({ label: '', description: '' })
-    setIsModalOpen(false)
+
+    const data = (await response.json()) as {
+      ok: boolean
+      categories: Array<{
+        id: string
+        label: string
+        description: string
+        created_at: string
+        email_count: number
+      }>
+    }
+
+    setCategories(
+      (data.categories || []).map((cat) => ({
+        id: cat.id,
+        label: cat.label,
+        description: cat.description,
+        createdAt: (cat.created_at || '').split('T')[0] || '',
+        emailCount: cat.email_count || 0,
+      }))
+    )
+  }, [backendBaseUrl, token])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      loadCategories().catch((error) => {
+        console.error('Failed to load categories:', error)
+      })
+    }, 0)
+
+    return () => window.clearTimeout(timer)
+  }, [loadCategories])
+
+  const handleCreateCategory = () => {
+    if (!newCategory.label.trim() || !token) return
+
+    const create = async () => {
+      const response = await fetch(`${backendBaseUrl}/emails/categories`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          label: newCategory.label,
+          description: newCategory.description,
+        }),
+      })
+      if (!response.ok) {
+        throw new Error(`Failed to create category (${response.status})`)
+      }
+
+      await loadCategories()
+      setNewCategory({ label: '', description: '' })
+      setIsModalOpen(false)
+    }
+
+    create().catch((error) => {
+      console.error('Failed to create category:', error)
+    })
   }
 
   const handleDeleteClick = (category: Category) => {
@@ -73,11 +107,27 @@ export default function CategorizationPage() {
   }
 
   const handleConfirmDelete = () => {
-    if (selectedCategory) {
-      setCategories(categories.filter(cat => cat.id !== selectedCategory.id))
+    if (!selectedCategory || !token) return
+
+    const remove = async () => {
+      const response = await fetch(`${backendBaseUrl}/emails/categories/${selectedCategory.id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      if (!response.ok) {
+        throw new Error(`Failed to delete category (${response.status})`)
+      }
+
+      await loadCategories()
       setIsDeleteModalOpen(false)
       setSelectedCategory(null)
     }
+
+    remove().catch((error) => {
+      console.error('Failed to delete category:', error)
+    })
   }
 
   return (
@@ -221,7 +271,7 @@ export default function CategorizationPage() {
             <div className="cat-modal__content">
               <div className="cat-warning-icon">⚠️</div>
               <p className="cat-warning-text">
-                Are you sure you want to delete the category <strong>"{selectedCategory.label}"</strong>?
+                Are you sure you want to delete the category <strong>&quot;{selectedCategory.label}&quot;</strong>?
               </p>
               <p className="cat-warning-subtext">
                 This action cannot be undone. Emails in this category will need to be re-categorized.

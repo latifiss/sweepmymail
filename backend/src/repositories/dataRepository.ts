@@ -40,6 +40,24 @@ export interface DbDailySummary {
   generated_at: string;
 }
 
+export interface DbCategory {
+  id: string;
+  user_id: string;
+  label: string;
+  description: string;
+  keywords: string[];
+  email_count: number;
+  created_at: string;
+}
+
+export interface DbPriorityKeyword {
+  id: string;
+  user_id: string;
+  word: string;
+  email_count: number;
+  created_at: string;
+}
+
 function throwIfError(error: { message: string } | null, fallback: string) {
   if (error) throw new Error(error.message || fallback);
 }
@@ -209,5 +227,101 @@ export async function replaceDailySummaryForUser(payload: {
 
   const { error: insertError } = await supabase.from("daily_summaries").insert(payload);
   throwIfError(insertError, "Failed to insert daily summary");
+}
+
+export async function listCategoriesForUser(userId: string): Promise<DbCategory[]> {
+  const { data, error } = await supabase
+    .from("categories")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  throwIfError(error, "Failed to list categories");
+  return data || [];
+}
+
+export async function createCategory(payload: {
+  user_id: string;
+  label: string;
+  description: string;
+  keywords: string[];
+  email_count?: number;
+}): Promise<DbCategory> {
+  const { data, error } = await supabase
+    .from("categories")
+    .insert({
+      ...payload,
+      email_count: payload.email_count || 0,
+    })
+    .select("*")
+    .single();
+  throwIfError(error, "Failed to create category");
+  return data;
+}
+
+export async function deleteCategoryForUser(userId: string, categoryId: string): Promise<void> {
+  const { error } = await supabase.from("categories").delete().eq("user_id", userId).eq("id", categoryId);
+  throwIfError(error, "Failed to delete category");
+}
+
+export async function updateCategoryEmailCount(
+  userId: string,
+  categoryId: string,
+  emailCount: number
+): Promise<void> {
+  const { error } = await supabase
+    .from("categories")
+    .update({ email_count: emailCount })
+    .eq("user_id", userId)
+    .eq("id", categoryId);
+  throwIfError(error, "Failed to update category email count");
+}
+
+export async function listPriorityKeywordsForUser(userId: string): Promise<DbPriorityKeyword[]> {
+  const { data, error } = await supabase
+    .from("priority_keywords")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  throwIfError(error, "Failed to list priority keywords");
+  return data || [];
+}
+
+export async function createPriorityKeyword(payload: {
+  user_id: string;
+  word: string;
+  email_count?: number;
+}): Promise<DbPriorityKeyword> {
+  const { data, error } = await supabase
+    .from("priority_keywords")
+    .insert({
+      ...payload,
+      email_count: payload.email_count || 0,
+    })
+    .select("*")
+    .single();
+  throwIfError(error, "Failed to create priority keyword");
+  return data;
+}
+
+export async function deletePriorityKeywordForUser(userId: string, keywordId: string): Promise<void> {
+  const { error } = await supabase
+    .from("priority_keywords")
+    .delete()
+    .eq("user_id", userId)
+    .eq("id", keywordId);
+  throwIfError(error, "Failed to delete priority keyword");
+}
+
+export async function updatePriorityKeywordEmailCount(
+  userId: string,
+  keywordId: string,
+  emailCount: number
+): Promise<void> {
+  const { error } = await supabase
+    .from("priority_keywords")
+    .update({ email_count: emailCount })
+    .eq("user_id", userId)
+    .eq("id", keywordId);
+  throwIfError(error, "Failed to update priority keyword email count");
 }
 

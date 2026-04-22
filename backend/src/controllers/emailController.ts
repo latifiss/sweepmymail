@@ -8,6 +8,8 @@ import {
   markEmailsArchived,
   upsertSubscription,
 } from "../repositories/dataRepository";
+import { applyAllCategoriesForUser } from "../services/categoryService";
+import { applyAllPriorityKeywordsForUser } from "../services/priorityService";
 
 function toApiError(err: any) {
   const details = err?.response?.data || err?.errors || err?.stack || undefined;
@@ -47,6 +49,8 @@ export const fetchAndGetEmails = async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   try {
     const emails = await gmailService.fetchGmailMessagesAndSave(userId, true);
+    await applyAllCategoriesForUser(userId);
+    await applyAllPriorityKeywordsForUser(userId);
     res.json({ ok: true, count: emails.length, emails });
   } catch (err: any) {
     res.status(500).json({ ok: false, error: err.message || err });

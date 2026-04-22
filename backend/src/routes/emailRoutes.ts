@@ -7,6 +7,12 @@ import {
   batchDelete,
   getBySender,
 } from "../controllers/emailController";
+import { createCategoryAndApply, deleteCategory, getCategories } from "../controllers/categoryController";
+import {
+  createPriorityKeywordAndApply,
+  deletePriorityKeyword,
+  getPriorityKeywords,
+} from "../controllers/priorityController";
 import express from "express";
 
 const router = express.Router();
@@ -30,5 +36,15 @@ router.post("/rollup", rollup);
 
 // batch delete messages (permanently)
 router.post("/delete", batchDelete);
+
+// user-defined keyword categories (saved + applied as Gmail labels)
+router.get("/categories", getCategories);
+router.post("/categories", createCategoryAndApply);
+router.delete("/categories/:id", deleteCategory);
+
+// user-defined high priority keywords (mark matched Gmail as IMPORTANT)
+router.get("/priority-keywords", getPriorityKeywords);
+router.post("/priority-keywords", createPriorityKeywordAndApply);
+router.delete("/priority-keywords/:id", deletePriorityKeyword);
 
 export default router;

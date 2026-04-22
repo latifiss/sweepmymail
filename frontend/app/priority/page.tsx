@@ -1,7 +1,9 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
+import { useAppSelector } from '@/store/app/hooks'
+import { selectAuthToken } from '@/store/features/auth/authSlice'
 
 interface PriorityWord {
   id: string
@@ -10,21 +12,58 @@ interface PriorityWord {
 }
 
 export default function HighPriorityPage() {
-  const [priorityWords, setPriorityWords] = useState<PriorityWord[]>([
-    { id: '1', word: 'urgent', createdAt: '2024-01-15' },
-    { id: '2', word: 'invoice', createdAt: '2024-01-15' },
-    { id: '3', word: 'contract', createdAt: '2024-01-15' },
-    { id: '4', word: 'meeting', createdAt: '2024-01-15' },
-    { id: '5', word: 'deadline', createdAt: '2024-01-15' }
-  ])
+  const token = useAppSelector(selectAuthToken)
+  const backendBaseUrl = useMemo(
+    () => process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000',
+    []
+  )
+  const [priorityWords, setPriorityWords] = useState<PriorityWord[]>([])
   
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [selectedWord, setSelectedWord] = useState<PriorityWord | null>(null)
   const [newWord, setNewWord] = useState('')
 
+  const loadKeywords = useCallback(async () => {
+    if (!token) return
+    const response = await fetch(`${backendBaseUrl}/emails/priority-keywords`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    if (!response.ok) {
+      throw new Error(`Failed to load priority keywords (${response.status})`)
+    }
+
+    const data = (await response.json()) as {
+      ok: boolean
+      keywords: Array<{
+        id: string
+        word: string
+        created_at: string
+      }>
+    }
+
+    setPriorityWords(
+      (data.keywords || []).map((item) => ({
+        id: item.id,
+        word: item.word,
+        createdAt: (item.created_at || '').split('T')[0] || '',
+      }))
+    )
+  }, [backendBaseUrl, token])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      loadKeywords().catch((error) => {
+        console.error('Failed to load priority keywords:', error)
+      })
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [loadKeywords])
+
   const handleAddWord = () => {
-    if (!newWord.trim()) return
+    if (!newWord.trim() || !token) return
     
     const existingWord = priorityWords.find(
       w => w.word.toLowerCase() === newWord.trim().toLowerCase()
@@ -35,15 +74,27 @@ export default function HighPriorityPage() {
       return
     }
     
-    const word: PriorityWord = {
-      id: Date.now().toString(),
-      word: newWord.trim().toLowerCase(),
-      createdAt: new Date().toISOString().split('T')[0]
+    const add = async () => {
+      const response = await fetch(`${backendBaseUrl}/emails/priority-keywords`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ word: newWord.trim() }),
+      })
+      if (!response.ok) {
+        throw new Error(`Failed to create priority keyword (${response.status})`)
+      }
+
+      await loadKeywords()
+      setNewWord('')
+      setIsModalOpen(false)
     }
-    
-    setPriorityWords([...priorityWords, word])
-    setNewWord('')
-    setIsModalOpen(false)
+
+    add().catch((error) => {
+      console.error('Failed to add priority keyword:', error)
+    })
   }
 
   const handleDeleteClick = (word: PriorityWord) => {
@@ -52,11 +103,27 @@ export default function HighPriorityPage() {
   }
 
   const handleConfirmDelete = () => {
-    if (selectedWord) {
-      setPriorityWords(priorityWords.filter(w => w.id !== selectedWord.id))
+    if (!selectedWord || !token) return
+
+    const remove = async () => {
+      const response = await fetch(`${backendBaseUrl}/emails/priority-keywords/${selectedWord.id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      if (!response.ok) {
+        throw new Error(`Failed to delete priority keyword (${response.status})`)
+      }
+
+      await loadKeywords()
       setIsDeleteModalOpen(false)
       setSelectedWord(null)
     }
+
+    remove().catch((error) => {
+      console.error('Failed to remove priority keyword:', error)
+    })
   }
 
   return (
@@ -230,7 +297,7 @@ export default function HighPriorityPage() {
             <div className="modal__content">
               <div className="warning-icon">⚠️</div>
               <p className="warning-text">
-                Are you sure you want to remove the keyword <strong>"{selectedWord.word}"</strong>?
+                Are you sure you want to remove the keyword <strong>&quot;{selectedWord.word}&quot;</strong>?
               </p>
               <p className="warning-subtext">
                 Emails containing this word will no longer be automatically marked as high priority.
