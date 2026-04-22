@@ -23,6 +23,23 @@ export interface DbEmail {
   archived: boolean;
 }
 
+export interface DbDailySummary {
+  id: string;
+  user_id: string;
+  summary_text: string;
+  citations: Array<{
+    id: number;
+    emailId: string;
+    subject: string;
+    sender: string;
+    preview: string;
+    link: string;
+  }>;
+  emails_received: number;
+  priority_items: number;
+  generated_at: string;
+}
+
 function throwIfError(error: { message: string } | null, fallback: string) {
   if (error) throw new Error(error.message || fallback);
 }
@@ -123,6 +140,23 @@ export async function getEmailsForUser(userId: string): Promise<DbEmail[]> {
   return data || [];
 }
 
+export async function getEmailsForUserInRange(
+  userId: string,
+  sinceIso: string,
+  untilIso: string
+): Promise<DbEmail[]> {
+  const { data, error } = await supabase
+    .from("emails")
+    .select("*")
+    .eq("user_id", userId)
+    .gte("date", sinceIso)
+    .lt("date", untilIso)
+    .order("date", { ascending: false })
+    .limit(5000);
+  throwIfError(error, "Failed to fetch emails for date range");
+  return data || [];
+}
+
 export async function getEmailCountForUser(userId: string): Promise<number> {
   const { count, error } = await supabase
     .from("emails")
@@ -142,5 +176,38 @@ export async function upsertSubscription(payload: {
 }): Promise<void> {
   const { error } = await supabase.from("subscriptions").upsert(payload, { onConflict: "user_id,sender" });
   throwIfError(error, "Failed to upsert subscription");
+}
+
+export async function listUsers(): Promise<DbUser[]> {
+  const { data, error } = await supabase.from("users").select("*");
+  throwIfError(error, "Failed to list users");
+  return data || [];
+}
+
+export async function getLatestDailySummary(userId: string): Promise<DbDailySummary | null> {
+  const { data, error } = await supabase
+    .from("daily_summaries")
+    .select("*")
+    .eq("user_id", userId)
+    .order("generated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  throwIfError(error, "Failed to fetch latest daily summary");
+  return data;
+}
+
+export async function replaceDailySummaryForUser(payload: {
+  user_id: string;
+  summary_text: string;
+  citations: DbDailySummary["citations"];
+  emails_received: number;
+  priority_items: number;
+  generated_at: string;
+}): Promise<void> {
+  const { error: deleteError } = await supabase.from("daily_summaries").delete().eq("user_id", payload.user_id);
+  throwIfError(deleteError, "Failed to delete previous daily summary");
+
+  const { error: insertError } = await supabase.from("daily_summaries").insert(payload);
+  throwIfError(insertError, "Failed to insert daily summary");
 }
 

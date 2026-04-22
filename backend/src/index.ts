@@ -5,6 +5,8 @@ import cors from 'cors';
 import authRoutes from "./routes/authRoutes";
 import emailRoutes from "./routes/emailRoutes";
 import stripeRoutes from "./routes/stripeRoutes";
+import dailySummaryRoutes from "./routes/dailySummaryRoutes";
+import { startDailySummaryScheduler } from "./services/dailySummaryService";
 
 const app = express();
 const PORT = parseInt(env.PORT, 10);
@@ -52,6 +54,7 @@ app.get('/', (req, res) => {
 app.use("/auth", authRoutes);
 app.use("/emails", emailRoutes);
 app.use("/stripe", stripeRoutes);
+app.use("/daily-summary", dailySummaryRoutes);
 
 app.use(function onError(err: any, req: express.Request, res: express.Response, next: express.NextFunction) {
   res.statusCode = 500;
@@ -70,6 +73,8 @@ async function startServer() {
       console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode`);
       console.log(`Listening on port ${PORT}`);
       console.log('✅ Supabase connection configured via environment variables');
+      startDailySummaryScheduler();
+      console.log("✅ Daily summary scheduler started (runs at 06:00 UTC)");
     });
   } catch (err) {
     console.error('Server startup failed:', err);

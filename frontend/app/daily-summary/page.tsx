@@ -1,7 +1,9 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
+import { useAppSelector } from '@/store/app/hooks'
+import { selectAuthToken } from '@/store/features/auth/authSlice'
 
 interface Citation {
   id: number
@@ -14,90 +16,69 @@ interface Citation {
 
 interface SummaryData {
   text: string
+  emailsReceived: number
+  priorityItems: number
   citations: Citation[]
 }
 
 export default function DailySummaryPage() {
   const [selectedCitation, setSelectedCitation] = useState<Citation | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const token = useAppSelector(selectAuthToken)
+  const backendBaseUrl = useMemo(
+    () => process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000',
+    []
+  )
+  const [summaryData, setSummaryData] = useState<SummaryData>({
+    text: '',
+    emailsReceived: 0,
+    priorityItems: 0,
+    citations: [],
+  })
+  const [isLoading, setIsLoading] = useState(true)
 
-  const summaryData: SummaryData = {
-    text: "You received 47 emails in the last 24 hours[1]. Your inbox saw 23 promotional emails from various retailers[2], with 12 spam messages automatically filtered out[3]. Three priority emails require your attention: a contract review from legal department[4], an invoice payment reminder from finance[5], and an urgent client request[6]. Your Amazon order (#ORD-7842) has been shipped and will arrive Friday[7]. The team meeting scheduled for tomorrow has been moved to 3 PM[8]. Don't forget to review the monthly analytics report shared by marketing[9].",
-    citations: [
-      {
-        id: 1,
-        emailId: 'email_001',
-        subject: 'Daily Email Summary',
-        sender: 'notifications@magicmail.com',
-        preview: 'You received 47 emails in the last 24 hours across all categories.',
-        link: 'https://mail.google.com/mail/u/0/#inbox'
-      },
-      {
-        id: 2,
-        emailId: 'email_002',
-        subject: 'Flash Sale: 50% Off Everything',
-        sender: 'promotions@amazon.com',
-        preview: 'Limited time offer! Get 50% off on all electronics. Use code FLASH50.',
-        link: 'https://mail.google.com/mail/u/0/#promotions'
-      },
-      {
-        id: 3,
-        emailId: 'email_003',
-        subject: 'Weekly Newsletter',
-        sender: 'newsletter@techcrunch.com',
-        preview: 'Top stories this week: AI breakthroughs, new product launches, and industry trends.',
-        link: 'https://mail.google.com/mail/u/0/#spam'
-      },
-      {
-        id: 4,
-        emailId: 'email_004',
-        subject: 'Urgent: Contract Review Needed',
-        sender: 'legal@company.com',
-        preview: 'Please review the attached contract for the new partnership agreement. Deadline: Friday.',
-        link: 'https://mail.google.com/mail/u/0/#inbox'
-      },
-      {
-        id: 5,
-        emailId: 'email_005',
-        subject: 'Invoice #INV-2024-001 - Payment Due',
-        sender: 'finance@company.com',
-        preview: 'Your invoice for $2,500 is due by March 15th. Please process payment at your earliest convenience.',
-        link: 'https://mail.google.com/mail/u/0/#inbox'
-      },
-      {
-        id: 6,
-        emailId: 'email_006',
-        subject: 'Client Request: Project Timeline Update',
-        sender: 'client@acme.com',
-        preview: 'Urgent: Need to discuss timeline adjustments for the Q2 deliverables.',
-        link: 'https://mail.google.com/mail/u/0/#inbox'
-      },
-      {
-        id: 7,
-        emailId: 'email_007',
-        subject: 'Your Amazon Order Has Shipped',
-        sender: 'shipment@amazon.com',
-        preview: 'Order #ORD-7842 has been shipped and will arrive by Friday, March 10th.',
-        link: 'https://mail.google.com/mail/u/0/#inbox'
-      },
-      {
-        id: 8,
-        emailId: 'email_008',
-        subject: 'Meeting Rescheduled: Team Sync',
-        sender: 'calendar@company.com',
-        preview: 'The team meeting originally scheduled for 2 PM has been moved to 3 PM today.',
-        link: 'https://mail.google.com/mail/u/0/#inbox'
-      },
-      {
-        id: 9,
-        emailId: 'email_009',
-        subject: 'Monthly Analytics Report - February',
-        sender: 'analytics@company.com',
-        preview: 'Q1 performance metrics are in. View the attached report for detailed insights.',
-        link: 'https://mail.google.com/mail/u/0/#inbox'
+  useEffect(() => {
+    const loadSummary = async () => {
+      if (!token) {
+        setIsLoading(false)
+        return
       }
-    ]
-  }
+
+      try {
+        const headers = {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+
+        let response = await fetch(`${backendBaseUrl}/daily-summary/latest`, { headers })
+
+        if (response.status === 404) {
+          await fetch(`${backendBaseUrl}/daily-summary/regenerate`, {
+            method: 'POST',
+            headers,
+          })
+          response = await fetch(`${backendBaseUrl}/daily-summary/latest`, { headers })
+        }
+
+        if (!response.ok) {
+          throw new Error(`Failed to load daily summary (${response.status})`)
+        }
+
+        const data = (await response.json()) as {
+          ok: boolean
+          summary: SummaryData
+        }
+
+        setSummaryData(data.summary)
+      } catch (error) {
+        console.error('Daily summary fetch failed:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadSummary()
+  }, [backendBaseUrl, token])
 
   const handleCitationClick = (citation: Citation) => {
     setSelectedCitation(citation)
@@ -173,17 +154,19 @@ export default function DailySummaryPage() {
               <div className="ds-card__badge">AI Generated</div>
               <div className="ds-card__stats">
                 <div className="ds-card__stat">
-                  <span className="ds-card__stat-number">47</span>
+                  <span className="ds-card__stat-number">{summaryData.emailsReceived}</span>
                   <span className="ds-card__stat-label">Emails Received</span>
                 </div>
                 <div className="ds-card__stat">
-                  <span className="ds-card__stat-number">3</span>
+                  <span className="ds-card__stat-number">{summaryData.priorityItems}</span>
                   <span className="ds-card__stat-label">Priority Items</span>
                 </div>
               </div>
             </div>
             <div className="ds-card__content">
               <div className="ds-summary-text">
+                {isLoading && <span>Generating your daily summary...</span>}
+                {!isLoading && !summaryData.text && <span>No daily summary available yet.</span>}
                 {summaryParts.map((part, index) => {
                   if (part.type === 'text') {
                     return <span key={index}>{part.content}</span>

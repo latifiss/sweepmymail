@@ -10,6 +10,7 @@ export const env = {
   GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI || "",
   JWT_SECRET: process.env.JWT_SECRET || "supersecret",
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || "",
+  DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY || "",
   SMTP_HOST: process.env.SMTP_HOST || "",
   SMTP_PORT: process.env.SMTP_PORT || "587",
   SMTP_USER: process.env.SMTP_USER || "",
