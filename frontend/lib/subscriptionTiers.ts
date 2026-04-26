@@ -1,4 +1,4 @@
-export type SubscriptionTierId = 'starter' | 'growth' | 'pro'
+export type SubscriptionTierId = 'free' | 'starter' | 'growth' | 'pro'
 
 export type SubscriptionTier = {
   id: SubscriptionTierId
@@ -13,12 +13,22 @@ export type SubscriptionTier = {
 const DEFAULT_CHECKOUT_URL = '#'
 
 const checkoutUrlByTier: Record<SubscriptionTierId, string> = {
+  free: DEFAULT_CHECKOUT_URL,
   starter: process.env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL_STARTER || DEFAULT_CHECKOUT_URL,
   growth: process.env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL_GROWTH || DEFAULT_CHECKOUT_URL,
   pro: process.env.NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL_PRO || DEFAULT_CHECKOUT_URL,
 }
 
 export const subscriptionTiers: SubscriptionTier[] = [
+  {
+    id: 'free',
+    name: 'Free',
+    priceLabel: '$0',
+    frequency: 'forever',
+    description: 'Try the basics with small limits before upgrading.',
+    highlights: ['Fetch 100 emails/sync', 'Delete 50 at a time', '1 category', '2 priority keywords'],
+    lemonSqueezyCheckoutUrl: checkoutUrlByTier.free,
+  },
   {
     id: 'starter',
     name: 'Starter',

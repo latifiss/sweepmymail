@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { useAppSelector } from '@/store/app/hooks'
 import { selectAuthToken } from '@/store/features/auth/authSlice'
+import PricingPopup from '@/components/pricingPopup'
 
 interface PriorityWord {
   id: string
@@ -27,6 +28,7 @@ export default function HighPriorityPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false)
+  const [isPricingOpen, setIsPricingOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [selectedWord, setSelectedWord] = useState<PriorityWord | null>(null)
   const [newWord, setNewWord] = useState('')
@@ -45,7 +47,10 @@ export default function HighPriorityPage() {
       return 'Your Google session expired. Please sign in with Google again, then retry.'
     }
     if (message.includes('limit reached')) {
-      return rawMessage
+      if (message.includes('free tier')) {
+        setIsPricingOpen(true)
+      }
+      return 'You’ve reached the Free tier limit for priority keywords. Upgrade to add more.'
     }
     return 'Could not add this keyword right now. Please try again.'
   }
@@ -369,6 +374,8 @@ export default function HighPriorityPage() {
           </div>
         </div>
       )}
+
+      {isPricingOpen && <PricingPopup onClose={() => setIsPricingOpen(false)} />}
     </main>
   )
 }

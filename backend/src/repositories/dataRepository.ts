@@ -58,7 +58,7 @@ export interface DbPriorityKeyword {
   created_at: string;
 }
 
-export type SubscriptionTierId = "starter" | "growth" | "pro";
+export type SubscriptionTierId = "free" | "starter" | "growth" | "pro";
 
 export interface DbUserSubscription {
   user_id: string;
@@ -89,7 +89,7 @@ export async function getUserById(id: string): Promise<DbUser | null> {
 function normalizeTier(value: unknown): SubscriptionTierId | null {
   if (typeof value !== "string") return null;
   const normalized = value.trim().toLowerCase();
-  if (normalized === "starter" || normalized === "growth" || normalized === "pro") {
+  if (normalized === "free" || normalized === "starter" || normalized === "growth" || normalized === "pro") {
     return normalized;
   }
   return null;
@@ -123,7 +123,7 @@ export async function getUserSubscriptionByUserId(userId: string): Promise<DbUse
 
   const user = await getUserById(userId);
   if (!user) return null;
-  const fallbackTier = normalizeTier((user as any).subscription_tier) || "starter";
+  const fallbackTier = normalizeTier((user as any).subscription_tier) || "free";
   return {
     user_id: userId,
     tier: fallbackTier,

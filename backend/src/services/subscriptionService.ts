@@ -14,6 +14,12 @@ export type SubscriptionTierLimits = {
 };
 
 export const SUBSCRIPTION_TIER_LIMITS: Record<SubscriptionTierId, SubscriptionTierLimits> = {
+  free: {
+    maxFetchPerSync: 100,
+    maxDeleteBatch: 50,
+    maxCategories: 1,
+    maxPriorityKeywords: 2,
+  },
   starter: {
     maxFetchPerSync: 200,
     maxDeleteBatch: 150,
@@ -45,10 +51,10 @@ export class TierLimitError extends Error {
 export type WebhookSubscriptionStatus = "active" | "inactive" | "past_due" | "canceled";
 
 function normalizeTier(input: unknown): SubscriptionTierId {
-  if (typeof input !== "string") return "starter";
+  if (typeof input !== "string") return "free";
   const tier = input.trim().toLowerCase();
-  if (tier === "starter" || tier === "growth" || tier === "pro") return tier;
-  return "starter";
+  if (tier === "free" || tier === "starter" || tier === "growth" || tier === "pro") return tier;
+  return "free";
 }
 
 export async function getSubscriptionContext(userId: string): Promise<{
@@ -59,11 +65,15 @@ export async function getSubscriptionContext(userId: string): Promise<{
     const subscription =
       (await getUserSubscriptionByUserId(userId)) || ({
         user_id: userId,
-        tier: "starter",
+        tier: "free",
         status: "active",
       } satisfies DbUserSubscription);
 
-    const tier = normalizeTier(subscription.tier);
+    // If not actively subscribed, treat as free tier.
+    const effectiveTier =
+      (subscription.status && subscription.status !== "active") ? "free" : normalizeTier(subscription.tier);
+
+    const tier = effectiveTier;
     const limits = SUBSCRIPTION_TIER_LIMITS[tier];
 
     return {
@@ -71,14 +81,14 @@ export async function getSubscriptionContext(userId: string): Promise<{
       limits,
     };
   } catch (error) {
-    console.error("Failed to load subscription context, falling back to starter tier:", error);
+    console.error("Failed to load subscription context, falling back to free tier:", error);
     return {
       subscription: {
         user_id: userId,
-        tier: "starter",
+        tier: "free",
         status: "active",
       },
-      limits: SUBSCRIPTION_TIER_LIMITS.starter,
+      limits: SUBSCRIPTION_TIER_LIMITS.free,
     };
   }
 }
@@ -97,11 +107,11 @@ export async function setUserSubscriptionTier(userId: string, tierInput: unknown
 }
 
 export function resolveTierFromVariantId(variantId: string | null): SubscriptionTierId {
-  if (!variantId) return "starter";
+  if (!variantId) return "free";
   if (env.LEMONSQUEEZY_VARIANT_ID_PRO && variantId === env.LEMONSQUEEZY_VARIANT_ID_PRO) return "pro";
   if (env.LEMONSQUEEZY_VARIANT_ID_GROWTH && variantId === env.LEMONSQUEEZY_VARIANT_ID_GROWTH) return "growth";
   if (env.LEMONSQUEEZY_VARIANT_ID_STARTER && variantId === env.LEMONSQUEEZY_VARIANT_ID_STARTER) return "starter";
-  return "starter";
+  return "free";
 }
 
 export async function upsertSubscriptionFromWebhook(payload: {
@@ -126,7 +136,7 @@ export async function upsertSubscriptionFromWebhook(payload: {
 export function enforceMaxCount(currentCount: number, maxCount: number, entityName: string, tier: SubscriptionTierId) {
   if (currentCount >= maxCount) {
     throw new TierLimitError(
-      `${entityName} limit reached for ${tier} tier (${maxCount}). Upgrade your subscription to increase this limit.`
+      `${entityName} limit reached for ${tier} tier (${maxCount}). Upgrade to continue.`
     );
   }
 }
@@ -134,7 +144,7 @@ export function enforceMaxCount(currentCount: number, maxCount: number, entityNa
 export function enforceBatchSize(batchSize: number, maxBatchSize: number, tier: SubscriptionTierId) {
   if (batchSize > maxBatchSize) {
     throw new TierLimitError(
-      `This action exceeds your ${tier} tier limit (${maxBatchSize} items per request).`
+      `This action exceeds your ${tier} tier limit (${maxBatchSize} items per request). Upgrade to continue.`
     );
   }
 }

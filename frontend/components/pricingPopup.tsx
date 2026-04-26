@@ -27,6 +27,13 @@ const PricingPopup = ({ onClose }: PricingPopupProps) => {
           view full details and continue to checkout.
         </p>
 
+        <p className="pricing-popup__text">
+          Free tier is available for everyone with smaller limits.
+          <Link href="/subscriptions/free" style={{ textDecoration: 'underline', marginLeft: 6 }}>
+            See Free limits
+          </Link>
+        </p>
+
         <h2 className="pricing-popup__subtitle">AVAILABLE TIERS</h2>
 
         <div className="pricing-popup__bundles">

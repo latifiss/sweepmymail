@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { useAppSelector } from '@/store/app/hooks'
 import { selectAuthToken } from '@/store/features/auth/authSlice'
+import PricingPopup from '@/components/pricingPopup'
 
 interface Category {
   id: string
@@ -29,6 +30,7 @@ export default function CategorizationPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false)
+  const [isPricingOpen, setIsPricingOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [newCategory, setNewCategory] = useState({
@@ -50,7 +52,10 @@ export default function CategorizationPage() {
       return 'Your Google session expired. Please sign in with Google again, then retry.'
     }
     if (message.includes('limit reached')) {
-      return rawMessage
+      if (message.includes('free tier')) {
+        setIsPricingOpen(true)
+      }
+      return 'You’ve reached the Free tier limit for categories. Upgrade to create more.'
     }
     return 'Could not create this category right now. Please try again.'
   }
@@ -343,6 +348,8 @@ export default function CategorizationPage() {
           </div>
         </div>
       )}
+
+      {isPricingOpen && <PricingPopup onClose={() => setIsPricingOpen(false)} />}
     </main>
   )
 }
