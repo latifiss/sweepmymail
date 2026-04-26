@@ -6,8 +6,10 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import ScrollSection from '@/components/scrollSection'
 import PricingPopup from '@/components/pricingPopup'
 import Image from 'next/image'
-import Cell from '@/components/cell'
 import CellDisplay from '@/components/cellDisplay'
+import { useRouter } from 'next/navigation'
+import { useAppSelector } from '@/store/app/hooks'
+import { selectAuthToken } from '@/store/features/auth/authSlice'
 
 // Define section colors based on your variables
 const sectionColors = {
@@ -22,9 +24,16 @@ const sectionColors = {
 }
 
 export default function HomePage() {
+  const router = useRouter()
+  const token = useAppSelector(selectAuthToken)
   const [showPricing, setShowPricing] = useState(false)
 
   useEffect(() => {
+    if (token) {
+      router.replace('/subscriptions')
+      return
+    }
+
     gsap.registerPlugin(ScrollTrigger)
     document.body.style.backgroundColor = '#ffffff'
     ScrollTrigger.refresh()
@@ -33,7 +42,11 @@ export default function HomePage() {
       ScrollTrigger.getAll().forEach(trigger => trigger.kill())
       document.body.style.backgroundColor = ''
     }
-  }, [])
+  }, [router, token])
+
+  if (token) {
+    return null
+  }
 
   return (
     <main className="scroll-page">

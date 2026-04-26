@@ -55,20 +55,32 @@ export async function getSubscriptionContext(userId: string): Promise<{
   subscription: DbUserSubscription;
   limits: SubscriptionTierLimits;
 }> {
-  const subscription =
-    (await getUserSubscriptionByUserId(userId)) || ({
-      user_id: userId,
-      tier: "starter",
-      status: "active",
-    } satisfies DbUserSubscription);
+  try {
+    const subscription =
+      (await getUserSubscriptionByUserId(userId)) || ({
+        user_id: userId,
+        tier: "starter",
+        status: "active",
+      } satisfies DbUserSubscription);
 
-  const tier = normalizeTier(subscription.tier);
-  const limits = SUBSCRIPTION_TIER_LIMITS[tier];
+    const tier = normalizeTier(subscription.tier);
+    const limits = SUBSCRIPTION_TIER_LIMITS[tier];
 
-  return {
-    subscription: { ...subscription, tier },
-    limits,
-  };
+    return {
+      subscription: { ...subscription, tier },
+      limits,
+    };
+  } catch (error) {
+    console.error("Failed to load subscription context, falling back to starter tier:", error);
+    return {
+      subscription: {
+        user_id: userId,
+        tier: "starter",
+        status: "active",
+      },
+      limits: SUBSCRIPTION_TIER_LIMITS.starter,
+    };
+  }
 }
 
 export async function setUserSubscriptionTier(userId: string, tierInput: unknown): Promise<DbUserSubscription> {

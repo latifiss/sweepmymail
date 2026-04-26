@@ -2,8 +2,9 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
-import { useAppSelector } from '@/store/app/hooks'
-import { selectAuthToken, selectCurrentUser } from '@/store/features/auth/authSlice'
+import { useRouter } from 'next/navigation'
+import { useAppDispatch, useAppSelector } from '@/store/app/hooks'
+import { logout, selectAuthToken, selectCurrentUser } from '@/store/features/auth/authSlice'
 
 type ProfileResponse = {
   id: string
@@ -41,6 +42,8 @@ type SubscriptionMeResponse = {
 }
 
 export default function ProfilePage() {
+  const router = useRouter()
+  const dispatch = useAppDispatch()
   const [isEditing, setIsEditing] = useState(false)
   const token = useAppSelector(selectAuthToken)
   const authUser = useAppSelector(selectCurrentUser)
@@ -147,6 +150,11 @@ export default function ProfilePage() {
 
   const handleSave = () => {
     setIsEditing(false)
+  }
+
+  const handleLogout = () => {
+    dispatch(logout())
+    router.replace('/scroll')
   }
 
   return (
@@ -322,7 +330,7 @@ export default function ProfilePage() {
           <div className="profile-section profile-section--danger">
             <h2 className="profile-section__title">Danger Zone</h2>
             <div className="profile-section__content">
-              <button className="btn-logout">
+              <button className="btn-logout" onClick={handleLogout}>
                 <div className="btn-logout__content">
                   <span>Log Out</span>
                 </div>

@@ -46,6 +46,12 @@ export const createCategoryAndApply = async (req: Request, res: Response) => {
     if (error instanceof TierLimitError) {
       return res.status(error.status).json({ ok: false, error: error.message });
     }
+    console.error("createCategoryAndApply failed:", {
+      message: error?.message,
+      stack: error?.stack,
+      userId,
+      label,
+    });
     return res.status(500).json({ ok: false, error: error.message || String(error) });
   }
 };
