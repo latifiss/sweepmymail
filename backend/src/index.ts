@@ -6,6 +6,8 @@ import authRoutes from "./routes/authRoutes";
 import emailRoutes from "./routes/emailRoutes";
 import stripeRoutes from "./routes/stripeRoutes";
 import dailySummaryRoutes from "./routes/dailySummaryRoutes";
+import subscriptionRoutes from "./routes/subscriptionRoutes";
+import { handleLemonSqueezyWebhook } from "./controllers/subscriptionWebhookController";
 import { startDailySummaryScheduler } from "./services/dailySummaryService";
 
 const app = express();
@@ -21,6 +23,8 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001'
 ];
+
+app.post("/subscriptions/webhook/lemonsqueezy", express.raw({ type: "application/json" }), handleLemonSqueezyWebhook);
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -55,6 +59,7 @@ app.use("/auth", authRoutes);
 app.use("/emails", emailRoutes);
 app.use("/stripe", stripeRoutes);
 app.use("/daily-summary", dailySummaryRoutes);
+app.use("/subscriptions", subscriptionRoutes);
 
 app.use(function onError(err: any, req: express.Request, res: express.Response, next: express.NextFunction) {
   res.statusCode = 500;

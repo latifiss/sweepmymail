@@ -86,7 +86,7 @@ export async function ensureLabelForUser(userId: string, labelName: string) {
  * Fetch promotional/newsletter messages and return structured array.
  * Also optionally persist into Emails collection.
  */
-export async function fetchGmailMessagesAndSave(userId: string, persist = true) {
+export async function fetchGmailMessagesAndSave(userId: string, persist = true, maxResults = 200) {
   const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
 
@@ -94,7 +94,7 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true) 
   const list = await gmail.users.messages.list({
     userId: "me",
     q: "category:promotions OR category:social OR label:^unread", // broaden optionally
-    maxResults: 200,
+    maxResults,
   });
 
   const messages = list.data.messages || [];

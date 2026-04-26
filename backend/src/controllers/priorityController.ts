@@ -5,6 +5,7 @@ import {
   listPriorityKeywordsForUser,
 } from "../repositories/dataRepository";
 import { applyPriorityKeywordToEmails } from "../services/priorityService";
+import { enforceMaxCount, getSubscriptionContext, TierLimitError } from "../services/subscriptionService";
 
 export const getPriorityKeywords = async (req: Request, res: Response) => {
   const userId = (req as any).user.id as string;
@@ -26,6 +27,10 @@ export const createPriorityKeywordAndApply = async (req: Request, res: Response)
   }
 
   try {
+    const existingKeywords = await listPriorityKeywordsForUser(userId);
+    const { subscription, limits } = await getSubscriptionContext(userId);
+    enforceMaxCount(existingKeywords.length, limits.maxPriorityKeywords, "Priority keyword", subscription.tier);
+
     const keyword = await createPriorityKeyword({
       user_id: userId,
       word,
@@ -34,6 +39,9 @@ export const createPriorityKeywordAndApply = async (req: Request, res: Response)
     const count = await applyPriorityKeywordToEmails(userId, keyword);
     return res.json({ ok: true, keyword: { ...keyword, email_count: count } });
   } catch (error: any) {
+    if (error instanceof TierLimitError) {
+      return res.status(error.status).json({ ok: false, error: error.message });
+    }
     return res.status(500).json({ ok: false, error: error.message || String(error) });
   }
 };

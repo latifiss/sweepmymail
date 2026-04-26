@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Link from 'next/link'
 
 type PricingPopupProps = {
   onClose: () => void
@@ -14,51 +15,46 @@ const PricingPopup = ({ onClose }: PricingPopupProps) => {
           ✕
         </button>
 
-        <h1 className="pricing-popup__title">
-           OUR PRICING
-        </h1>
+        <h1 className="pricing-popup__title">SUBSCRIPTION TIERS</h1>
 
         <p className="pricing-popup__text">
-          As of today, our Pay-As-You-Clean rate for Sweep My Mail is changing.
-          The cost per email cleanup is increasing slightly to help us continue
-          improving spam detection, unsubscribe accuracy, and speed.
+          Choose the plan that fits your inbox size. Each tier includes fast
+          cleanup, smarter spam detection, and better unsubscribe automation.
         </p>
 
         <p className="pricing-popup__text">
-          Don’t worry — you can still clean your inbox affordably using bundles.
-          Bundles now last longer, giving you more flexibility. And for a limited
-          time, we’re introducing a special starter bundle designed for quick inbox
-          cleanups.
+          Payments are handled securely with LemonSqueezy. Click any tier below to
+          view full details and continue to checkout.
         </p>
 
-        <h2 className="pricing-popup__subtitle">CLEANING BUNDLES</h2>
+        <h2 className="pricing-popup__subtitle">AVAILABLE TIERS</h2>
 
         <div className="pricing-popup__bundles">
-          <div className="bundle bundle--highlight">
+          <Link href="/subscriptions/starter" className="bundle bundle--highlight">
             <span className="bundle__badge">
-              LIMITED <br /> TIME <br /> OFFER
+              BEST <br /> ENTRY <br /> PLAN
             </span>
-            <p className="bundle__mins">500 emails</p>
-            <p className="bundle__price">$2.99</p>
-            <p className="bundle__time">Valid for 24 hours</p>
-          </div>
+            <p className="bundle__mins">Starter</p>
+            <p className="bundle__price">$7</p>
+            <p className="bundle__time">Monthly billing</p>
+          </Link>
 
-          <div className="bundle">
-            <p className="bundle__mins">1,500 emails</p>
-            <p className="bundle__price">$4.99</p>
-            <p className="bundle__time">Valid for 7 days</p>
-          </div>
+          <Link href="/subscriptions/growth" className="bundle">
+            <p className="bundle__mins">Growth</p>
+            <p className="bundle__price">$15</p>
+            <p className="bundle__time">Monthly billing</p>
+          </Link>
 
-          <div className="bundle">
-            <p className="bundle__mins">3,500 emails</p>
-            <p className="bundle__price">$8.99</p>
-            <p className="bundle__time">Valid for 14 days</p>
-          </div>
+          <Link href="/subscriptions/pro" className="bundle">
+            <p className="bundle__mins">Pro</p>
+            <p className="bundle__price">$29</p>
+            <p className="bundle__time">Monthly billing</p>
+          </Link>
         </div>
 
-        <button className="pricing-popup__cta">
-          GET A CLEANING BUNDLE
-        </button>
+        <Link href="/subscriptions" className="pricing-popup__cta">
+          VIEW ALL TIERS
+        </Link>
 
         <button
           className="pricing-popup__dismiss"

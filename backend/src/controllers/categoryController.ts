@@ -5,6 +5,7 @@ import {
   listCategoriesForUser,
 } from "../repositories/dataRepository";
 import { applyCategoryToEmails, extractKeywords } from "../services/categoryService";
+import { enforceMaxCount, getSubscriptionContext, TierLimitError } from "../services/subscriptionService";
 
 export const getCategories = async (req: Request, res: Response) => {
   const userId = (req as any).user.id as string;
@@ -28,6 +29,10 @@ export const createCategoryAndApply = async (req: Request, res: Response) => {
   const keywords = extractKeywords(`${label} ${safeDescription}`);
 
   try {
+    const existingCategories = await listCategoriesForUser(userId);
+    const { subscription, limits } = await getSubscriptionContext(userId);
+    enforceMaxCount(existingCategories.length, limits.maxCategories, "Category", subscription.tier);
+
     const category = await createCategory({
       user_id: userId,
       label: label.trim(),
@@ -38,6 +43,9 @@ export const createCategoryAndApply = async (req: Request, res: Response) => {
     const count = await applyCategoryToEmails(userId, category);
     return res.json({ ok: true, category: { ...category, email_count: count } });
   } catch (error: any) {
+    if (error instanceof TierLimitError) {
+      return res.status(error.status).json({ ok: false, error: error.message });
+    }
     return res.status(500).json({ ok: false, error: error.message || String(error) });
   }
 };
