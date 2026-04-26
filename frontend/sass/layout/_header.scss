@@ -8,6 +8,15 @@
   width: 100%;
   background-color: transparent;
 
+  &:link,
+    &:visited,
+    &:hover,
+    &:active {
+      color: #ffffff !important;
+      text-decoration: none !important;
+      outline: none !important;
+    }
+
   &__container {
     max-width: 72rem; // 6xl
     margin: 0 auto;
@@ -41,6 +50,17 @@
 
   &__mobile-menu {
     display: block;
+    outline: none;
+    border: none;
+
+    &:link,
+    &:visited,
+    &:hover,
+    &:active {
+      color: #ffffff !important;
+      text-decoration: none !important;
+      outline: none !important;
+    }
 
     @media (min-width: 768px) {
       display: none;
