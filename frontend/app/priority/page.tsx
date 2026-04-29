@@ -4,11 +4,17 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { useAppSelector } from '@/store/app/hooks'
 import { selectAuthToken } from '@/store/features/auth/authSlice'
+import PricingPopup from '@/components/pricingPopup'
 
 interface PriorityWord {
   id: string
   word: string
   createdAt: string
+}
+
+type ApiErrorResponse = {
+  ok?: boolean
+  error?: string
 }
 
 export default function HighPriorityPage() {
@@ -21,8 +27,33 @@ export default function HighPriorityPage() {
   
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false)
+  const [isPricingOpen, setIsPricingOpen] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
   const [selectedWord, setSelectedWord] = useState<PriorityWord | null>(null)
   const [newWord, setNewWord] = useState('')
+
+  const showFriendlyError = (message: string) => {
+    setErrorMessage(message)
+    setIsErrorModalOpen(true)
+  }
+
+  const parsePriorityCreateError = (rawMessage: string) => {
+    const message = rawMessage.toLowerCase()
+    if (message.includes('priority_keywords_user_word_unique') || message.includes('duplicate')) {
+      return 'You already added this keyword. Try a different one.'
+    }
+    if (message.includes('invalid authentication credentials')) {
+      return 'Your Google session expired. Please sign in with Google again, then retry.'
+    }
+    if (message.includes('limit reached')) {
+      if (message.includes('free tier')) {
+        setIsPricingOpen(true)
+      }
+      return 'You’ve reached the Free tier limit for priority keywords. Upgrade to add more.'
+    }
+    return 'Could not add this keyword right now. Please try again.'
+  }
 
   const loadKeywords = useCallback(async () => {
     if (!token) return
@@ -70,7 +101,7 @@ export default function HighPriorityPage() {
     )
     
     if (existingWord) {
-      alert('This word already exists in your priority list')
+      showFriendlyError('You already added this keyword. Try a different one.')
       return
     }
     
@@ -84,7 +115,8 @@ export default function HighPriorityPage() {
         body: JSON.stringify({ word: newWord.trim() }),
       })
       if (!response.ok) {
-        throw new Error(`Failed to create priority keyword (${response.status})`)
+        const payload = (await response.json().catch(() => ({}))) as ApiErrorResponse
+        throw new Error(payload.error || `Failed to create priority keyword (${response.status})`)
       }
 
       await loadKeywords()
@@ -94,6 +126,7 @@ export default function HighPriorityPage() {
 
     add().catch((error) => {
       console.error('Failed to add priority keyword:', error)
+      showFriendlyError(parsePriorityCreateError(error?.message || 'Unknown error'))
     })
   }
 
@@ -320,6 +353,29 @@ export default function HighPriorityPage() {
           </div>
         </div>
       )}
+
+      {isErrorModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsErrorModalOpen(false)}>
+          <div className="modal modal--warning" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__header modal__header--warning">
+              <h2 className="modal__title">Could not add keyword</h2>
+              <button className="modal__close" onClick={() => setIsErrorModalOpen(false)}>
+                ×
+              </button>
+            </div>
+            <div className="modal__content">
+              <p className="warning-text">{errorMessage}</p>
+            </div>
+            <div className="modal__footer">
+              <button className="modal__create-btn" onClick={() => setIsErrorModalOpen(false)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isPricingOpen && <PricingPopup onClose={() => setIsPricingOpen(false)} />}
     </main>
   )
 }

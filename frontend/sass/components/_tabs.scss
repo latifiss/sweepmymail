@@ -70,6 +70,14 @@
     cursor: pointer;
     color: #374151;
 
+    &:link,
+    &:visited,
+    &:hover,
+    &:active {
+      text-decoration: none !important;
+      outline: none !important;
+    }
+
     @media (prefers-color-scheme: dark) {
       color: #d1d5db;
     }
