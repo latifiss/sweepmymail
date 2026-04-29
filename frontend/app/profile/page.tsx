@@ -1,10 +1,10 @@
 'use client'
-/* eslint-disable @next/next/no-img-element */
 
 import React, { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
-import { useAppSelector } from '@/store/app/hooks'
-import { selectAuthToken, selectCurrentUser } from '@/store/features/auth/authSlice'
+import { useRouter } from 'next/navigation'
+import { useAppDispatch, useAppSelector } from '@/store/app/hooks'
+import { logout, selectAuthToken, selectCurrentUser } from '@/store/features/auth/authSlice'
 
 type ProfileResponse = {
   id: string
@@ -20,13 +20,30 @@ type ProfileUiData = {
   name: string
   email: string
   plan: string
+  subscriptionStatus: string
   credits: number
   emailsCleaned: number
   joinDate: string
   picture: string
 }
 
+type SubscriptionMeResponse = {
+  ok: boolean
+  subscription: {
+    tier: 'starter' | 'growth' | 'pro'
+    status: 'active' | 'inactive' | 'past_due' | 'canceled'
+  }
+  limits: {
+    maxFetchPerSync: number
+    maxDeleteBatch: number
+    maxCategories: number
+    maxPriorityKeywords: number
+  }
+}
+
 export default function ProfilePage() {
+  const router = useRouter()
+  const dispatch = useAppDispatch()
   const [isEditing, setIsEditing] = useState(false)
   const token = useAppSelector(selectAuthToken)
   const authUser = useAppSelector(selectCurrentUser)
@@ -37,7 +54,8 @@ export default function ProfilePage() {
   const [userData, setUserData] = useState<ProfileUiData>({
     name: authUser?.email?.split('@')[0] || 'User',
     email: authUser?.email || '',
-    plan: 'Free Plan',
+    plan: 'Starter',
+    subscriptionStatus: 'inactive',
     credits: 0,
     emailsCleaned: 0,
     joinDate: '-',
@@ -85,8 +103,58 @@ export default function ProfilePage() {
     fetchProfile()
   }, [backendBaseUrl, token])
 
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      if (!token) {
+        console.log('[Subscription Check] Skipped: missing auth token')
+        return
+      }
+
+      try {
+        console.log('[Subscription Check] Fetching /subscriptions/me...')
+        const response = await fetch(`${backendBaseUrl}/subscriptions/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (!response.ok) {
+          console.log('[Subscription Check] Request failed', {
+            status: response.status,
+            statusText: response.statusText,
+          })
+          return
+        }
+
+        const data = (await response.json()) as SubscriptionMeResponse
+        console.log('[Subscription Check] Success payload:', data)
+
+        if (!data?.ok || !data.subscription || !data.limits) {
+          console.log('[Subscription Check] Unexpected payload format:', data)
+          return
+        }
+
+        setUserData((prev) => ({
+          ...prev,
+          plan: data.subscription.tier.toUpperCase(),
+          subscriptionStatus: data.subscription.status,
+          credits: data.limits.maxDeleteBatch,
+        }))
+      } catch (error) {
+        console.error('[Subscription Check] Failed to fetch subscription:', error)
+      }
+    }
+
+    fetchSubscription()
+  }, [backendBaseUrl, token])
+
   const handleSave = () => {
     setIsEditing(false)
+  }
+
+  const handleLogout = () => {
+    dispatch(logout())
+    router.replace('/scroll')
   }
 
   return (
@@ -192,6 +260,11 @@ export default function ProfilePage() {
                   <p className="profile-field__value">{userData.plan}</p>
                 )}
               </div>
+
+              <div className="profile-field">
+                <label className="profile-field__label">Subscription Status</label>
+                <p className="profile-field__value">{userData.subscriptionStatus}</p>
+              </div>
             </div>
           </div>
 
@@ -257,7 +330,7 @@ export default function ProfilePage() {
           <div className="profile-section profile-section--danger">
             <h2 className="profile-section__title">Danger Zone</h2>
             <div className="profile-section__content">
-              <button className="btn-logout">
+              <button className="btn-logout" onClick={handleLogout}>
                 <div className="btn-logout__content">
                   <span>Log Out</span>
                 </div>

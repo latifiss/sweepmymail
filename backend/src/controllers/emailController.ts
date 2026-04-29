@@ -10,6 +10,7 @@ import {
 } from "../repositories/dataRepository";
 import { applyAllCategoriesForUser } from "../services/categoryService";
 import { applyAllPriorityKeywordsForUser } from "../services/priorityService";
+import { enforceBatchSize, getSubscriptionContext, TierLimitError } from "../services/subscriptionService";
 
 function toApiError(err: any) {
   const details = err?.response?.data || err?.errors || err?.stack || undefined;
@@ -48,11 +49,15 @@ function toApiError(err: any) {
 export const fetchAndGetEmails = async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   try {
-    const emails = await gmailService.fetchGmailMessagesAndSave(userId, true);
+    const { limits } = await getSubscriptionContext(userId);
+    const emails = await gmailService.fetchGmailMessagesAndSave(userId, true, limits.maxFetchPerSync);
     await applyAllCategoriesForUser(userId);
     await applyAllPriorityKeywordsForUser(userId);
     res.json({ ok: true, count: emails.length, emails });
   } catch (err: any) {
+    if (err instanceof TierLimitError) {
+      return res.status(err.status).json({ ok: false, error: err.message });
+    }
     res.status(500).json({ ok: false, error: err.message || err });
   }
 };
@@ -178,9 +183,14 @@ export const batchDelete = async (req: Request, res: Response) => {
   }
 
   try {
+    const { subscription, limits } = await getSubscriptionContext(userId);
+    enforceBatchSize(messageIds.length, limits.maxDeleteBatch, subscription.tier);
     const result = await gmailService.batchDeleteMessagesForUser(userId, messageIds);
     res.json({ ok: true, result });
   } catch (err: any) {
+    if (err instanceof TierLimitError) {
+      return res.status(err.status).json({ ok: false, error: err.message });
+    }
     const parsed = toApiError(err);
     res.status(parsed.status).json({ ok: false, error: parsed.error, details: parsed.details });
   }

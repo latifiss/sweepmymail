@@ -1,14 +1,8 @@
-import express from 'express';
 import { env } from './config/env';
-import morgan from 'morgan';
-import cors from 'cors';
-import authRoutes from "./routes/authRoutes";
-import emailRoutes from "./routes/emailRoutes";
-import stripeRoutes from "./routes/stripeRoutes";
-import dailySummaryRoutes from "./routes/dailySummaryRoutes";
+import { createApp } from "./app";
 import { startDailySummaryScheduler } from "./services/dailySummaryService";
 
-const app = express();
+const app = createApp();
 const PORT = parseInt(env.PORT, 10);
 
 if (isNaN(PORT) || PORT < 0 || PORT > 65535) {
@@ -16,6 +10,7 @@ if (isNaN(PORT) || PORT < 0 || PORT > 65535) {
   process.exit(1);
 }
 
+<<<<<<< HEAD
 const allowedOrigins = [
   'http://localhost:4000',
   'http://localhost:3000',
@@ -69,6 +64,8 @@ app.use(function onError(err: any, req: express.Request, res: express.Response, 
   );
 });
 
+=======
+>>>>>>> 7d069948a9e3a0ec8980a5d64d5895c5a3b31996
 async function startServer() {
   try {
     app.listen(PORT, '0.0.0.0', async () => {

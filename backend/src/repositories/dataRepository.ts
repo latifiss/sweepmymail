@@ -58,6 +58,18 @@ export interface DbPriorityKeyword {
   created_at: string;
 }
 
+export type SubscriptionTierId = "free" | "starter" | "growth" | "pro";
+
+export interface DbUserSubscription {
+  user_id: string;
+  tier: SubscriptionTierId;
+  status: "active" | "inactive" | "past_due" | "canceled";
+  lemonsqueezy_customer_id?: string | null;
+  lemonsqueezy_variant_id?: string | null;
+  current_period_end?: string | null;
+  updated_at?: string;
+}
+
 function throwIfError(error: { message: string } | null, fallback: string) {
   if (error) throw new Error(error.message || fallback);
 }
@@ -72,6 +84,70 @@ export async function getUserById(id: string): Promise<DbUser | null> {
   const { data, error } = await supabase.from("users").select("*").eq("id", id).maybeSingle();
   throwIfError(error, "Failed to fetch user by id");
   return data;
+}
+
+function normalizeTier(value: unknown): SubscriptionTierId | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "free" || normalized === "starter" || normalized === "growth" || normalized === "pro") {
+    return normalized;
+  }
+  return null;
+}
+
+export async function getUserSubscriptionByUserId(userId: string): Promise<DbUserSubscription | null> {
+  try {
+    const { data, error } = await supabase
+      .from("user_subscriptions")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (!error && data) {
+      const tier = normalizeTier((data as any).tier);
+      if (tier) {
+        return {
+          user_id: userId,
+          tier,
+          status: ((data as any).status || "active") as DbUserSubscription["status"],
+          lemonsqueezy_customer_id: (data as any).lemonsqueezy_customer_id || null,
+          lemonsqueezy_variant_id: (data as any).lemonsqueezy_variant_id || null,
+          current_period_end: (data as any).current_period_end || null,
+          updated_at: (data as any).updated_at,
+        };
+      }
+    }
+  } catch {
+    // table might not exist in some environments; fallback below
+  }
+
+  const user = await getUserById(userId);
+  if (!user) return null;
+  const fallbackTier = normalizeTier((user as any).subscription_tier) || "free";
+  return {
+    user_id: userId,
+    tier: fallbackTier,
+    status: "active",
+  };
+}
+
+export async function upsertUserSubscriptionByUserId(payload: DbUserSubscription): Promise<void> {
+  try {
+    const { error } = await supabase.from("user_subscriptions").upsert(payload, { onConflict: "user_id" });
+    if (!error) return;
+  } catch {
+    // fallback below
+  }
+
+  const { error: userUpdateError } = await supabase
+    .from("users")
+    .update({ subscription_tier: payload.tier })
+    .eq("id", payload.user_id);
+
+  throwIfError(
+    userUpdateError,
+    "Failed to update subscription tier. Add `user_subscriptions` table or `users.subscription_tier` column."
+  );
 }
 
 export async function createUser(payload: {

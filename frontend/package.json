@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "e2e": "start-server-and-test dev http://localhost:3000 cy:run"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -25,8 +28,10 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cypress": "^15.14.1",
     "eslint": "^9",
     "eslint-config-next": "16.0.7",
+    "start-server-and-test": "^3.0.2",
     "typescript": "^5"
   }
 }

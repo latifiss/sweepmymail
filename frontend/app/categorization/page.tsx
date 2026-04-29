@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { useAppSelector } from '@/store/app/hooks'
 import { selectAuthToken } from '@/store/features/auth/authSlice'
+import PricingPopup from '@/components/pricingPopup'
 
 interface Category {
   id: string
@@ -11,6 +12,11 @@ interface Category {
   description: string
   createdAt: string
   emailCount: number
+}
+
+type ApiErrorResponse = {
+  ok?: boolean
+  error?: string
 }
 
 export default function CategorizationPage() {
@@ -23,11 +29,36 @@ export default function CategorizationPage() {
   
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false)
+  const [isPricingOpen, setIsPricingOpen] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [newCategory, setNewCategory] = useState({
     label: '',
     description: ''
   })
+
+  const showFriendlyError = (message: string) => {
+    setErrorMessage(message)
+    setIsErrorModalOpen(true)
+  }
+
+  const parseCategoryCreateError = (rawMessage: string) => {
+    const message = rawMessage.toLowerCase()
+    if (message.includes('duplicate')) {
+      return 'This category already exists. Please use a different name.'
+    }
+    if (message.includes('invalid authentication credentials')) {
+      return 'Your Google session expired. Please sign in with Google again, then retry.'
+    }
+    if (message.includes('limit reached')) {
+      if (message.includes('free tier')) {
+        setIsPricingOpen(true)
+      }
+      return 'You’ve reached the Free tier limit for categories. Upgrade to create more.'
+    }
+    return 'Could not create this category right now. Please try again.'
+  }
 
   const loadCategories = useCallback(async () => {
     if (!token) return
@@ -88,7 +119,8 @@ export default function CategorizationPage() {
         }),
       })
       if (!response.ok) {
-        throw new Error(`Failed to create category (${response.status})`)
+        const payload = (await response.json().catch(() => ({}))) as ApiErrorResponse
+        throw new Error(payload.error || `Failed to create category (${response.status})`)
       }
 
       await loadCategories()
@@ -98,6 +130,7 @@ export default function CategorizationPage() {
 
     create().catch((error) => {
       console.error('Failed to create category:', error)
+      showFriendlyError(parseCategoryCreateError(error?.message || 'Unknown error'))
     })
   }
 
@@ -294,6 +327,29 @@ export default function CategorizationPage() {
           </div>
         </div>
       )}
+
+      {isErrorModalOpen && (
+        <div className="cat-modal-overlay" onClick={() => setIsErrorModalOpen(false)}>
+          <div className="cat-modal cat-modal--warning" onClick={(e) => e.stopPropagation()}>
+            <div className="cat-modal__header cat-modal__header--warning">
+              <h2 className="cat-modal__title">Could not create category</h2>
+              <button className="cat-modal__close" onClick={() => setIsErrorModalOpen(false)}>
+                ×
+              </button>
+            </div>
+            <div className="cat-modal__content">
+              <p className="cat-warning-text">{errorMessage}</p>
+            </div>
+            <div className="cat-modal__footer">
+              <button className="cat-modal__create-btn" onClick={() => setIsErrorModalOpen(false)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isPricingOpen && <PricingPopup onClose={() => setIsPricingOpen(false)} />}
     </main>
   )
 }
