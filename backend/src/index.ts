@@ -20,6 +20,9 @@ const allowedOrigins = [
   'http://localhost:4000',
   'http://localhost:3000',
   'http://localhost:3001'
+  'http://mymagicmail.app',
+  'http://mymagicmail.com',
+  'http://themagicmail.app',
 ];
 
 app.use(express.json({ limit: '50mb' }));
