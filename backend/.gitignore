@@ -6,6 +6,12 @@ dist
 .env.development.local
 .env.test.local
 .env.production.local
-.env.development
-.env.test
+.env.development.env.test
 .env.production
+
+backend/GMAIL_API_SETUP.md
+backend/GOOGLE_OAUTH_SETUP.md
+backend/SETUP.md
+backend/TESTING.md
+backend/test-routes.js
+backend/test-with-token.js

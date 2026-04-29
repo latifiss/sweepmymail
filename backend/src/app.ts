@@ -11,7 +11,8 @@ import { handleLemonSqueezyWebhook } from "./controllers/subscriptionWebhookCont
 export function createApp() {
   const app = express();
 
-  const allowedOrigins = ["http://localhost:4000", "http://localhost:3000", "http://localhost:3001"];
+  const allowedOrigins = ["http://localhost:4000", "http://localhost:3000", "http://localhost:3001", "http://mymagicmail.app",
+  "http://mymagicmail.com", "http://themagicmail.app",];
 
   // Webhooks must receive raw body for signature validation.
   app.post("/subscriptions/webhook/lemonsqueezy", express.raw({ type: "application/json" }), handleLemonSqueezyWebhook);
