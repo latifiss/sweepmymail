@@ -27,7 +27,7 @@ JWT_SECRET=your_super_secret_jwt_key_here
 # Stripe Configuration
 STRIPE_SECRET_KEY=your_stripe_secret_key_here
 
-# Redis Configuration
+# Redis Configuration.
 REDIS_URL=redis://localhost:6379
 ```
 
