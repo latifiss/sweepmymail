@@ -9,9 +9,9 @@ dist
 .env.development.env.test
 .env.production
 
-backend/GMAIL_API_SETUP.md
-backend/GOOGLE_OAUTH_SETUP.md
-backend/SETUP.md
-backend/TESTING.md
-backend/test-routes.js
-backend/test-with-token.js
+GMAIL_API_SETUP.md
+GOOGLE_OAUTH_SETUP.md
+SETUP.md
+TESTING.md
+test-routes.js
+test-with-token.js
