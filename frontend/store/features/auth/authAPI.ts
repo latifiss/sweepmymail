@@ -12,6 +12,7 @@ import {
 } from './authSlice';
 
 interface User {
+  id: string;
   _id: string;
   email: string;
   role: 'admin' | 'customer'; 
