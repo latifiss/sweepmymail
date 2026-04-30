@@ -1,0 +1,98 @@
+@use '../sass-utils/variables' as *;
+
+.about-page {
+  min-height: 100vh;
+  background: $light-gray;
+  padding: $spacing-xxxl $container-padding;
+
+  &__container {
+    max-width: $container-max-width;
+    margin: 0 auto;
+  }
+}
+
+/* HEADER */
+.about-header {
+  text-align: center;
+  margin-bottom: $spacing-xxxl;
+
+  &__title {
+    font-size: 3rem;
+    font-weight: $font-weight-extra-bold;
+    font-family: $font-family-gliker;
+    color: $text-color;
+
+    @media (max-width: $breakpoint-md) {
+      font-size: 2rem;
+    }
+  }
+
+  &__subtitle {
+    font-size: $font-size-lg;
+    color: $text-light;
+    margin-top: $spacing-sm;
+  }
+
+  &__badge {
+    display: inline-block;
+    margin-top: $spacing-md;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    font-family: $font-family-gliker;
+    color: $white;
+    background: #0066cc;
+    padding: $spacing-xs $spacing-md;
+    box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* CONTENT */
+.about-content {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+}
+
+/* SECTION */
+.about-section {
+  background: $white;
+  border: 1px solid $border-color;
+  box-shadow: 6px 6px 0 0 #0066cc;
+  padding: $spacing-xl;
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: $font-weight-bold;
+    font-family: $font-family-gliker;
+    margin-bottom: $spacing-md;
+    color: $text-color;
+  }
+
+  &__text {
+    font-size: $font-size-base;
+    color: $text-light;
+    line-height: $line-height-base;
+  }
+
+  &__list {
+    margin-top: $spacing-sm;
+    padding-left: $spacing-lg;
+    color: $text-light;
+
+    li {
+      margin-bottom: $spacing-sm;
+    }
+  }
+
+  &__highlight {
+    display: inline-block;
+    margin-top: $spacing-sm;
+    color: #0066cc;
+    font-weight: $font-weight-semibold;
+    font-family: $font-family-gliker;
+  }
+
+  &--highlight {
+    border-left: 4px solid #0066cc;
+  }
+}

@@ -28,6 +28,11 @@ export default function HomePage() {
   const token = useAppSelector(selectAuthToken)
   const [showPricing, setShowPricing] = useState(false)
 
+  // Navigation handler
+  const handleNavigation = (path: string) => {
+    router.push(path)
+  }
+
   useEffect(() => {
     if (token) {
       router.replace('/subscriptions')
@@ -55,7 +60,7 @@ export default function HomePage() {
         <div className="container">
           <div className="hero-content">
             <h1 className="hero-title hero-title--dark">
-              Sweep My Mail
+              My Magic Mail
               <span className="hero-title__highlight"> Clean Inbox, Clear Mind</span>
             </h1>
             <p className="hero-description hero-description--dark">
@@ -64,7 +69,7 @@ export default function HomePage() {
             </p>
             <button 
               className="btn btn--primary btn--large"
-              onClick={() => setShowPricing(true)}
+              onClick={() => token ? handleNavigation('/emails') : handleNavigation('/login')}
             >
               Get started
             </button>
@@ -92,7 +97,10 @@ export default function HomePage() {
                 <li>✓ Safe - moves to trash first</li>
                 <li>✓ Recover anytime within 30 days</li>
               </ul>
-                          <button className="btn btn--opt-1">
+                          <button 
+                            className="btn btn--opt-1"
+                            onClick={() => token ? handleNavigation('/emails') : handleNavigation('/login')}
+                          >
                               <div className='btn__content'>
                                   <div className='btn__text'>Learn More</div>
                                   <Image src="/icons/right-white.svg" alt="arrow" width={16} height={16} style={{ marginLeft: '8px' }} />
@@ -127,7 +135,10 @@ export default function HomePage() {
                 <li>✓ Custom rules for specific senders</li>
                 <li>✓ Instant categorization as emails arrive</li>
               </ul>
-                          <button className="btn btn--opt-2">
+                          <button 
+                            className="btn btn--opt-2"
+                            onClick={() => token ? handleNavigation('/categorization') : handleNavigation('/login')}
+                          >
                               <div className='btn__content'>
                                   <div className='btn__text'>Customize Categories</div>
                                   <Image src="/icons/right-white.svg" alt="arrow" width={16} height={16} style={{ marginLeft: '8px' }} />
@@ -201,7 +212,10 @@ export default function HomePage() {
                 <div className="keyword-tag">⭐ meeting</div>
                 <button className="keyword-add">+ Add Keyword</button>
               </div>
-                          <button className="btn btn--opt-3">
+                          <button 
+                            className="btn btn--opt-3"
+                            onClick={() => token ? handleNavigation('/priority') : handleNavigation('/login')}
+                          >
                               <div className='btn__content'>
                                   <div className='btn__text'>Set Your Priorities</div>
                                   <Image src="/icons/right-white.svg" alt="arrow" width={16} height={16} style={{ marginLeft: '8px' }} />
@@ -291,7 +305,10 @@ export default function HomePage() {
                 <li>✓ Smart notifications for urgent matters</li>
                 <li>✓ Customizable summary frequency</li>
               </ul>
-                          <button className="btn btn--opt-4">
+                          <button 
+                            className="btn btn--opt-4"
+                            onClick={() => token ? handleNavigation('/daily-summary') : handleNavigation('/login')}
+                          >
                               <div className='btn__content'>
                                   <div className='btn__text'>Try Daily Digest</div>
                                   <Image src="/icons/right-white.svg" alt="arrow" width={16} height={16} style={{ marginLeft: '8px' }} />
@@ -395,15 +412,9 @@ export default function HomePage() {
               Ready to Transform Your Inbox?
             </h2>
             <p className="cta-description cta-description--dark">
-              Join 50,000+ users who save 2+ hours daily
+              Join 108+ users who save 2+ hours daily
             </p>
             <div className="cta-buttons">
-              <button 
-                className="btn btn--dark btn--large"
-                onClick={() => setShowPricing(true)}
-              >
-                Start Free Trial
-              </button>
               <button className="btn btn--outline-dark btn--large">
                 Watch Demo
               </button>
@@ -418,16 +429,10 @@ export default function HomePage() {
           <footer className="footer">
             <div className="footer__content">
               <div className="footer__logo">
-                <h3>Sweep My Mail</h3>
+                <h3>My Magic Mail</h3>
                 <p>Clean inbox. Clear mind.</p>
               </div>
               <div className="footer__links">
-                <div className="footer__links-column">
-                  <h4>Product</h4>
-                  <a href="#">Features</a>
-                  <a href="#">Pricing</a>
-                  <a href="#">Demo</a>
-                </div>
                 <div className="footer__links-column">
                   <h4>Company</h4>
                   <a href="#">About</a>
@@ -441,7 +446,7 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="footer__copyright">
-                © 2024 Sweep My Mail. All rights reserved.
+                © 2026 Magic Mail. All rights reserved.
               </div>
             </div>
           </footer>

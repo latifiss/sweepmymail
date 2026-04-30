@@ -65,6 +65,11 @@
 @use 'pages/login' as *;
 @use 'pages/emails' as *;
 @use 'pages/subscriptions' as *;
+@use 'pages/terms' as *;
+@use './pages/cookies.scss' as *;
+@use 'pages/privacy' as *;
+@use 'pages/about' as *;
+@use 'pages/contact' as *;
 
 // =============================================================================
 // CUSTOM STYLES
