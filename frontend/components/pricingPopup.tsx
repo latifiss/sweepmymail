@@ -43,19 +43,36 @@ const PricingPopup = ({ onClose }: PricingPopupProps) => {
             </span>
             <p className="bundle__mins">Starter</p>
             <p className="bundle__price">$7</p>
-            <p className="bundle__time">Monthly billing</p>
+            <p className="bundle__time">Monthly</p>
+            <div className="bundle__features">
+              <p className="bundle__feature">10k emails/month</p>
+              <p className="bundle__feature">5 category</p>
+              <p className="bundle__feature">7 priority keywords</p>
+            </div>
           </Link>
 
           <Link href="/subscriptions/growth" className="bundle">
             <p className="bundle__mins">Growth</p>
             <p className="bundle__price">$15</p>
-            <p className="bundle__time">Monthly billing</p>
+            <p className="bundle__time">Monthly</p>
+            <div className="bundle__features">
+              <p className="bundle__feature">50k emails/month</p>
+              <p className="bundle__feature">20 category</p>
+              <p className="bundle__feature">25 priority keywords</p>
+              <p className="bundle__feature">Email support</p>
+            </div>
           </Link>
 
           <Link href="/subscriptions/pro" className="bundle">
             <p className="bundle__mins">Pro</p>
             <p className="bundle__price">$29</p>
-            <p className="bundle__time">Monthly billing</p>
+            <p className="bundle__time">Monthly</p>
+            <div className="bundle__features">
+              <p className="bundle__feature">200k emails/month</p>
+              <p className="bundle__feature">50 category</p>
+              <p className="bundle__feature">70 priority keywords</p>
+              <p className="bundle__feature">Email support</p>
+            </div>
           </Link>
         </div>
 

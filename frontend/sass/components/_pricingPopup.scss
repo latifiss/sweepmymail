@@ -157,6 +157,19 @@
   font-weight: $font-weight-semibold;
 }
 
+.bundle__features {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.bundle__feature {
+  font-size: 0.75rem;
+  color: $black;
+  font-weight: $font-weight-semibold;
+}
+
 .pricing-popup__cta {
   background: #00a870;
   color: #ffffff;
