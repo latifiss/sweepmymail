@@ -48,7 +48,7 @@ export default function ProfilePage() {
   const token = useAppSelector(selectAuthToken)
   const authUser = useAppSelector(selectCurrentUser)
   const backendBaseUrl = useMemo(
-    () => process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000',
+    () => process.env.NEXT_PUBLIC_BACKEND_URL || ' ',
     []
   )
   const [userData, setUserData] = useState<ProfileUiData>({

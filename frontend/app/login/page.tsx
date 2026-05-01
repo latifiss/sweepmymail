@@ -9,7 +9,7 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     try {
-      const backendBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000'
+      const backendBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || ' '
       const response = await fetch(`${backendBaseUrl}/auth/google/url`)
 
       if (!response.ok) {

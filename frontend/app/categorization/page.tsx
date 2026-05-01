@@ -22,7 +22,7 @@ type ApiErrorResponse = {
 export default function CategorizationPage() {
   const token = useAppSelector(selectAuthToken)
   const backendBaseUrl = useMemo(
-    () => process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000',
+    () => process.env.NEXT_PUBLIC_BACKEND_URL || ' ',
     []
   )
   const [categories, setCategories] = useState<Category[]>([])

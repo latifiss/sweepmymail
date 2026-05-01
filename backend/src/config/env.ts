@@ -16,7 +16,7 @@ export const env = {
   SMTP_USER: process.env.SMTP_USER || "",
   SMTP_PASS: process.env.SMTP_PASS || "",
   REDIS_URL: process.env.REDIS_URL || "redis://localhost:6379",
-  FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:3000",
+  FRONTEND_URL: process.env.FRONTEND_URL || "https://www.mymagicmail.app",
   LEMONSQUEEZY_WEBHOOK_SECRET: process.env.LEMONSQUEEZY_WEBHOOK_SECRET || "",
   LEMONSQUEEZY_VARIANT_ID_STARTER: process.env.LEMONSQUEEZY_VARIANT_ID_STARTER || "",
   LEMONSQUEEZY_VARIANT_ID_GROWTH: process.env.LEMONSQUEEZY_VARIANT_ID_GROWTH || "",

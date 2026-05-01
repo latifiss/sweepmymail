@@ -30,7 +30,7 @@ export default function GoogleLoginCallbackPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const backendBaseUrl = useMemo(
-    () => process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000',
+    () => process.env.NEXT_PUBLIC_BACKEND_URL || ' ',
     []
   )
 

@@ -45,7 +45,7 @@ const parseSender = (senderRaw: string) => {
 const EmailsPage = () => {
   const token = useAppSelector(selectAuthToken)
   const backendBaseUrl = useMemo(
-    () => process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000',
+    () => process.env.NEXT_PUBLIC_BACKEND_URL || ' ',
     []
   )
   const [groups, setGroups] = useState<GroupedEmailSender[]>([])
