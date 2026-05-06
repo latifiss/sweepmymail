@@ -165,7 +165,7 @@ export default function HighPriorityPage() {
         <div className="priority-header">
           <div className="priority-header__content">
             <div className="priority-header__icon">
-              <Image src="/icons/sifted.png" alt="Priority" width={40} height={40} />
+              <Image src="/logos/logo.png" alt="Priority" width={40} height={40} />
             </div>
             <h1 className="priority-header__title">High Priority</h1>
             <p className="priority-header__subtitle">

@@ -188,7 +188,7 @@ export default function CategorizationPage() {
             <div key={category.id} className="cat-card">
               <div className="cat-card__header">
                 <div className="cat-card__icon">
-                  <Image src="/icons/sifted.png" alt="Category" width={24} height={24} />
+                  <Image src="/logos/logo.png" alt="Category" width={24} height={24} />
                 </div>
                 <button 
                   className="cat-card__delete"

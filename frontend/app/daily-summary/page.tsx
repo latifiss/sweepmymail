@@ -135,7 +135,7 @@ export default function DailySummaryPage() {
         <div className="ds-header">
           <div className="ds-header__content">
             <div className="ds-header__icon">
-              <Image src="/icons/sifted.png" alt="Summary" width={40} height={40} />
+              <Image src="/logos/logo.png" alt="Summary" width={40} height={40} />
             </div>
             <h1 className="ds-header__title">Daily Summary</h1>
             <p className="ds-header__subtitle">
