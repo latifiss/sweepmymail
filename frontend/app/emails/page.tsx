@@ -3,6 +3,7 @@
 import Cell from '@/components/cell'
 import Guide from '@/components/guide'
 import LoadingModal from '@/components/loader'
+import CellShimmer from '@/components/cellShimmer'
 import { useAppSelector } from '@/store/app/hooks'
 import { selectAuthToken } from '@/store/features/auth/authSlice'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
@@ -59,6 +60,7 @@ const EmailsPage = () => {
     message: '',
     color: ACTION_COLORS.keep,
   })
+  const [initialLoading, setInitialLoading] = useState(true) // <-- NEW state
 
   const headers = useMemo(() => {
     if (!token) return null
@@ -82,10 +84,13 @@ const EmailsPage = () => {
     const fetchGroupedEmails = async () => {
       if (!headers) return
 
+      setInitialLoading(true) // <-- start loading
       try {
         await refreshGroups()
       } catch (error) {
         console.error('Failed loading emails page data:', error)
+      } finally {
+        setInitialLoading(false) // <-- done loading
       }
     }
 
@@ -234,13 +239,25 @@ const EmailsPage = () => {
               <Guide />
               <div className='emails__content__right'>
               <div className='emails__content__header'>
-                  <p className='emails__content__header__title'>Your subscriptions</p>
+                  <p className='emails__content__header__title'>My emails</p>
               </div>
               <div className='emails__content_body'>
-                  {groups.length === 0 && (
+                  {/* Show shimmer placeholders during initial loading */}
+                  {initialLoading && (
+                    <>
+                      <CellShimmer />
+                      <CellShimmer />
+                      <CellShimmer />
+                    </>
+                  )}
+
+                  {/* Show "No emails yet" only when NOT loading AND groups empty */}
+                  {!initialLoading && groups.length === 0 && (
                     <p className='emails__content__header__title'>No emails yet</p>
                   )}
-                  {groups.map((group) => {
+
+                  {/* Show actual cells when NOT loading and groups exist */}
+                  {!initialLoading && groups.map((group) => {
                     const { senderName, senderEmail } = parseSender(group.sender)
                     const lastThree = [...(group.examples || [])]
                       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
