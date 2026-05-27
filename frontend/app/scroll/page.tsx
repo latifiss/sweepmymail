@@ -405,11 +405,11 @@ export default function HomePage() {
             <p className="cta-description cta-description--dark">
               Join 108+ users who save 2+ hours daily
             </p>
-            <div className="cta-buttons">
+            {/* <div className="cta-buttons">
               <button className="btn btn--outline-dark btn--large">
                 Watch Demo
               </button>
-            </div>
+            </div> */}
           </div>
         </div>
       </ScrollSection>
