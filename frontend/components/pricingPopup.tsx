@@ -2,12 +2,29 @@
 
 import React from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useAppSelector } from '@/store/app/hooks' 
 
 type PricingPopupProps = {
   onClose: () => void
 }
 
 const PricingPopup = ({ onClose }: PricingPopupProps) => {
+  const router = useRouter()
+  
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
+
+  const handleFreeTierClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+    onClose() 
+    
+    if (isAuthenticated) {
+      router.push('/scroll')
+    } else {
+      router.push('/login')
+    }
+  }
+
   return (
     <div className="pricing-popup__overlay">
       <div className="pricing-popup">
@@ -76,9 +93,13 @@ const PricingPopup = ({ onClose }: PricingPopupProps) => {
           </Link>
         </div>
 
-        <Link href="/subscriptions" className="pricing-popup__cta">
-          VIEW ALL TIERS
-        </Link>
+        <a 
+          href="#" 
+          className="pricing-popup__cta"
+          onClick={handleFreeTierClick}
+        >
+          Continue with FREE Tier
+        </a>
 
         <button
           className="pricing-popup__dismiss"
