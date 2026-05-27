@@ -11,7 +11,6 @@
   }
 }
 
-/* HEADER */
 .privacy-header {
   text-align: center;
   margin-bottom: $spacing-xxxl;
@@ -45,14 +44,12 @@
   }
 }
 
-/* CONTENT */
 .privacy-content {
   display: flex;
   flex-direction: column;
   gap: $spacing-xl;
 }
 
-/* SECTION */
 .privacy-section {
   background: $white;
   border: 1px solid $border-color;

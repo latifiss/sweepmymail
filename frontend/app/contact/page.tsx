@@ -125,7 +125,7 @@ export default function ContactPage() {
 
             <div className="contact-info__card">
               <h3>Location</h3>
-              <p>Remote / Global</p>
+              <p>Accra, Ghana</p>
             </div>
 
             <div className="contact-info__note">

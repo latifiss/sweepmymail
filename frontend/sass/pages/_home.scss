@@ -45,7 +45,6 @@
   }
 }
 
-// Hero Section
 .hero-content {
   text-align: center;
   max-width: 800px;
@@ -100,7 +99,6 @@
   margin-top: $spacing-md;
 }
 
-// Feature Blocks
 .feature-block {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -211,7 +209,6 @@
   }
 }
 
-// Demo Cell Component with Custom Shadows
 .demo-cell {
   display: flex;
   align-items: flex-start;
@@ -228,7 +225,6 @@
     gap: 0;
   }
 
-  // Shadow variations for different sections
   &--shadow-1 {
     box-shadow: 8px 8px 0 0 rgba(0, 0, 0, 1);
   }
@@ -446,7 +442,6 @@
   }
 }
 
-// Unread Tag
 .unread-tag {
   background: $primary-light;
   color: $primary-color;
@@ -467,7 +462,6 @@
   }
 }
 
-// Category Grid Demo
 .category-grid-demo {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -507,7 +501,6 @@
   &--priority { background: #ffebee; color: #f44336; }
 }
 
-// Priority Email Demo - Mobile Optimized
 .priority-email-demo {
   display: flex;
   align-items: flex-start;
@@ -605,7 +598,6 @@
   }
 }
 
-// Summary Demo
 .summary-item-demo {
   strong {
     display: block;
@@ -645,7 +637,6 @@
   }
 }
 
-// Keywords Demo
 .keyword-demo {
   display: flex;
   flex-wrap: wrap;
@@ -701,7 +692,6 @@
   }
 }
 
-// Pricing Section
 .pricing-section {
   text-align: center;
   max-width: 800px;
@@ -786,7 +776,6 @@
   word-wrap: break-word;
 }
 
-// CTA Section
 .cta-content {
   text-align: center;
   max-width: 700px;
@@ -842,7 +831,6 @@
   }
 }
 
-// Button Styles
 .btn {
   display: inline-flex;
   align-items: center;
@@ -948,7 +936,6 @@
   }
 }
 
-// Footer
 .footer {
   width: 100%;
   

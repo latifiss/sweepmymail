@@ -11,7 +11,6 @@
   }
 }
 
-/* HEADER */
 .about-header {
   text-align: center;
   margin-bottom: $spacing-xxxl;
@@ -46,14 +45,12 @@
   }
 }
 
-/* CONTENT */
 .about-content {
   display: flex;
   flex-direction: column;
   gap: $spacing-xl;
 }
 
-/* SECTION */
 .about-section {
   background: $white;
   border: 1px solid $border-color;

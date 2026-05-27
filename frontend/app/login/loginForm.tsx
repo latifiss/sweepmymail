@@ -23,7 +23,6 @@ export default function LoginForm() {
       await login({ email, password }).unwrap();
       router.push("/");
     } catch (err: any) {
-      // Error is handled by Redux and displayed below
       console.error("Login failed:", err);
     }
   };

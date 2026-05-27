@@ -11,7 +11,6 @@ import { useRouter } from 'next/navigation'
 import { useAppSelector } from '@/store/app/hooks'
 import { selectAuthToken } from '@/store/features/auth/authSlice'
 
-// Define section colors based on your variables
 const sectionColors = {
   hero: '#ffffff',
   features: '#f5f5f5',
@@ -28,7 +27,6 @@ export default function HomePage() {
   const token = useAppSelector(selectAuthToken)
   const [showPricing, setShowPricing] = useState(false)
 
-  // Navigation handler
   const handleNavigation = (path: string) => {
     router.push(path)
   }
@@ -192,7 +190,6 @@ export default function HomePage() {
         </div>
       </ScrollSection>
 
-      {/* Feature 3: Priority Keywords - Text Left, Demo Right */}
       <ScrollSection id="priority-emails" color={sectionColors.priority}>
         <div className="container">
           <div className="feature-block">
@@ -203,7 +200,7 @@ export default function HomePage() {
               </h2>
               <p className="feature-description">
                 Set custom keywords and watch important emails rise to the top. 
-                Whether it's "invoice", "contract", or your boss's name.
+                Whether it&apos;s &quot;invoice&quot;, &quot;contract&quot;, or your boss&apos;s name.
               </p>
               <div className="keyword-demo">
                 <div className="keyword-tag">💰 invoice</div>
@@ -433,17 +430,57 @@ export default function HomePage() {
                 <p>Clean inbox. Clear mind.</p>
               </div>
               <div className="footer__links">
-                <div className="footer__links-column">
-                  <h4>Company</h4>
-                  <a href="#">About</a>
-                  <a href="#">Blog</a>
-                  <a href="#">Contact</a>
-                </div>
-                <div className="footer__links-column">
-                  <h4>Legal</h4>
-                  <a href="#">Privacy</a>
-                  <a href="#">Terms</a>
-                </div>
+              <div className="footer__links-column">
+  <h4>Company</h4>
+  <a 
+    href="/about" 
+    onClick={(e) => {
+      e.preventDefault();
+      window.location.href = '/about';
+    }}
+  >
+    About
+  </a>
+  <a 
+    href="/refund-policy" 
+    onClick={(e) => {
+      e.preventDefault();
+      window.location.href = '/refund-policy';
+    }}
+  >
+    Refund Policy
+  </a>
+  <a 
+    href="/contact" 
+    onClick={(e) => {
+      e.preventDefault();
+      window.location.href = '/contact';
+    }}
+  >
+    Contact
+  </a>
+</div>
+<div className="footer__links-column">
+  <h4>Legal</h4>
+  <a 
+    href="/privacy" 
+    onClick={(e) => {
+      e.preventDefault();
+      window.location.href = '/privacy';
+    }}
+  >
+    Privacy
+  </a>
+  <a 
+    href="/terms" 
+    onClick={(e) => {
+      e.preventDefault();
+      window.location.href = '/terms';
+    }}
+  >
+    Terms
+  </a>
+</div>
               </div>
               <div className="footer__copyright">
                 © 2026 Magic Mail. All rights reserved.

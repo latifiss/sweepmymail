@@ -11,7 +11,6 @@
   }
 }
 
-/* HEADER */
 .cookies-header {
   text-align: center;
   margin-bottom: $spacing-xxxl;
@@ -45,14 +44,12 @@
   }
 }
 
-/* CONTENT */
 .cookies-content {
   display: flex;
   flex-direction: column;
   gap: $spacing-xl;
 }
 
-/* SECTION */
 .cookies-section {
   background: $white;
   border: 1px solid $border-color;
@@ -92,7 +89,6 @@
   }
 }
 
-/* COOKIE TYPES */
 .cookies-type {
   margin-top: $spacing-md;
   padding: $spacing-md;

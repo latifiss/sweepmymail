@@ -11,7 +11,6 @@
   border-bottom: 1px solid #e0e0e0;
   margin-bottom: 4px;
 
-  /* ---------------- Side / Arrow ---------------- */
   &__side {
     display: flex;
     align-items: center;
@@ -33,7 +32,6 @@
     transition: transform 0.25s ease;
   }
 
-  /* ---------------- Content ---------------- */
   &__content {
     display: flex;
     flex-direction: column;
@@ -126,7 +124,6 @@
     padding: 0;
   }
 
-  /* ---------------- Dropdown (Animated) ---------------- */
   &__dropdown {
     display: flex;
     flex-direction: column;
@@ -159,7 +156,6 @@
     }
   }
 
-  /* ---------------- Open State ---------------- */
   &--open {
     .cell__arrow {
       transform: rotate(180deg);

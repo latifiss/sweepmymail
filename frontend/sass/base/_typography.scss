@@ -1,11 +1,5 @@
-// =============================================================================
-// TYPOGRAPHY
-// =============================================================================
 @use '../sass-utils/variables' as *;
 
-// Typography rules and text styles
-
-// Headings
 h1,
 h2,
 h3,
@@ -44,13 +38,11 @@ h6 {
   font-size: 1rem;
 }
 
-// Paragraphs
 p {
   margin-bottom: 1rem;
   color: $text-light;
 }
 
-// Links
 a {
   color: $primary-color;
   text-decoration: none;
@@ -67,7 +59,6 @@ a {
   }
 }
 
-// Text utilities
 strong,
 b {
   font-weight: 700;
@@ -82,7 +73,6 @@ small {
   font-size: 0.875rem;
 }
 
-// Code
 code,
 kbd,
 samp {
@@ -106,7 +96,6 @@ pre {
   }
 }
 
-// Lists
 ul,
 ol {
   margin-bottom: 1rem;
@@ -131,7 +120,6 @@ dd {
   margin-bottom: 0.5rem;
 }
 
-// Blockquote
 blockquote {
   border-left: 4px solid #0066cc;
   padding-left: 1rem;

@@ -1,9 +1,4 @@
-// =============================================================================
-// HEADER
-// =============================================================================
-// Header/banner styles
 
-// Navigation header (for main site navigation)
 .nav-header {
   width: 100%;
   background-color: transparent;
@@ -18,7 +13,7 @@
     }
 
   &__container {
-    max-width: 72rem; // 6xl
+    max-width: 72rem; 
     margin: 0 auto;
     padding: 0 1rem;
     height: 6rem;
