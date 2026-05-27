@@ -21,7 +21,6 @@ export async function applyPriorityKeywordToEmails(
   const ids = matched.map((m) => m.message_id).filter(Boolean);
 
   if (ids.length > 0) {
-    // IMPORTANT is a Gmail system label used for high-priority marker.
     await gmailService.modifyMessagesForUser(userId, ids, ["IMPORTANT"], []);
   }
 

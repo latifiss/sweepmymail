@@ -267,7 +267,6 @@ export default function HighPriorityPage() {
         </div>
       </div>
 
-      {/* Add Keyword Modal */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -314,7 +313,6 @@ export default function HighPriorityPage() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && selectedWord && (
         <div className="modal-overlay" onClick={() => setIsDeleteModalOpen(false)}>
           <div className="modal modal--warning" onClick={(e) => e.stopPropagation()}>

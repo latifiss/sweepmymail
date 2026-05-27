@@ -9,7 +9,6 @@ export default function AboutPage() {
     <main className="about-page">
       <div className="about-page__container">
 
-        {/* HERO */}
         <header className="about-header">
           <h1 className="about-header__title">About Magic Mail</h1>
           <p className="about-header__subtitle">
@@ -18,7 +17,6 @@ export default function AboutPage() {
           <span className="about-header__badge">Est. {year}</span>
         </header>
 
-        {/* CONTENT */}
         <section className="about-content">
 
           <div className="about-section">
@@ -55,7 +53,7 @@ export default function AboutPage() {
           <div className="about-section about-section--highlight">
             <h2 className="about-section__title">Built for Productivity</h2>
             <p className="about-section__text">
-              Whether you're a student, professional, or business owner,
+              Whether you&apos;re a student, professional, or business owner,
               Magic Mail adapts to your workflow and scales with your needs.
             </p>
           </div>

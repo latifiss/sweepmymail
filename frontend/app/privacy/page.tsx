@@ -9,7 +9,6 @@ export default function PrivacyPage() {
     <main className="privacy-page">
       <div className="privacy-page__container">
 
-        {/* HEADER */}
         <header className="privacy-header">
           <h1 className="privacy-header__title">Privacy Policy</h1>
           <p className="privacy-header__subtitle">
@@ -20,7 +19,6 @@ export default function PrivacyPage() {
           </span>
         </header>
 
-        {/* CONTENT */}
         <section className="privacy-content">
 
           <div className="privacy-section">

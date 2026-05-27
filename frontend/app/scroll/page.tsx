@@ -53,7 +53,6 @@ export default function HomePage() {
 
   return (
     <main className="scroll-page">
-      {/* Hero Section */}
       <ScrollSection id="hero" color={sectionColors.hero}>
         <div className="container">
           <div className="hero-content">
@@ -76,7 +75,6 @@ export default function HomePage() {
         </div>
       </ScrollSection>
 
-      {/* Feature 1: Clean Emails to Trash - Text Left, Demo Right */}
       <ScrollSection id="clean-emails" color={sectionColors.features}>
         <div className="container">
           <div className="feature-block">
@@ -114,7 +112,6 @@ export default function HomePage() {
         </div>
       </ScrollSection>
 
-      {/* Feature 2: Auto-Categorize Emails - Text Right, Demo Left */}
       <ScrollSection id="auto-categorize" color={sectionColors.autoCategorize}>
         <div className="container">
           <div className="feature-block feature-block--reverse">
@@ -283,7 +280,6 @@ export default function HomePage() {
         </div>
       </ScrollSection>
 
-      {/* Feature 4: Daily Summaries - Text Right, Demo Left */}
       <ScrollSection id="summarize" color={sectionColors.summarize}>
         <div className="container">
           <div className="feature-block feature-block--reverse">
@@ -367,7 +363,6 @@ export default function HomePage() {
         </div>
       </ScrollSection>
 
-      {/* Pricing Section */}
       <ScrollSection id="pricing" color={sectionColors.pricing}>
         <div className="container">
           <div className="pricing-section">
@@ -401,7 +396,6 @@ export default function HomePage() {
         </div>
       </ScrollSection>
 
-      {/* CTA Section */}
       <ScrollSection id="cta" color={sectionColors.cta}>
         <div className="container">
           <div className="cta-content">
@@ -420,7 +414,6 @@ export default function HomePage() {
         </div>
       </ScrollSection>
 
-      {/* Footer Section */}
       <ScrollSection id="footer" color={sectionColors.footer}>
         <div className="container">
           <footer className="footer">
@@ -490,7 +483,6 @@ export default function HomePage() {
         </div>
       </ScrollSection>
 
-      {/* Pricing Popup */}
       {showPricing && (
         <PricingPopup onClose={() => setShowPricing(false)} />
       )}

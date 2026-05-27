@@ -5,13 +5,13 @@ import { FC } from "react";
 type DashboardCardProps = {
   title: string;
   count: number;
-  color?: "blue" | "green" | "red" | "yellow" | "purple"; // predefined color options
+  color?: "blue" | "green" | "red" | "yellow" | "purple"; 
 };
 
 export const DashboardCard: FC<DashboardCardProps> = ({
   title,
   count,
-  color = "blue", // default dot color
+  color = "blue", 
 }) => {
   return (
     <div className="card card--dashboard">

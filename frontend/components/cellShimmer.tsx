@@ -31,7 +31,6 @@ const CellShimmer = () => {
           </div>
         </div>
 
-        {/* ActionsRow placeholder */}
         <div className="actions-row" style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
           <Skeleton width={80} height={32} borderRadius={20} />
           <Skeleton width={80} height={32} borderRadius={20} />
@@ -39,7 +38,6 @@ const CellShimmer = () => {
           <Skeleton width={80} height={32} borderRadius={20} />
         </div>
 
-        {/* Dropdown area (SpotRow + lastEmails placeholders) */}
         <div className="cell__dropdown">
           <div className="spot-row" style={{ marginBottom: '12px' }}>
             <Skeleton width="100%" height={40} />

@@ -50,7 +50,6 @@ export const googleCallback = async (req: Request, res: Response) => {
 
     let user = await getUserByEmail(data.email);
     if (!user) {
-      // Check if refresh_token exists, if not use a placeholder (will need to re-auth later)
       if (!tokens.refresh_token) {
         console.warn("No refresh token provided by Google. User will need to re-authenticate when token expires.");
       }

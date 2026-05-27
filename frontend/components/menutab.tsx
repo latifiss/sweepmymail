@@ -12,7 +12,7 @@ type Tab = {
   id: string;
   label: string;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  items: string[]; // popup items
+  items: string[]; 
 };
 
 const tabs: Tab[] = [
@@ -27,7 +27,6 @@ export default function IconTabsMobile() {
   const [popupOpen, setPopupOpen] = useState<boolean>(false);
   const tabRef = useRef<HTMLDivElement>(null);
 
-  // Close popup when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (tabRef.current && !tabRef.current.contains(event.target as Node)) {
@@ -51,7 +50,6 @@ export default function IconTabsMobile() {
 
   return (
     <div className="relative inline-block" ref={tabRef}>
-      {/* Tab buttons */}
       <div className="menu-tabs">
         {tabs.map((tab) => {
           const isActive = tab.id === activeTab;
@@ -69,7 +67,6 @@ export default function IconTabsMobile() {
         })}
       </div>
 
-      {/* Popup */}
       {popupOpen && activeTabObj && (
         <div className="menu-tabs__popup">
           {activeTabObj.items.map((item, index) => (

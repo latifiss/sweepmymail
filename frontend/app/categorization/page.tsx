@@ -234,7 +234,6 @@ export default function CategorizationPage() {
         )}
       </div>
 
-      {/* Create Category Modal */}
       {isModalOpen && (
         <div className="cat-modal-overlay" onClick={() => setIsModalOpen(false)}>
           <div className="cat-modal" onClick={(e) => e.stopPropagation()}>
@@ -288,7 +287,6 @@ export default function CategorizationPage() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && selectedCategory && (
         <div className="cat-modal-overlay" onClick={() => setIsDeleteModalOpen(false)}>
           <div className="cat-modal cat-modal--warning" onClick={(e) => e.stopPropagation()}>

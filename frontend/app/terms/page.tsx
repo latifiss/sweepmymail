@@ -9,7 +9,6 @@ export default function TermsPage() {
     <main className="terms-page">
       <div className="terms-page__container">
 
-        {/* HEADER */}
         <header className="terms-header">
           <h1 className="terms-header__title">Terms of Service</h1>
           <p className="terms-header__subtitle">
@@ -18,7 +17,6 @@ export default function TermsPage() {
           <span className="terms-header__date">Last updated: {lastUpdated}</span>
         </header>
 
-        {/* CONTENT */}
         <section className="terms-content">
 
           <div className="terms-section">

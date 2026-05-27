@@ -1,7 +1,6 @@
 import Stripe from "stripe";
 import { env } from "../config/env";
 
-// Only initialize Stripe if the secret key is provided
 let stripe: Stripe | null = null;
 
 if (env.STRIPE_SECRET_KEY) {

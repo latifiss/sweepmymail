@@ -9,7 +9,6 @@ export default function CookiesPolicyPage() {
     <main className="cookies-page">
       <div className="cookies-page__container">
 
-        {/* HEADER */}
         <header className="cookies-header">
           <h1 className="cookies-header__title">Cookies Policy</h1>
           <p className="cookies-header__subtitle">
@@ -20,7 +19,6 @@ export default function CookiesPolicyPage() {
           </span>
         </header>
 
-        {/* CONTENT */}
         <section className="cookies-content">
 
           <div className="cookies-section">

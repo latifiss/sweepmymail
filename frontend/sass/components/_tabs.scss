@@ -35,9 +35,9 @@
   transform: translateX(-50%);
   z-index: 1000;
 
-  white-space: nowrap;      // 🔒 no wrapping
-  overflow: hidden;         // prevents spill
-  text-overflow: ellipsis;  // safety
+  white-space: nowrap;      
+  overflow: hidden;         
+  text-overflow: ellipsis;  
 
   @media (prefers-color-scheme: dark) {
     background-color: rgba(31, 41, 55, 0.5);
@@ -113,7 +113,6 @@
   }
 }
 
-// Menu tab styles (for menutab component)
 .menu-tabs {
   display: flex;
   gap: 1rem;
@@ -208,7 +207,6 @@
   }
 }
 
-// Mobile menu tabs (for tabviewMobile component)
 .mobile-menu {
   position: relative;
   display: inline-flex;

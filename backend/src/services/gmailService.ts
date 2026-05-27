@@ -16,13 +16,9 @@ function getOauthClient() {
   return new OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, env.GOOGLE_REDIRECT_URI);
 }
 
-/**
- * Build an authenticated gmail client for a stored user
- */
 async function getGmailForUser(user: DbUser) {
   const oauth2Client = getOauthClient();
   
-  // Set credentials - use refresh token if available, otherwise use access token
   const credentials: any = {};
   if (user.refresh_token) {
     credentials.refresh_token = user.refresh_token;
@@ -33,19 +29,16 @@ async function getGmailForUser(user: DbUser) {
   
   oauth2Client.setCredentials(credentials);
 
-  // Try to get a fresh access token if we have a refresh token
   if (user.refresh_token) {
     try {
       const res = await oauth2Client.getAccessToken();
       if (res.token) {
         oauth2Client.setCredentials({ access_token: res.token });
-        // Update user's access token in DB if it changed
         if (res.token !== user.access_token) {
           await updateUserTokens(user.id, { access_token: res.token });
         }
       }
     } catch (err) {
-      // If refresh fails, try using the existing access token
       console.warn("Failed to refresh access token, using existing token");
     }
   }
@@ -54,8 +47,6 @@ async function getGmailForUser(user: DbUser) {
 }
 
 function sanitizeGmailLabelName(name: string) {
-  // Gmail label name max length is 225 characters.
-  // Also avoid slashes creating nested labels unexpectedly.
   return name.replace(/\//g, " ").trim().slice(0, 225) || "Rolled up";
 }
 
@@ -82,10 +73,6 @@ export async function ensureLabelForUser(userId: string, labelName: string) {
   return { labelId: created.data.id, labelName: desired };
 }
 
-/**
- * Fetch promotional/newsletter messages and return structured array.
- * Also optionally persist into Emails collection.
- */
 export async function fetchGmailMessagesAndSave(userId: string, persist = true, maxResults = 200) {
   const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
@@ -93,7 +80,7 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true, 
   const gmail = await getGmailForUser(user);
   const list = await gmail.users.messages.list({
     userId: "me",
-    q: "category:promotions OR category:social OR label:^unread", // broaden optionally
+    q: "category:promotions OR category:social OR label:^unread",
     maxResults,
   });
 
@@ -131,14 +118,11 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true, 
 
       if (persist) {
         try {
-          // upsert avoid duplicates
           await upsertEmail(item);
         } catch (err) {
-          // ignore duplicates or save errors
         }
       }
     } catch (err) {
-      // skip single message errors
       console.warn("Failed to fetch message", m.id, err);
     }
   }
@@ -146,24 +130,18 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true, 
   return results;
 }
 
-/**
- * Batch delete messages by Gmail message IDs
- */
 export async function batchDeleteMessagesForUser(userId: string, messageIds: string[]) {
   if (!messageIds.length) return { deleted: 0 };
   const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
   const gmail = await getGmailForUser(user);
 
-  // Gmail supports batchModify for trash or delete - here we call 'batchDelete' via modifying labels to TRASH or using delete
-  // We'll use users.messages.batchDelete which permanently deletes messages.
   try {
     await gmail.users.messages.batchDelete({
       userId: "me",
       requestBody: { ids: messageIds },
     });
 
-    // also remove from our DB
     await deleteEmailsForUserByMessageIds(user.id, messageIds);
 
     return { deleted: messageIds.length };
@@ -172,11 +150,6 @@ export async function batchDeleteMessagesForUser(userId: string, messageIds: str
   }
 }
 
-/**
- * Archive (remove INBOX) or add labels to messages.
- * labelsToAdd: array of labelIds to add
- * labelsToRemove: array of labelIds to remove
- */
 export async function modifyMessagesForUser(userId: string, messageIds: string[], labelsToAdd: string[] = [], labelsToRemove: string[] = []) {
   const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
@@ -197,10 +170,6 @@ export async function modifyMessagesForUser(userId: string, messageIds: string[]
   }
 }
 
-/**
- * Group saved emails by sender domain / sender name
- * returns array of { key, count, examples: [...first few messages] }
- */
 export async function getGroupedEmails(userId: string, limit = 100) {
   const emails = await getEmailsForUser(userId);
   const grouped = new Map<string, { key: string; sender: string; count: number; examples: any[] }>();
@@ -233,15 +202,11 @@ export async function getGroupedEmails(userId: string, limit = 100) {
     .slice(0, limit);
 }
 
-/**
- * Helper: fetch all messages ids for a given sender (by domain or full sender string)
- */
 export async function getMessageIdsForSender(userId: string, senderMatch: string) {
   const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
   const gmail = await getGmailForUser(user);
 
-  // Try search query: from:"domain or sender"
   const q = `from:${senderMatch}`;
   const list = await gmail.users.messages.list({ userId: "me", q, maxResults: 500 });
   const ids = (list.data.messages || []).map(m => m.id!) as string[];

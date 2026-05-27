@@ -69,7 +69,6 @@ export async function getSubscriptionContext(userId: string): Promise<{
         status: "active",
       } satisfies DbUserSubscription);
 
-    // If not actively subscribed, treat as free tier.
     const effectiveTier =
       (subscription.status && subscription.status !== "active") ? "free" : normalizeTier(subscription.tier);
 

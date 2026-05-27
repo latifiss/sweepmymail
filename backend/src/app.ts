@@ -17,7 +17,6 @@ export function createApp() {
   "https://mymagicmail.com",
   "https://www.mymagicmail.com",];
 
-  // Webhooks must receive raw body for signature validation.
   app.post("/subscriptions/webhook/lemonsqueezy", express.raw({ type: "application/json" }), handleLemonSqueezyWebhook);
 
   app.use(express.json({ limit: "50mb" }));

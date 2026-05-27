@@ -24,7 +24,6 @@ export default function ContactPage() {
     e.preventDefault()
     setLoading(true)
 
-    // simulate request (replace with API later)
     setTimeout(() => {
       setLoading(false)
       setSuccess(true)
@@ -36,7 +35,6 @@ export default function ContactPage() {
     <main className="contact-page">
       <div className="contact-page__container">
 
-        {/* HEADER */}
         <header className="contact-header">
           <h1 className="contact-header__title">Contact Us</h1>
           <p className="contact-header__subtitle">
@@ -44,10 +42,8 @@ export default function ContactPage() {
           </p>
         </header>
 
-        {/* CONTENT */}
         <section className="contact-content">
 
-          {/* FORM */}
           <form className="contact-form" onSubmit={handleSubmit}>
 
             <div className="contact-form__row">
@@ -110,7 +106,6 @@ export default function ContactPage() {
 
           </form>
 
-          {/* INFO SIDE PANEL */}
           <aside className="contact-info">
 
             <div className="contact-info__card">

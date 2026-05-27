@@ -24,12 +24,10 @@ export function SelectDropdown({
   const [selected, setSelected] = useState<Option | null>(externalValue);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Sync with external value changes
   useEffect(() => {
     setSelected(externalValue);
   }, [externalValue]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -41,8 +39,8 @@ export function SelectDropdown({
   }, []);
 
   const handleSelect = (option: Option) => {
-    setSelected(option); // Update internal state
-    onChange?.(option); // Notify parent
+    setSelected(option); 
+    onChange?.(option); 
     setOpen(false);
   };
 
@@ -64,7 +62,6 @@ export function SelectDropdown({
         </svg>
       </button>
 
-      {/* Dropdown */}
       {open && (
         <div className="form__dropdown__menu">
           {options.map((option) => {

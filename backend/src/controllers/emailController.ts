@@ -1,4 +1,3 @@
-// src/controllers/emailController.ts
 import { Request, Response } from "express";
 import gmailService from "../services/gmailService";
 import { unsubscribeFromLink } from "../services/unsubscribeService";
@@ -106,15 +105,11 @@ export const unsubscribe = async (req: Request, res: Response) => {
       return res.status(404).json({ ok: false, error: "No unsubscribe link found for this sender" });
     }
 
-    // determine user email for mail-from (we store user as JWT payload id only; fetch user from Subscription/User collection if needed)
-    // here we retrieve the saved user email for 'from' when sending mailto
     const user = (req as any).user;
     const fromEmail = user.email || undefined;
 
-    // try unsubscribe
     const result = await unsubscribeFromLink(link || "", fromEmail || "");
 
-    // store subscription record for sender if provided
     if (sender) {
       await upsertSubscription({
         user_id: (req as any).user.id,
@@ -130,14 +125,6 @@ export const unsubscribe = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * POST /emails/rollup
- * Body: { sender }  -> mark sender as rolled up: set subscription rule, archive existing messages for that sender
- *
- * This endpoint:
- *  - stores a Subscription with a `rolledUp: true`
- *  - finds message ids for the sender and archives them (removes INBOX label)
- */
 export const rollup = async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   const { sender } = req.body as { sender: string };
@@ -145,7 +132,6 @@ export const rollup = async (req: Request, res: Response) => {
   if (!sender) return res.status(400).json({ ok: false, error: "sender required" });
 
   try {
-    // upsert subscription rule
     await upsertSubscription({
       user_id: userId,
       sender,
@@ -155,12 +141,9 @@ export const rollup = async (req: Request, res: Response) => {
 
     const { labelId, labelName } = await gmailService.ensureLabelForUser(userId, sender);
 
-    // find messages for sender, label them, and archive (remove INBOX label). We'll search via gmailService.
     const ids = await gmailService.getMessageIdsForSender(userId, sender);
     if (ids.length) {
-      // Gmail label for INBOX is "INBOX" to remove
       await gmailService.modifyMessagesForUser(userId, ids, [labelId], ["INBOX"]);
-      // optionally update our DB record to reflect they're archived (we can remove or flag)
       await markEmailsArchived((req as any).user.id, ids);
     }
 
@@ -171,10 +154,6 @@ export const rollup = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * POST /emails/delete
- * Body: { messageIds: string[] }
- */
 export const batchDelete = async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   const { messageIds } = req.body as { messageIds: string[] };
@@ -196,10 +175,6 @@ export const batchDelete = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * GET /emails/by-sender?sender=Spotify
- * Get example messages for a given sender (first 50)
- */
 export const getBySender = async (req: Request, res: Response) => {
   const sender = req.query.sender as string;
   if (!sender) return res.status(400).json({ ok: false, error: "sender query required" });

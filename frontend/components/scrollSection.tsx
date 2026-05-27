@@ -1,11 +1,10 @@
-// components/ScrollSection.tsx
+
 'use client'
 
 import React, { useRef, useEffect, ReactNode } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
-// Register ScrollTrigger plugin
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger)
 }
@@ -46,7 +45,6 @@ const ScrollSection = ({ children, id, color, className = '' }: ScrollSectionPro
       }
     })
 
-    // Cleanup
     return () => {
       trigger.kill()
     }

@@ -8,7 +8,7 @@ type ArticleCardProps = {
   category: string;
   content: string;
   status: ArticleStatus;
-  date: string; // can be formatted string like "Today: 3:20pm"
+  date: string; 
 };
 
 const statusClasses: Record<ArticleStatus, string> = {
@@ -25,17 +25,14 @@ export const ArticleCard: FC<ArticleCardProps> = ({
 }) => {
   return (
     <div className="card card--article">
-      {/* Category */}
       <div className="card__category">
         {category}
       </div>
 
-      {/* Content */}
       <div className="card__content">
         {content}
       </div>
 
-      {/* Footer: status tag + date */}
       <div className="card__footer">
         <span className={statusClasses[status]}>{status.toUpperCase()}</span>
         <span className="card__date">{date}</span>

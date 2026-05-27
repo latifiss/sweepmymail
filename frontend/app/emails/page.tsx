@@ -60,7 +60,7 @@ const EmailsPage = () => {
     message: '',
     color: ACTION_COLORS.keep,
   })
-  const [initialLoading, setInitialLoading] = useState(true) // <-- NEW state
+  const [initialLoading, setInitialLoading] = useState(true) 
 
   const headers = useMemo(() => {
     if (!token) return null
@@ -70,7 +70,6 @@ const EmailsPage = () => {
   const refreshGroups = useCallback(async () => {
     if (!headers) return
 
-    // Pull fresh Gmail messages into DB first, then fetch grouped senders.
     await fetch(`${backendBaseUrl}/emails`, { headers })
     const response = await fetch(`${backendBaseUrl}/emails/grouped`, { headers })
     if (!response.ok) {
@@ -84,13 +83,13 @@ const EmailsPage = () => {
     const fetchGroupedEmails = async () => {
       if (!headers) return
 
-      setInitialLoading(true) // <-- start loading
+      setInitialLoading(true) 
       try {
         await refreshGroups()
       } catch (error) {
         console.error('Failed loading emails page data:', error)
       } finally {
-        setInitialLoading(false) // <-- done loading
+        setInitialLoading(false) 
       }
     }
 
@@ -242,7 +241,6 @@ const EmailsPage = () => {
                   <p className='emails__content__header__title'>My emails</p>
               </div>
               <div className='emails__content_body'>
-                  {/* Show shimmer placeholders during initial loading */}
                   {initialLoading && (
                     <>
                       <CellShimmer />
@@ -251,12 +249,10 @@ const EmailsPage = () => {
                     </>
                   )}
 
-                  {/* Show "No emails yet" only when NOT loading AND groups empty */}
                   {!initialLoading && groups.length === 0 && (
                     <p className='emails__content__header__title'>No emails yet</p>
                   )}
 
-                  {/* Show actual cells when NOT loading and groups exist */}
                   {!initialLoading && groups.map((group) => {
                     const { senderName, senderEmail } = parseSender(group.sender)
                     const lastThree = [...(group.examples || [])]

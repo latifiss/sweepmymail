@@ -118,7 +118,7 @@ export async function getUserSubscriptionByUserId(userId: string): Promise<DbUse
       }
     }
   } catch {
-    // table might not exist in some environments; fallback below
+    
   }
 
   const user = await getUserById(userId);
@@ -136,7 +136,6 @@ export async function upsertUserSubscriptionByUserId(payload: DbUserSubscription
     const { error } = await supabase.from("user_subscriptions").upsert(payload, { onConflict: "user_id" });
     if (!error) return;
   } catch {
-    // fallback below
   }
 
   const { error: userUpdateError } = await supabase

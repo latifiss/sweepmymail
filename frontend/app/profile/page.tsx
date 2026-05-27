@@ -74,7 +74,6 @@ export default function ProfilePage() {
         })
 
         if (!response.ok) {
-          // If the backend hasn't been restarted / endpoint isn't available yet, don't spam errors.
           if (response.status === 404) return
           throw new Error(`Profile fetch failed with status ${response.status}`)
         }
