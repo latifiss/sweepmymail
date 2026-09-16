@@ -2,6 +2,7 @@ import express from "express";
 import morgan from "morgan";
 import cors from "cors";
 import authRoutes from "./routes/authRoutes";
+import betterAuthRoutes from "./routes/betterAuthRoutes";
 import emailRoutes from "./routes/emailRoutes";
 import stripeRoutes from "./routes/stripeRoutes";
 import dailySummaryRoutes from "./routes/dailySummaryRoutes";
@@ -11,17 +12,19 @@ import { handleLemonSqueezyWebhook } from "./controllers/subscriptionWebhookCont
 export function createApp() {
   const app = express();
 
-  const allowedOrigins = ["http://localhost:4000", "http://localhost:3000", "http://localhost:3001", "http://mymagicmail.app",
-  "http://mymagicmail.com", "http://themagicmail.app", "https://mymagicmail.app",
-  "https://www.mymagicmail.app",
-  "https://mymagicmail.com",
-  "https://www.mymagicmail.com",];
+  const allowedOrigins = [
+    "http://localhost:4000",
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://mymagicmail.app",
+    "http://mymagicmail.com",
+    "http://themagicmail.app",
+    "https://mymagicmail.app",
+    "https://www.mymagicmail.app",
+    "https://mymagicmail.com",
+    "https://www.mymagicmail.com",
+  ];
 
-  app.post("/subscriptions/webhook/lemonsqueezy", express.raw({ type: "application/json" }), handleLemonSqueezyWebhook);
-
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ extended: true, limit: "50mb" }));
-  app.use(morgan("dev"));
   app.use(
     cors({
       origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
@@ -33,8 +36,16 @@ export function createApp() {
     })
   );
 
+  app.all("/api/auth/*splat", betterAuthRoutes);
+
+  app.post("/subscriptions/webhook/lemonsqueezy", express.raw({ type: "application/json" }), handleLemonSqueezyWebhook);
+
+  app.use(express.json({ limit: "10mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+  app.use(morgan("dev"));
+
   app.get("/", (req, res) => {
-    res.send("Hello World!");
+    res.json({ name: "Magic Mail API", status: "ok" });
   });
 
   app.use("/auth", authRoutes);
@@ -44,15 +55,14 @@ export function createApp() {
   app.use("/subscriptions", subscriptionRoutes);
 
   app.use(function onError(err: any, req: express.Request, res: express.Response, next: express.NextFunction) {
-    res.statusCode = 500;
-    res.end(
-      JSON.stringify({
-        error: err.message,
-        stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
-      })
-    );
+    if (res.headersSent) return next(err);
+
+    const status = err.statusCode || err.status || 500;
+    res.status(status).json({
+      error: process.env.NODE_ENV === "development" ? err.message : "Internal server error",
+      ...(process.env.NODE_ENV === "development" ? { stack: err.stack } : {}),
+    });
   });
 
   return app;
 }
-
