@@ -5,6 +5,7 @@ import { env } from "./config/env";
 import authRoutes from "./routes/authRoutes";
 import { betterAuthHandler } from "./routes/betterAuthRoutes";
 import emailRoutes from "./routes/emailRoutes";
+import agentRoutes from "./routes/agentRoutes";
 import stripeRoutes from "./routes/stripeRoutes";
 import dailySummaryRoutes from "./routes/dailySummaryRoutes";
 import subscriptionRoutes from "./routes/subscriptionRoutes";
@@ -38,6 +39,7 @@ export function createApp() {
 
   app.use("/auth", authRoutes);
   app.use("/emails", emailRoutes);
+  app.use("/agent", agentRoutes);
   app.use("/stripe", stripeRoutes);
   app.use("/daily-summary", dailySummaryRoutes);
   app.use("/subscriptions", subscriptionRoutes);
