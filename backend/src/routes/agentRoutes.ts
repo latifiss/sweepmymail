@@ -135,6 +135,62 @@ router.get("/debug/openrouter-direct", authMiddleware, async (req, res) => {
   }
 });
 
+router.get("/debug/openrouter-model-test", authMiddleware, async (req, res) => {
+  const key = env.OPENROUTER_API_KEY;
+  const models = [
+    "openrouter/free",
+    "google/gemma-4-31b-it:free",
+    "cohere/north-mini-code:free",
+  ];
+
+  if (!key) {
+    return res.status(500).json({ ok: false, error: "OPENROUTER_API_KEY is not configured" });
+  }
+
+  const results = await Promise.all(
+    models.map(async (model) => {
+      try {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${key}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: "user", content: "Reply with exactly: OK" }],
+          }),
+        });
+
+        const body = await response.json().catch(() => null);
+        return {
+          model,
+          ok: response.ok,
+          status: response.status,
+          responseModel: body?.model ?? null,
+          responseId: body?.id ?? null,
+          error: body?.error
+            ? { code: body.error.code ?? null, message: body.error.message ?? "Unknown error" }
+            : null,
+        };
+      } catch (error) {
+        return {
+          model,
+          ok: false,
+          status: 502,
+          responseModel: null,
+          responseId: null,
+          error: {
+            message: error instanceof Error ? error.message : "Request failed",
+          },
+        };
+      }
+    }),
+  );
+
+  return res.json({ results });
+});
+
 router.post("/chat", authMiddleware, async (req, res, next) => {
   const user = (req as any).user as { id: string; email: string };
   const messages = req.body?.messages;
