@@ -27,26 +27,47 @@ function formatEmails(emails: any[], limit: number) {
   }));
 }
 
+function getToolErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Gmail request failed";
+}
+
 export function createAgentTools(userId: string, userEmail: string) {
   return {
     get_recent_emails: tool({
-      description: "Get the user's most recent inbox emails. Always use this tool whenever the user asks for latest, recent, newest, or current emails without specifying a search topic. Refresh from Gmail first so the results reflect the current inbox. Results include message IDs for follow-up actions.",
+      description: "Get the user's most recent inbox emails. Always use this tool whenever the user asks for latest, recent, newest, or current emails without specifying a search topic. Refresh from Gmail first so the results reflect the current inbox. Results include message IDs for follow-up actions. If the tool returns ok=false, report the returned error instead of claiming the user needs to authenticate.",
       inputSchema: z.object({
         limit: z.number().int().min(1).max(50).default(10),
       }),
       execute: async ({ limit }) => {
         requireAgentConfiguration();
-        const emails = await gmailService.fetchGmailMessagesAndSave(userId, true, Math.max(limit, 20));
-        const sorted = [...emails].sort((a, b) => {
-          const aTime = new Date(a.date || 0).getTime();
-          const bTime = new Date(b.date || 0).getTime();
-          return bTime - aTime;
-        });
 
-        return {
-          count: Math.min(sorted.length, limit),
-          emails: formatEmails(sorted, limit),
-        };
+        try {
+          const emails = await gmailService.fetchGmailMessagesAndSave(userId, true, Math.max(limit, 20));
+          const sorted = [...emails].sort((a, b) => {
+            const aTime = new Date(a.date || 0).getTime();
+            const bTime = new Date(b.date || 0).getTime();
+            return bTime - aTime;
+          });
+
+          return {
+            ok: true,
+            count: Math.min(sorted.length, limit),
+            emails: formatEmails(sorted, limit),
+          };
+        } catch (error) {
+          console.error("get_recent_emails failed", {
+            userId,
+            userEmail,
+            error: getToolErrorMessage(error),
+          });
+
+          return {
+            ok: false,
+            count: 0,
+            emails: [],
+            error: getToolErrorMessage(error),
+          };
+        }
       },
     }),
 
@@ -148,48 +169,47 @@ export function createAgentTools(userId: string, userEmail: string) {
     }),
 
     delete_emails: tool({
-      description: "Permanently delete specific Gmail messages. This is destructive and always requires explicit user approval.",
-      needsApproval: true,
+      description: "Delete specific emails permanently from Gmail. This action requires explicit user confirmation before execution.",
       inputSchema: z.object({
-        messageIds: z.array(z.string()).min(1).max(100),
+        messageIds: z.array(z.string()).min(1).max(500),
+        confirmed: z.boolean().default(false),
       }),
-      execute: async ({ messageIds }) => gmailService.batchDeleteMessagesForUser(userId, messageIds),
+      execute: async ({ messageIds, confirmed }) => {
+        if (!confirmed) {
+          return { requiresConfirmation: true, count: messageIds.length };
+        }
+        const result = await gmailService.batchDeleteMessagesForUser(userId, messageIds);
+        return { deleted: result.deleted };
+      },
     }),
 
     unsubscribe: tool({
-      description: "Unsubscribe from a sender using a verified unsubscribe link stored on the user's emails. This is an external side effect and requires explicit user approval.",
-      needsApproval: true,
+      description: "Unsubscribe from a sender using the unsubscribe link available in the user's synchronized email data. Requires explicit user confirmation.",
       inputSchema: z.object({
-        messageId: z.string().optional(),
-        sender: z.string().optional(),
-      }).refine((input) => Boolean(input.messageId || input.sender), {
-        message: "messageId or sender is required",
+        messageId: z.string().min(1),
+        confirmed: z.boolean().default(false),
       }),
-      execute: async ({ messageId, sender }) => {
-        let link: string | null = null;
-        let resolvedSender = sender || "";
-
-        if (messageId) {
-          const email = await getEmailByMessageId(userId, messageId);
-          link = email?.unsubscribe_link || null;
-          resolvedSender = resolvedSender || email?.sender || "";
+      execute: async ({ messageId, confirmed }) => {
+        const email = await getEmailByMessageId(userId, messageId);
+        if (!email) throw new Error("Email not found");
+        if (!email.unsubscribe_link) throw new Error("No unsubscribe link is available for this email");
+        if (!confirmed) {
+          return { requiresConfirmation: true, sender: email.sender, subject: email.subject };
         }
+        await unsubscribeFromLink(email.unsubscribe_link);
+        return { unsubscribed: true, sender: email.sender };
+      },
+    }),
 
-        if (!link && sender) {
-          const emails = await getEmailsBySenderLike(userId, sender, 50);
-          const email = emails.find((item) => Boolean(item.unsubscribe_link));
-          link = email?.unsubscribe_link || null;
-          resolvedSender = email?.sender || sender;
-        }
-
-        if (!link) throw new Error("No unsubscribe link was found for this sender");
-
-        const result = await unsubscribeFromLink(link, userEmail);
-        return {
-          sender: resolvedSender,
-          success: result.success,
-          message: result.message,
-        };
+    find_sender_emails: tool({
+      description: "Find synchronized emails from a sender. Use this before bulk sender actions.",
+      inputSchema: z.object({
+        sender: z.string().min(1),
+        limit: z.number().int().min(1).max(100).default(50),
+      }),
+      execute: async ({ sender, limit }) => {
+        const emails = await getEmailsBySenderLike(userId, sender);
+        return { count: emails.length, emails: formatEmails(emails, limit) };
       },
     }),
   };
