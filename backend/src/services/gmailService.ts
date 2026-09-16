@@ -32,6 +32,17 @@ async function getGmailForUser(user: DbUser) {
   return google.gmail({ version: "v1", auth: oauth2Client });
 }
 
+function getGmailErrorMessage(error: unknown, operation: string) {
+  const err = error as any;
+  const status = err?.response?.status ?? err?.code;
+  const message = err?.response?.data?.error?.message || err?.message || "Unknown Gmail error";
+  const reason = err?.response?.data?.error?.errors?.[0]?.reason;
+  const details = [status ? `status ${status}` : null, reason ? `reason ${reason}` : null]
+    .filter(Boolean)
+    .join(", ");
+  return `${operation} failed${details ? ` (${details})` : ""}: ${message}`;
+}
+
 function sanitizeGmailLabelName(name: string) {
   return name.replace(/\//g, " ").trim().slice(0, 225) || "Rolled up";
 }
@@ -63,75 +74,85 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true, 
   const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
 
-  const gmail = await getGmailForUser(user);
+  let gmail;
+  try {
+    gmail = await getGmailForUser(user);
+  } catch (error) {
+    throw new Error(getGmailErrorMessage(error, "Gmail authentication"));
+  }
+
   const results: Array<Record<string, unknown>> = [];
   let pageToken: string | undefined;
   let remaining = Math.min(Math.max(maxResults, 1), 500);
 
-  while (remaining > 0) {
-    const list = await gmail.users.messages.list({
-      userId: "me",
-      q: "in:inbox",
-      maxResults: Math.min(remaining, 100),
-      pageToken,
-      includeSpamTrash: false,
-    });
+  try {
+    while (remaining > 0) {
+      const list = await gmail.users.messages.list({
+        userId: "me",
+        q: "in:inbox",
+        maxResults: Math.min(remaining, 100),
+        pageToken,
+        includeSpamTrash: false,
+      });
 
-    const messages = list.data.messages || [];
-    if (!messages.length) break;
+      const messages = list.data.messages || [];
+      if (!messages.length) break;
 
-    const batch = await Promise.all(
-      messages.map(async (m) => {
-        if (!m.id) return null;
+      const batch = await Promise.all(
+        messages.map(async (m) => {
+          if (!m.id) return null;
 
-        try {
-          const details = await gmail.users.messages.get({
-            userId: "me",
-            id: m.id,
-            format: "metadata",
-            metadataHeaders: ["From", "Subject", "List-Unsubscribe"],
-          });
+          try {
+            const details = await gmail.users.messages.get({
+              userId: "me",
+              id: m.id,
+              format: "metadata",
+              metadataHeaders: ["From", "Subject", "List-Unsubscribe"],
+            });
 
-          const headers = details.data.payload?.headers || [];
-          const from = headers.find((h) => h.name?.toLowerCase() === "from")?.value || "unknown";
-          const subject = headers.find((h) => h.name?.toLowerCase() === "subject")?.value || "";
-          const listUnsub = headers.find((h) => h.name?.toLowerCase() === "list-unsubscribe")?.value;
-          const internalDate = details.data.internalDate
-            ? new Date(Number(details.data.internalDate))
-            : new Date();
+            const headers = details.data.payload?.headers || [];
+            const from = headers.find((h) => h.name?.toLowerCase() === "from")?.value || "unknown";
+            const subject = headers.find((h) => h.name?.toLowerCase() === "subject")?.value || "";
+            const listUnsub = headers.find((h) => h.name?.toLowerCase() === "list-unsubscribe")?.value;
+            const internalDate = details.data.internalDate
+              ? new Date(Number(details.data.internalDate))
+              : new Date();
 
-          return {
-            user_id: user.id,
-            sender: from,
-            subject,
-            snippet: details.data.snippet || "",
-            date: internalDate.toISOString(),
-            unsubscribe_link: listUnsub || null,
-            message_id: m.id,
-          };
-        } catch (error) {
-          console.warn("Failed to fetch Gmail message metadata", m.id, error);
-          return null;
-        }
-      })
-    );
+            return {
+              user_id: user.id,
+              sender: from,
+              subject,
+              snippet: details.data.snippet || "",
+              date: internalDate.toISOString(),
+              unsubscribe_link: listUnsub || null,
+              message_id: m.id,
+            };
+          } catch (error) {
+            console.warn(getGmailErrorMessage(error, `Gmail message metadata ${m.id}`));
+            return null;
+          }
+        })
+      );
 
-    for (const item of batch) {
-      if (!item) continue;
-      results.push(item);
+      for (const item of batch) {
+        if (!item) continue;
+        results.push(item);
 
-      if (persist) {
-        try {
-          await upsertEmail(item);
-        } catch (error) {
-          console.warn("Failed to persist email", item.message_id, error);
+        if (persist) {
+          try {
+            await upsertEmail(item);
+          } catch (error) {
+            console.warn("Failed to persist email", item.message_id, error);
+          }
         }
       }
-    }
 
-    remaining -= messages.length;
-    pageToken = list.data.nextPageToken || undefined;
-    if (!pageToken) break;
+      remaining -= messages.length;
+      pageToken = list.data.nextPageToken || undefined;
+      if (!pageToken) break;
+    }
+  } catch (error) {
+    throw new Error(getGmailErrorMessage(error, "Gmail inbox refresh"));
   }
 
   return results.sort((a, b) => {
