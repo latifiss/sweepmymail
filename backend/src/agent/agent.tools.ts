@@ -30,13 +30,13 @@ function formatEmails(emails: any[], limit: number) {
 export function createAgentTools(userId: string, userEmail: string) {
   return {
     get_recent_emails: tool({
-      description: "Get the user's most recent synchronized inbox emails. Use this tool whenever the user asks for latest, recent, newest, or current emails without specifying a search topic. Results include message IDs for follow-up actions.",
+      description: "Get the user's most recent inbox emails. Always use this tool whenever the user asks for latest, recent, newest, or current emails without specifying a search topic. Refresh from Gmail first so the results reflect the current inbox. Results include message IDs for follow-up actions.",
       inputSchema: z.object({
         limit: z.number().int().min(1).max(50).default(10),
       }),
       execute: async ({ limit }) => {
         requireAgentConfiguration();
-        const emails = await getEmailsForUser(userId);
+        const emails = await gmailService.fetchGmailMessagesAndSave(userId, true, Math.max(limit, 20));
         const sorted = [...emails].sort((a, b) => {
           const aTime = new Date(a.date || 0).getTime();
           const bTime = new Date(b.date || 0).getTime();
