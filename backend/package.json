@@ -19,9 +19,9 @@
   },
   "dependencies": {
     "@microsoft/microsoft-graph-client": "^3.0.7",
-    "@openrouter/ai-sdk-provider": "^1.2.0",
+    "@openrouter/ai-sdk-provider": "^2.9.1",
     "@supabase/supabase-js": "^2.104.0",
-    "ai": "^6.0.0",
+    "ai": "^6.0.34",
     "axios": "^1.12.0",
     "bcrypt": "^6.0.0",
     "better-auth": "^1.7.5",
