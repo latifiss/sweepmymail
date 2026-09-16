@@ -191,6 +191,78 @@ router.get("/debug/openrouter-model-test", authMiddleware, async (req, res) => {
   return res.json({ results });
 });
 
+router.get("/debug/openrouter-tool-test", authMiddleware, async (req, res) => {
+  const key = env.OPENROUTER_API_KEY;
+  const model = "cohere/north-mini-code:free";
+
+  if (!key) {
+    return res.status(500).json({ ok: false, error: "OPENROUTER_API_KEY is not configured" });
+  }
+
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: "user",
+            content: "Call the test_tool exactly once with the value OK. Do not answer with normal text.",
+          },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "test_tool",
+              description: "A diagnostic tool. Call this tool when requested.",
+              parameters: {
+                type: "object",
+                properties: {
+                  value: { type: "string" },
+                },
+                required: ["value"],
+              },
+            },
+          },
+        ],
+        tool_choice: {
+          type: "function",
+          function: { name: "test_tool" },
+        },
+      }),
+    });
+
+    const body = await response.json().catch(() => null);
+    const toolCalls = body?.choices?.[0]?.message?.tool_calls;
+
+    return res.status(response.ok ? 200 : response.status).json({
+      ok: response.ok,
+      status: response.status,
+      model: body?.model ?? model,
+      responseId: body?.id ?? null,
+      toolCalled: Array.isArray(toolCalls) && toolCalls.length > 0,
+      toolName: toolCalls?.[0]?.function?.name ?? null,
+      toolArguments: toolCalls?.[0]?.function?.arguments ?? null,
+      error: body?.error
+        ? { code: body.error.code ?? null, message: body.error.message ?? "Unknown error" }
+        : null,
+    });
+  } catch (error) {
+    return res.status(502).json({
+      ok: false,
+      status: 502,
+      error: {
+        message: error instanceof Error ? error.message : "OpenRouter tool request failed",
+      },
+    });
+  }
+});
+
 router.post("/chat", authMiddleware, async (req, res, next) => {
   const user = (req as any).user as { id: string; email: string };
   const messages = req.body?.messages;
