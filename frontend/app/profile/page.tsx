@@ -3,8 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useAppDispatch, useAppSelector } from '@/store/app/hooks'
-import { logout, selectAuthToken, selectCurrentUser } from '@/store/features/auth/authSlice'
+import { signOutBetterAuth, getBetterAuthSession } from '@/lib/auth-session'
 
 type ProfileResponse = {
   id: string
@@ -43,38 +42,50 @@ type SubscriptionMeResponse = {
 
 export default function ProfilePage() {
   const router = useRouter()
-  const dispatch = useAppDispatch()
   const [isEditing, setIsEditing] = useState(false)
-  const token = useAppSelector(selectAuthToken)
-  const authUser = useAppSelector(selectCurrentUser)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const backendBaseUrl = useMemo(
-    () => process.env.NEXT_PUBLIC_BACKEND_URL || ' ',
+    () => process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000',
     []
   )
   const [userData, setUserData] = useState<ProfileUiData>({
-    name: authUser?.email?.split('@')[0] || 'User',
-    email: authUser?.email || '',
+    name: 'User',
+    email: '',
     plan: 'Starter',
     subscriptionStatus: 'inactive',
     credits: 0,
     emailsCleaned: 0,
     joinDate: '-',
-    picture: authUser?.picture || ''
+    picture: ''
   })
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!token) return
+    const loadProfile = async () => {
+      const session = await getBetterAuthSession()
+
+      if (!session) {
+        router.replace('/login')
+        return
+      }
+
+      setIsAuthenticated(true)
+      setUserData((prev) => ({
+        ...prev,
+        name: session.user.name || session.user.email.split('@')[0],
+        email: session.user.email,
+        picture: session.user.image || '',
+      }))
 
       try {
         const response = await fetch(`${backendBaseUrl}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          credentials: 'include',
         })
 
         if (!response.ok) {
-          if (response.status === 404) return
+          if (response.status === 401 || response.status === 409) {
+            router.replace('/login')
+            return
+          }
           throw new Error(`Profile fetch failed with status ${response.status}`)
         }
 
@@ -99,39 +110,22 @@ export default function ProfilePage() {
       }
     }
 
-    fetchProfile()
-  }, [backendBaseUrl, token])
+    loadProfile()
+  }, [backendBaseUrl, router])
 
   useEffect(() => {
     const fetchSubscription = async () => {
-      if (!token) {
-        console.log('[Subscription Check] Skipped: missing auth token')
-        return
-      }
+      if (!isAuthenticated) return
 
       try {
-        console.log('[Subscription Check] Fetching /subscriptions/me...')
         const response = await fetch(`${backendBaseUrl}/subscriptions/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          credentials: 'include',
         })
 
-        if (!response.ok) {
-          console.log('[Subscription Check] Request failed', {
-            status: response.status,
-            statusText: response.statusText,
-          })
-          return
-        }
+        if (!response.ok) return
 
         const data = (await response.json()) as SubscriptionMeResponse
-        console.log('[Subscription Check] Success payload:', data)
-
-        if (!data?.ok || !data.subscription || !data.limits) {
-          console.log('[Subscription Check] Unexpected payload format:', data)
-          return
-        }
+        if (!data?.ok || !data.subscription || !data.limits) return
 
         setUserData((prev) => ({
           ...prev,
@@ -140,20 +134,24 @@ export default function ProfilePage() {
           credits: data.limits.maxDeleteBatch,
         }))
       } catch (error) {
-        console.error('[Subscription Check] Failed to fetch subscription:', error)
+        console.error('Failed to fetch subscription:', error)
       }
     }
 
     fetchSubscription()
-  }, [backendBaseUrl, token])
+  }, [backendBaseUrl, isAuthenticated])
 
   const handleSave = () => {
     setIsEditing(false)
   }
 
-  const handleLogout = () => {
-    dispatch(logout())
-    router.replace('/scroll')
+  const handleLogout = async () => {
+    try {
+      await signOutBetterAuth()
+    } finally {
+      router.replace('/')
+      router.refresh()
+    }
   }
 
   return (
@@ -199,17 +197,11 @@ export default function ProfilePage() {
             <div className="profile-section__header">
               <h2 className="profile-section__head">Account Settings</h2>
               {!isEditing ? (
-                <button 
-                  className="profile-section__edit-btn"
-                  onClick={() => setIsEditing(true)}
-                >
+                <button className="profile-section__edit-btn" onClick={() => setIsEditing(true)}>
                   Edit Profile
                 </button>
               ) : (
-                <button 
-                  className="profile-section__save-btn"
-                  onClick={handleSave}
-                >
+                <button className="profile-section__save-btn" onClick={handleSave}>
                   Save Changes
                 </button>
               )}
@@ -218,8 +210,8 @@ export default function ProfilePage() {
               <div className="profile-field">
                 <label className="profile-field__label">Full Name</label>
                 {isEditing ? (
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     className="profile-field__input"
                     value={userData.name}
                     onChange={(e) => setUserData({...userData, name: e.target.value})}
@@ -232,8 +224,8 @@ export default function ProfilePage() {
               <div className="profile-field">
                 <label className="profile-field__label">Email Address</label>
                 {isEditing ? (
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     className="profile-field__input"
                     value={userData.email}
                     onChange={(e) => setUserData({...userData, email: e.target.value})}
@@ -246,7 +238,7 @@ export default function ProfilePage() {
               <div className="profile-field">
                 <label className="profile-field__label">Subscription Plan</label>
                 {isEditing ? (
-                  <select 
+                  <select
                     className="profile-field__select"
                     value={userData.plan}
                     onChange={(e) => setUserData({...userData, plan: e.target.value})}
@@ -277,13 +269,12 @@ export default function ProfilePage() {
                   </div>
                   <div className="connected-account__details">
                     <p className="connected-account__name">Google Account</p>
-                                      <p className="connected-account__email">{userData.email}</p>
-                                      <div className="connected-account__status connected-account__status--connected">
-                  Connected
-                </div>
+                    <p className="connected-account__email">{userData.email}</p>
+                    <div className="connected-account__status connected-account__status--connected">
+                      Connected
+                    </div>
                   </div>
                 </div>
-                
               </div>
             </div>
           </div>
@@ -317,10 +308,6 @@ export default function ProfilePage() {
                 <div className="preference-item__info">
                   <p className="preference-item__title">Auto-Categorization</p>
                   <p className="preference-item__description">Automatically sort incoming emails</p>
-                </div>
-                <label className="toggle-switch">
-                  <input type="checkbox" defaultChecked />
-                  <span className="toggle-switch__slider"></span>
                 </label>
               </div>
             </div>
