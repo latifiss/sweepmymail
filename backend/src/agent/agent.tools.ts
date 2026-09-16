@@ -16,10 +16,42 @@ function requireAgentConfiguration() {
   if (!env.OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY is not configured");
 }
 
+function formatEmails(emails: any[], limit: number) {
+  return emails.slice(0, limit).map((email) => ({
+    messageId: email.message_id,
+    sender: email.sender,
+    subject: email.subject,
+    snippet: email.snippet,
+    date: email.date,
+    hasUnsubscribeLink: Boolean(email.unsubscribe_link),
+  }));
+}
+
 export function createAgentTools(userId: string, userEmail: string) {
   return {
+    get_recent_emails: tool({
+      description: "Get the user's most recent synchronized inbox emails. Use this tool whenever the user asks for latest, recent, newest, or current emails without specifying a search topic.",
+      inputSchema: z.object({
+        limit: z.number().int().min(1).max(50).default(10),
+      }),
+      execute: async ({ limit }) => {
+        requireAgentConfiguration();
+        const emails = await getEmailsForUser(userId);
+        const sorted = [...emails].sort((a, b) => {
+          const aTime = new Date(a.date || 0).getTime();
+          const bTime = new Date(b.date || 0).getTime();
+          return bTime - aTime;
+        });
+
+        return {
+          count: Math.min(sorted.length, limit),
+          emails: formatEmails(sorted, limit),
+        };
+      },
+    }),
+
     search_emails: tool({
-      description: "Search the user's synchronized inbox by keywords across sender, subject, and email preview. Always use this before bulk email actions when the user describes emails semantically.",
+      description: "Search the user's synchronized inbox by keywords across sender, subject, and email preview. Use this for topic, sender, or keyword searches and before bulk email actions when the user describes emails semantically.",
       inputSchema: z.object({
         query: z.string().min(1).describe("Keywords or phrase to search for"),
         limit: z.number().int().min(1).max(100).default(50),
@@ -35,14 +67,7 @@ export function createAgentTools(userId: string, userEmail: string) {
 
         return {
           count: matches.length,
-          emails: matches.slice(0, limit).map((email) => ({
-            messageId: email.message_id,
-            sender: email.sender,
-            subject: email.subject,
-            snippet: email.snippet,
-            date: email.date,
-            hasUnsubscribeLink: Boolean(email.unsubscribe_link),
-          })),
+          emails: formatEmails(matches, limit),
         };
       },
     }),
