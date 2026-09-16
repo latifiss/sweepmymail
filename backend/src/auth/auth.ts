@@ -4,7 +4,7 @@ import { Pool } from "pg";
 import { env } from "../config/env";
 import { supabase } from "../config/supabase";
 
-const pool = new Pool({
+export const pool = new Pool({
   connectionString: env.DATABASE_URL,
   max: env.DATABASE_POOL_MAX,
   idleTimeoutMillis: env.DATABASE_IDLE_TIMEOUT_MS,
