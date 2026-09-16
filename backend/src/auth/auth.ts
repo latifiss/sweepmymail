@@ -75,23 +75,30 @@ export const auth = betterAuth({
 });
 
 export async function getGoogleAccessTokenForEmail(email: string) {
-  const result = await pool.query<{ id: string }>(
+  const userResult = await pool.query<{ id: string }>(
     'select "id" from "user" where lower("email") = lower($1) limit 1',
     [email]
   );
 
-  const authUserId = result.rows[0]?.id;
+  const authUserId = userResult.rows[0]?.id;
   if (!authUserId) throw new Error("Better Auth user not found");
+
+  const accountResult = await pool.query<{ id: string }>(
+    'select "id" from "account" where "userId" = $1 and "providerId" = $2 limit 1',
+    [authUserId, "google"]
+  );
+
+  const accountId = accountResult.rows[0]?.id;
+  if (!accountId) throw new Error("Google account is not connected");
 
   const token = await auth.api.getAccessToken({
     body: {
-      providerId: "google",
-      userId: authUserId,
+      accountId,
     },
   });
 
   if (!token?.accessToken) {
-    throw new Error("Google account is not connected or its access token is unavailable");
+    throw new Error("Google access token is unavailable");
   }
 
   return token.accessToken;
