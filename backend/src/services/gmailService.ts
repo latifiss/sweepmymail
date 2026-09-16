@@ -1,6 +1,6 @@
 import { google } from "googleapis";
 import { env } from "../config/env";
-import { getGoogleAccessTokenForEmail } from "../auth/auth";
+import { getGoogleAccessTokenForEmail, refreshGoogleAccessTokenForEmail } from "../auth/auth";
 import {
   DbUser,
   deleteEmailsForUserByMessageIds,
@@ -12,24 +12,20 @@ import {
 
 const { OAuth2 } = google.auth;
 
-function getOauthClient() {
-  return new OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
+function getOauthClient(accessToken: string) {
+  const oauth2Client = new OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
+  oauth2Client.setCredentials({ access_token: accessToken });
+  return oauth2Client;
 }
 
 async function getGmailForUser(user: DbUser) {
-  const oauth2Client = getOauthClient();
-
-  let accessToken: string;
-
   try {
-    accessToken = await getGoogleAccessTokenForEmail(user.email);
+    const accessToken = await getGoogleAccessTokenForEmail(user.email);
+    return google.gmail({ version: "v1", auth: getOauthClient(accessToken) });
   } catch (error) {
     if (!user.access_token) throw error;
-    accessToken = user.access_token;
+    return google.gmail({ version: "v1", auth: getOauthClient(user.access_token) });
   }
-
-  oauth2Client.setCredentials({ access_token: accessToken });
-  return google.gmail({ version: "v1", auth: oauth2Client });
 }
 
 function getGmailErrorMessage(error: unknown, operation: string) {
@@ -41,6 +37,11 @@ function getGmailErrorMessage(error: unknown, operation: string) {
     .filter(Boolean)
     .join(", ");
   return `${operation} failed${details ? ` (${details})` : ""}: ${message}`;
+}
+
+function isGmailUnauthorized(error: unknown) {
+  const err = error as any;
+  return err?.response?.status === 401 || err?.code === 401;
 }
 
 function sanitizeGmailLabelName(name: string) {
@@ -74,26 +75,35 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true, 
   const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
 
-  let gmail;
-  try {
-    gmail = await getGmailForUser(user);
-  } catch (error) {
-    throw new Error(getGmailErrorMessage(error, "Gmail authentication"));
-  }
-
-  const results: Array<Record<string, unknown>> = [];
-  let pageToken: string | undefined;
-  let remaining = Math.min(Math.max(maxResults, 1), 500);
+  let gmail = await getGmailForUser(user);
+  let refreshed = false;
 
   try {
+    const results: Array<Record<string, unknown>> = [];
+    let pageToken: string | undefined;
+    let remaining = Math.min(Math.max(maxResults, 1), 500);
+
     while (remaining > 0) {
-      const list = await gmail.users.messages.list({
-        userId: "me",
-        q: "in:inbox",
-        maxResults: Math.min(remaining, 100),
-        pageToken,
-        includeSpamTrash: false,
-      });
+      let list;
+      try {
+        list = await gmail.users.messages.list({
+          userId: "me",
+          q: "in:inbox",
+          maxResults: Math.min(remaining, 100),
+          pageToken,
+          includeSpamTrash: false,
+        });
+      } catch (error) {
+        if (!isGmailUnauthorized(error) || refreshed) throw error;
+
+        const accessToken = await refreshGoogleAccessTokenForEmail(user.email);
+        gmail = google.gmail({ version: "v1", auth: getOauthClient(accessToken) });
+        refreshed = true;
+        pageToken = undefined;
+        remaining = Math.min(Math.max(maxResults, 1), 500);
+        results.length = 0;
+        continue;
+      }
 
       const messages = list.data.messages || [];
       if (!messages.length) break;
@@ -151,15 +161,15 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true, 
       pageToken = list.data.nextPageToken || undefined;
       if (!pageToken) break;
     }
+
+    return results.sort((a, b) => {
+      const aTime = new Date(String(a.date)).getTime();
+      const bTime = new Date(String(b.date)).getTime();
+      return bTime - aTime;
+    });
   } catch (error) {
     throw new Error(getGmailErrorMessage(error, "Gmail inbox refresh"));
   }
-
-  return results.sort((a, b) => {
-    const aTime = new Date(String(a.date)).getTime();
-    const bTime = new Date(String(b.date)).getTime();
-    return bTime - aTime;
-  });
 }
 
 export async function batchDeleteMessagesForUser(userId: string, messageIds: string[]) {
