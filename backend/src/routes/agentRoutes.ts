@@ -14,6 +14,7 @@ import {
   setConversationTitleIfNew,
   updateConversationTitle,
 } from "../agent/agent.persistence";
+import { env } from "../config/env";
 
 const router = express.Router();
 
@@ -78,6 +79,16 @@ router.delete("/conversations/:conversationId", authMiddleware, async (req, res,
   } catch (error) {
     return next(error);
   }
+});
+
+router.get("/debug/openrouter", authMiddleware, async (req, res) => {
+  const key = env.OPENROUTER_API_KEY;
+  return res.json({
+    openrouterKeyConfigured: Boolean(key),
+    openrouterKeyPrefix: key ? `${key.slice(0, 7)}...` : null,
+    openrouterKeyLength: key.length,
+    agentModel: env.AGENT_MODEL,
+  });
 });
 
 router.post("/chat", authMiddleware, async (req, res, next) => {
