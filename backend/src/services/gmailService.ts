@@ -1,5 +1,6 @@
 import { google } from "googleapis";
 import { env } from "../config/env";
+import { getGoogleAccessTokenForEmail } from "../auth/auth";
 import {
   DbUser,
   deleteEmailsForUserByMessageIds,
@@ -7,42 +8,27 @@ import {
   getUserById,
   markEmailsArchived,
   upsertEmail,
-  updateUserTokens,
 } from "../repositories/dataRepository";
 
 const { OAuth2 } = google.auth;
 
 function getOauthClient() {
-  return new OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, env.GOOGLE_REDIRECT_URI);
+  return new OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
 }
 
 async function getGmailForUser(user: DbUser) {
   const oauth2Client = getOauthClient();
-  
-  const credentials: any = {};
-  if (user.refresh_token) {
-    credentials.refresh_token = user.refresh_token;
-  }
-  if (user.access_token) {
-    credentials.access_token = user.access_token;
-  }
-  
-  oauth2Client.setCredentials(credentials);
 
-  if (user.refresh_token) {
-    try {
-      const res = await oauth2Client.getAccessToken();
-      if (res.token) {
-        oauth2Client.setCredentials({ access_token: res.token });
-        if (res.token !== user.access_token) {
-          await updateUserTokens(user.id, { access_token: res.token });
-        }
-      }
-    } catch (err) {
-      console.warn("Failed to refresh access token, using existing token");
-    }
+  let accessToken: string;
+
+  try {
+    accessToken = await getGoogleAccessTokenForEmail(user.email);
+  } catch (error) {
+    if (!user.access_token) throw error;
+    accessToken = user.access_token;
   }
 
+  oauth2Client.setCredentials({ access_token: accessToken });
   return google.gmail({ version: "v1", auth: oauth2Client });
 }
 
@@ -96,12 +82,11 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true, 
       });
 
       const headers = details.data.payload?.headers || [];
-      const from = headers.find(h => h.name === "From")?.value || "unknown";
-      const subject = headers.find(h => h.name === "Subject")?.value || "";
-      const listUnsub = headers.find(h => h.name?.toLowerCase() === "list-unsubscribe")?.value;
+      const from = headers.find((h) => h.name === "From")?.value || "unknown";
+      const subject = headers.find((h) => h.name === "Subject")?.value || "";
+      const listUnsub = headers.find((h) => h.name?.toLowerCase() === "list-unsubscribe")?.value;
       const messageId = m.id!;
       const internalDate = details.data.internalDate ? new Date(Number(details.data.internalDate)) : new Date();
-
       const snippet = details.data.snippet || "";
 
       const item = {
@@ -120,6 +105,7 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true, 
         try {
           await upsertEmail(item);
         } catch (err) {
+          console.warn("Failed to persist email", messageId, err);
         }
       }
     } catch (err) {
@@ -136,38 +122,36 @@ export async function batchDeleteMessagesForUser(userId: string, messageIds: str
   if (!user) throw new Error("User not found");
   const gmail = await getGmailForUser(user);
 
-  try {
-    await gmail.users.messages.batchDelete({
-      userId: "me",
-      requestBody: { ids: messageIds },
-    });
+  await gmail.users.messages.batchDelete({
+    userId: "me",
+    requestBody: { ids: messageIds },
+  });
 
-    await deleteEmailsForUserByMessageIds(user.id, messageIds);
-
-    return { deleted: messageIds.length };
-  } catch (err) {
-    throw err;
-  }
+  await deleteEmailsForUserByMessageIds(user.id, messageIds);
+  return { deleted: messageIds.length };
 }
 
-export async function modifyMessagesForUser(userId: string, messageIds: string[], labelsToAdd: string[] = [], labelsToRemove: string[] = []) {
+export async function modifyMessagesForUser(
+  userId: string,
+  messageIds: string[],
+  labelsToAdd: string[] = [],
+  labelsToRemove: string[] = []
+) {
+  if (!messageIds.length) return { modified: 0 };
   const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
   const gmail = await getGmailForUser(user);
 
-  try {
-    await gmail.users.messages.batchModify({
-      userId: "me",
-      requestBody: {
-        ids: messageIds,
-        addLabelIds: labelsToAdd,
-        removeLabelIds: labelsToRemove,
-      },
-    });
-    return { modified: messageIds.length };
-  } catch (err) {
-    throw err;
-  }
+  await gmail.users.messages.batchModify({
+    userId: "me",
+    requestBody: {
+      ids: messageIds,
+      addLabelIds: labelsToAdd,
+      removeLabelIds: labelsToRemove,
+    },
+  });
+
+  return { modified: messageIds.length };
 }
 
 export async function getGroupedEmails(userId: string, limit = 100) {
@@ -209,8 +193,7 @@ export async function getMessageIdsForSender(userId: string, senderMatch: string
 
   const q = `from:${senderMatch}`;
   const list = await gmail.users.messages.list({ userId: "me", q, maxResults: 500 });
-  const ids = (list.data.messages || []).map(m => m.id!) as string[];
-  return ids;
+  return (list.data.messages || []).map((m) => m.id!).filter(Boolean) as string[];
 }
 
 export default {
