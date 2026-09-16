@@ -303,6 +303,7 @@ router.post("/chat", authMiddleware, async (req, res, next) => {
       agent: createMailAgent(user.id, user.email, conversation.id),
       uiMessages: messages,
       abortSignal: abortController.signal,
+      sendReasoning: false,
     });
   } catch (error) {
     if (res.headersSent) return;
