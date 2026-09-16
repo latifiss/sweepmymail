@@ -27,34 +27,47 @@ function formatEmails(emails: any[], limit: number) {
   }));
 }
 
+function getToolErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Gmail request failed";
+}
+
 export function createAgentTools(userId: string, userEmail: string) {
   return {
     get_recent_emails: tool({
-      description: "Get the user's most recent inbox emails. Always use this tool whenever the user asks for latest, recent, newest, or current emails without specifying a search topic. Refresh from Gmail first so the results reflect the current inbox. Results include message IDs for follow-up actions.",
+      description: "Get the user's most recent inbox emails. Always use this tool whenever the user asks for latest, recent, newest, or current emails without specifying a search topic. Refresh from Gmail first so the results reflect the current inbox. Results include message IDs for follow-up actions. If the tool returns ok=false, report the returned error instead of claiming the user needs to authenticate.",
       inputSchema: z.object({
         limit: z.number().int().min(1).max(50).default(10),
       }),
       execute: async ({ limit }) => {
         requireAgentConfiguration();
 
-        let emails;
         try {
-          emails = await gmailService.fetchGmailMessagesAndSave(userId, true, Math.max(limit, 20));
+          const emails = await gmailService.fetchGmailMessagesAndSave(userId, true, Math.max(limit, 20));
+          const sorted = [...emails].sort((a, b) => {
+            const aTime = new Date(a.date || 0).getTime();
+            const bTime = new Date(b.date || 0).getTime();
+            return bTime - aTime;
+          });
+
+          return {
+            ok: true,
+            count: Math.min(sorted.length, limit),
+            emails: formatEmails(sorted, limit),
+          };
         } catch (error) {
-          console.warn("Failed to refresh recent Gmail messages; using synchronized emails", error);
-          emails = await getEmailsForUser(userId);
+          console.error("get_recent_emails failed", {
+            userId,
+            userEmail,
+            error: getToolErrorMessage(error),
+          });
+
+          return {
+            ok: false,
+            count: 0,
+            emails: [],
+            error: getToolErrorMessage(error),
+          };
         }
-
-        const sorted = [...emails].sort((a, b) => {
-          const aTime = new Date(a.date || 0).getTime();
-          const bTime = new Date(b.date || 0).getTime();
-          return bTime - aTime;
-        });
-
-        return {
-          count: Math.min(sorted.length, limit),
-          emails: formatEmails(sorted, limit),
-        };
       },
     }),
 
