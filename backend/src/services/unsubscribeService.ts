@@ -14,7 +14,7 @@ export async function unsubscribeFromLink(link: string, userEmail: string) {
 
     if (selected.toLowerCase().startsWith("http")) {
       await axios.get(selected, { timeout: 15000 });
-      return { success: true, method: "http", url: selected };
+      return { success: true, method: "http", url: selected, message: "Unsubscribe request completed" };
     } else if (selected.toLowerCase().startsWith("mailto:")) {
       const to = selected.replace(/^mailto:/i, "");
       let transporter;
@@ -35,12 +35,13 @@ export async function unsubscribeFromLink(link: string, userEmail: string) {
         subject: "Unsubscribe request",
         text: "Please remove me from this mailing list.",
       });
-      return { success: true, method: "mailto", to };
+      return { success: true, method: "mailto", to, message: "Unsubscribe request sent" };
     } else {
       await axios.get(selected, { timeout: 15000 });
-      return { success: true, method: "unknown", url: selected };
+      return { success: true, method: "unknown", url: selected, message: "Unsubscribe request completed" };
     }
   } catch (err: any) {
-    return { success: false, error: err.message || String(err) };
+    const message = err?.message || String(err);
+    return { success: false, error: message, message };
   }
 }
