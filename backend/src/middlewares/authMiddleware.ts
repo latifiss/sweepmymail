@@ -1,17 +1,37 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { env } from "../config/env";
+import { fromNodeHeaders } from "better-auth/node";
+import { auth } from "../auth/auth";
+import { getUserByEmail } from "../repositories/dataRepository";
 
-export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ error: "No token provided" });
-
-  const token = authHeader.split(" ")[1];
+export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const decoded = jwt.verify(token, env.JWT_SECRET);
-    (req as any).user = decoded;
-    next();
-  } catch {
-    res.status(401).json({ error: "Invalid token" });
+    const session = await auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+    });
+
+    if (!session?.user || !session.session) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const legacyUser = await getUserByEmail(session.user.email);
+
+    if (!legacyUser) {
+      return res.status(409).json({
+        error: "Account is authenticated but not initialized",
+        code: "USER_NOT_INITIALIZED",
+      });
+    }
+
+    (req as any).user = {
+      id: legacyUser.id,
+      email: legacyUser.email,
+      name: legacyUser.name,
+    };
+    (req as any).auth = session;
+
+    return next();
+  } catch (error) {
+    console.error("Authentication middleware error:", error);
+    return res.status(401).json({ error: "Unauthorized" });
   }
 };
