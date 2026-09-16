@@ -23,6 +23,8 @@ export const auth = betterAuth({
     google: {
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
+      accessType: "offline",
+      prompt: "select_account consent",
       scope: [
         "openid",
         "email",
@@ -107,6 +109,23 @@ export async function getGoogleAccessTokenForEmail(email: string) {
 
   if (!token?.accessToken) {
     throw new Error("Google access token is unavailable");
+  }
+
+  return token.accessToken;
+}
+
+export async function refreshGoogleAccessTokenForEmail(email: string) {
+  const { authUserId, accountId } = await getGoogleAccountForEmail(email);
+
+  const token = await auth.api.refreshToken({
+    body: {
+      accountId,
+      userId: authUserId,
+    },
+  });
+
+  if (!token?.accessToken) {
+    throw new Error("Google access token refresh failed");
   }
 
   return token.accessToken;

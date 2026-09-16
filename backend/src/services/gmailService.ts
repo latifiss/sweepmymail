@@ -1,6 +1,6 @@
 import { google } from "googleapis";
 import { env } from "../config/env";
-import { getGoogleAccessTokenForEmail } from "../auth/auth";
+import { getGoogleAccessTokenForEmail, refreshGoogleAccessTokenForEmail } from "../auth/auth";
 import {
   DbUser,
   deleteEmailsForUserByMessageIds,
@@ -12,24 +12,36 @@ import {
 
 const { OAuth2 } = google.auth;
 
-function getOauthClient() {
-  return new OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
+function getOauthClient(accessToken: string) {
+  const oauth2Client = new OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
+  oauth2Client.setCredentials({ access_token: accessToken });
+  return oauth2Client;
 }
 
 async function getGmailForUser(user: DbUser) {
-  const oauth2Client = getOauthClient();
-
-  let accessToken: string;
-
   try {
-    accessToken = await getGoogleAccessTokenForEmail(user.email);
+    const accessToken = await getGoogleAccessTokenForEmail(user.email);
+    return google.gmail({ version: "v1", auth: getOauthClient(accessToken) });
   } catch (error) {
     if (!user.access_token) throw error;
-    accessToken = user.access_token;
+    return google.gmail({ version: "v1", auth: getOauthClient(user.access_token) });
   }
+}
 
-  oauth2Client.setCredentials({ access_token: accessToken });
-  return google.gmail({ version: "v1", auth: oauth2Client });
+function getGmailErrorMessage(error: unknown, operation: string) {
+  const err = error as any;
+  const status = err?.response?.status ?? err?.code;
+  const message = err?.response?.data?.error?.message || err?.message || "Unknown Gmail error";
+  const reason = err?.response?.data?.error?.errors?.[0]?.reason;
+  const details = [status ? `status ${status}` : null, reason ? `reason ${reason}` : null]
+    .filter(Boolean)
+    .join(", ");
+  return `${operation} failed${details ? ` (${details})` : ""}: ${message}`;
+}
+
+function isGmailUnauthorized(error: unknown) {
+  const err = error as any;
+  return err?.response?.status === 401 || err?.code === 401;
 }
 
 function sanitizeGmailLabelName(name: string) {
@@ -63,58 +75,101 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true, 
   const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
 
-  const gmail = await getGmailForUser(user);
-  const list = await gmail.users.messages.list({
-    userId: "me",
-    q: "in:inbox",
-    maxResults,
-  });
+  let gmail = await getGmailForUser(user);
+  let refreshed = false;
 
-  const messages = list.data.messages || [];
-  const results: Array<Record<string, unknown>> = [];
+  try {
+    const results: Array<Record<string, unknown>> = [];
+    let pageToken: string | undefined;
+    let remaining = Math.min(Math.max(maxResults, 1), 500);
 
-  for (const m of messages) {
-    try {
-      const details = await gmail.users.messages.get({
-        userId: "me",
-        id: m.id!,
-        format: "metadata",
-        metadataHeaders: ["From", "Subject", "List-Unsubscribe"],
-      });
+    while (remaining > 0) {
+      let list;
+      try {
+        list = await gmail.users.messages.list({
+          userId: "me",
+          q: "in:inbox",
+          maxResults: Math.min(remaining, 100),
+          pageToken,
+          includeSpamTrash: false,
+        });
+      } catch (error) {
+        if (!isGmailUnauthorized(error) || refreshed) throw error;
 
-      const headers = details.data.payload?.headers || [];
-      const from = headers.find((h) => h.name?.toLowerCase() === "from")?.value || "unknown";
-      const subject = headers.find((h) => h.name?.toLowerCase() === "subject")?.value || "";
-      const listUnsub = headers.find((h) => h.name?.toLowerCase() === "list-unsubscribe")?.value;
-      const messageId = m.id!;
-      const internalDate = details.data.internalDate ? new Date(Number(details.data.internalDate)) : new Date();
-      const snippet = details.data.snippet || "";
+        const accessToken = await refreshGoogleAccessTokenForEmail(user.email);
+        gmail = google.gmail({ version: "v1", auth: getOauthClient(accessToken) });
+        refreshed = true;
+        pageToken = undefined;
+        remaining = Math.min(Math.max(maxResults, 1), 500);
+        results.length = 0;
+        continue;
+      }
 
-      const item = {
-        user_id: user.id,
-        sender: from,
-        subject,
-        snippet,
-        date: internalDate.toISOString(),
-        unsubscribe_link: listUnsub || null,
-        message_id: messageId,
-      };
+      const messages = list.data.messages || [];
+      if (!messages.length) break;
 
-      results.push(item);
+      const batch = await Promise.all(
+        messages.map(async (m) => {
+          if (!m.id) return null;
 
-      if (persist) {
-        try {
-          await upsertEmail(item);
-        } catch (err) {
-          console.warn("Failed to persist email", messageId, err);
+          try {
+            const details = await gmail.users.messages.get({
+              userId: "me",
+              id: m.id,
+              format: "metadata",
+              metadataHeaders: ["From", "Subject", "List-Unsubscribe"],
+            });
+
+            const headers = details.data.payload?.headers || [];
+            const from = headers.find((h) => h.name?.toLowerCase() === "from")?.value || "unknown";
+            const subject = headers.find((h) => h.name?.toLowerCase() === "subject")?.value || "";
+            const listUnsub = headers.find((h) => h.name?.toLowerCase() === "list-unsubscribe")?.value;
+            const internalDate = details.data.internalDate
+              ? new Date(Number(details.data.internalDate))
+              : new Date();
+
+            return {
+              user_id: user.id,
+              sender: from,
+              subject,
+              snippet: details.data.snippet || "",
+              date: internalDate.toISOString(),
+              unsubscribe_link: listUnsub || null,
+              message_id: m.id,
+            };
+          } catch (error) {
+            console.warn(getGmailErrorMessage(error, `Gmail message metadata ${m.id}`));
+            return null;
+          }
+        })
+      );
+
+      for (const item of batch) {
+        if (!item) continue;
+        results.push(item);
+
+        if (persist) {
+          try {
+            await upsertEmail(item);
+          } catch (error) {
+            console.warn("Failed to persist email", item.message_id, error);
+          }
         }
       }
-    } catch (err) {
-      console.warn("Failed to fetch message", m.id, err);
-    }
-  }
 
-  return results.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+      remaining -= messages.length;
+      pageToken = list.data.nextPageToken || undefined;
+      if (!pageToken) break;
+    }
+
+    return results.sort((a, b) => {
+      const aTime = new Date(String(a.date)).getTime();
+      const bTime = new Date(String(b.date)).getTime();
+      return bTime - aTime;
+    });
+  } catch (error) {
+    throw new Error(getGmailErrorMessage(error, "Gmail inbox refresh"));
+  }
 }
 
 export async function batchDeleteMessagesForUser(userId: string, messageIds: string[]) {
