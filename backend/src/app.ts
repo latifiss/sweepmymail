@@ -2,7 +2,7 @@ import express from "express";
 import morgan from "morgan";
 import cors from "cors";
 import authRoutes from "./routes/authRoutes";
-import betterAuthRoutes from "./routes/betterAuthRoutes";
+import { betterAuthHandler } from "./routes/betterAuthRoutes";
 import emailRoutes from "./routes/emailRoutes";
 import stripeRoutes from "./routes/stripeRoutes";
 import dailySummaryRoutes from "./routes/dailySummaryRoutes";
@@ -36,7 +36,7 @@ export function createApp() {
     })
   );
 
-  app.all("/api/auth/*splat", betterAuthRoutes);
+  app.all("/api/auth/*splat", betterAuthHandler);
 
   app.post("/subscriptions/webhook/lemonsqueezy", express.raw({ type: "application/json" }), handleLemonSqueezyWebhook);
 
