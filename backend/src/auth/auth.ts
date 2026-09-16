@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { google } from "googleapis";
 import { Pool } from "pg";
 import { env } from "../config/env";
 import { supabase } from "../config/supabase";
@@ -74,7 +75,7 @@ export const auth = betterAuth({
   },
 });
 
-export async function getGoogleAccessTokenForEmail(email: string) {
+async function getGoogleAccountIdForEmail(email: string) {
   const userResult = await pool.query<{ id: string }>(
     'select "id" from "user" where lower("email") = lower($1) limit 1',
     [email]
@@ -91,6 +92,12 @@ export async function getGoogleAccessTokenForEmail(email: string) {
   const accountId = accountResult.rows[0]?.id;
   if (!accountId) throw new Error("Google account is not connected");
 
+  return accountId;
+}
+
+export async function getGoogleAccessTokenForEmail(email: string) {
+  const accountId = await getGoogleAccountIdForEmail(email);
+
   const token = await auth.api.getAccessToken({
     body: {
       accountId,
@@ -102,6 +109,26 @@ export async function getGoogleAccessTokenForEmail(email: string) {
   }
 
   return token.accessToken;
+}
+
+export async function verifyGoogleGmailAccessForEmail(email: string) {
+  const accessToken = await getGoogleAccessTokenForEmail(email);
+  const oauth2Client = new google.auth.OAuth2(
+    env.GOOGLE_CLIENT_ID,
+    env.GOOGLE_CLIENT_SECRET
+  );
+
+  oauth2Client.setCredentials({ access_token: accessToken });
+
+  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+  const profile = await gmail.users.getProfile({ userId: "me" });
+
+  return {
+    connected: true,
+    email: profile.data.emailAddress || email,
+    messagesTotal: profile.data.messagesTotal ?? 0,
+    threadsTotal: profile.data.threadsTotal ?? 0,
+  };
 }
 
 export type Auth = typeof auth;
