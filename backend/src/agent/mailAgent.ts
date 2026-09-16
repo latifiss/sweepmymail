@@ -2,6 +2,7 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { ToolLoopAgent, stepCountIs } from "ai";
 import { env } from "../config/env";
 import { createAgentTools } from "./agent.tools";
+import { addMessage } from "./agent.persistence";
 
 const openrouter = createOpenRouter({
   apiKey: env.OPENROUTER_API_KEY,
@@ -21,7 +22,7 @@ Rules:
 - Keep responses concise and report what you found and what changed.
 - If a request is ambiguous, ask a short clarification instead of guessing which emails to modify.`;
 
-export function createMailAgent(userId: string, userEmail: string) {
+export function createMailAgent(userId: string, userEmail: string, conversationId?: string) {
   const tools = createAgentTools(userId, userEmail);
 
   return new ToolLoopAgent({
@@ -30,5 +31,26 @@ export function createMailAgent(userId: string, userEmail: string) {
     tools,
     stopWhen: stepCountIs(12),
     maxRetries: 2,
+    onFinish: async (event: any) => {
+      if (!conversationId) return;
+
+      for (const message of event.response?.messages || []) {
+        const role = message.role === "assistant" ? "assistant" : message.role === "tool" ? "tool" : "system";
+        const content = message.content ?? message;
+        const firstToolPart = Array.isArray(message.content)
+          ? message.content.find((part: any) => part?.type === "tool-call" || part?.type === "tool-result")
+          : undefined;
+
+        await addMessage({
+          conversationId,
+          role,
+          content,
+          toolName: firstToolPart?.toolName || null,
+          toolCallId: firstToolPart?.toolCallId || null,
+          toolInput: firstToolPart?.input || null,
+          toolResult: firstToolPart?.output || null,
+        });
+      }
+    },
   });
 }
