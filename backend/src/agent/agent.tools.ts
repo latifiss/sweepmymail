@@ -21,7 +21,7 @@ function formatEmails(emails: any[], limit: number) {
     messageId: email.message_id,
     sender: email.sender,
     subject: email.subject,
-    snippet: email.snippet,
+    snippet: typeof email.snippet === "string" ? email.snippet.slice(0, 180) : "",
     date: email.date,
     hasUnsubscribeLink: Boolean(email.unsubscribe_link),
   }));
@@ -30,7 +30,7 @@ function formatEmails(emails: any[], limit: number) {
 export function createAgentTools(userId: string, userEmail: string) {
   return {
     get_recent_emails: tool({
-      description: "Get the user's most recent synchronized inbox emails. Use this tool whenever the user asks for latest, recent, newest, or current emails without specifying a search topic.",
+      description: "Get the user's most recent synchronized inbox emails. Use this tool whenever the user asks for latest, recent, newest, or current emails without specifying a search topic. Results include message IDs for follow-up actions.",
       inputSchema: z.object({
         limit: z.number().int().min(1).max(50).default(10),
       }),
@@ -51,7 +51,7 @@ export function createAgentTools(userId: string, userEmail: string) {
     }),
 
     search_emails: tool({
-      description: "Search the user's synchronized inbox by keywords across sender, subject, and email preview. Use this for topic, sender, or keyword searches and before bulk email actions when the user describes emails semantically.",
+      description: "Search the user's synchronized inbox by keywords across sender, subject, and email preview. Use this for topic, sender, or keyword searches and before bulk email actions when the user describes emails semantically. Results include message IDs for follow-up actions.",
       inputSchema: z.object({
         query: z.string().min(1).describe("Keywords or phrase to search for"),
         limit: z.number().int().min(1).max(100).default(50),
