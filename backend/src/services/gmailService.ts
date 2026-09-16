@@ -66,7 +66,7 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true, 
   const gmail = await getGmailForUser(user);
   const list = await gmail.users.messages.list({
     userId: "me",
-    q: "category:promotions OR category:social OR label:^unread",
+    q: "in:inbox",
     maxResults,
   });
 
@@ -78,12 +78,13 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true, 
       const details = await gmail.users.messages.get({
         userId: "me",
         id: m.id!,
-        format: "full",
+        format: "metadata",
+        metadataHeaders: ["From", "Subject", "List-Unsubscribe"],
       });
 
       const headers = details.data.payload?.headers || [];
-      const from = headers.find((h) => h.name === "From")?.value || "unknown";
-      const subject = headers.find((h) => h.name === "Subject")?.value || "";
+      const from = headers.find((h) => h.name?.toLowerCase() === "from")?.value || "unknown";
+      const subject = headers.find((h) => h.name?.toLowerCase() === "subject")?.value || "";
       const listUnsub = headers.find((h) => h.name?.toLowerCase() === "list-unsubscribe")?.value;
       const messageId = m.id!;
       const internalDate = details.data.internalDate ? new Date(Number(details.data.internalDate)) : new Date();
@@ -113,7 +114,7 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true, 
     }
   }
 
-  return results;
+  return results.sort((a, b) => String(b.date).localeCompare(String(a.date)));
 }
 
 export async function batchDeleteMessagesForUser(userId: string, messageIds: string[]) {
