@@ -64,57 +64,81 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true, 
   if (!user) throw new Error("User not found");
 
   const gmail = await getGmailForUser(user);
-  const list = await gmail.users.messages.list({
-    userId: "me",
-    q: "in:inbox",
-    maxResults,
-  });
-
-  const messages = list.data.messages || [];
   const results: Array<Record<string, unknown>> = [];
+  let pageToken: string | undefined;
+  let remaining = Math.min(Math.max(maxResults, 1), 500);
 
-  for (const m of messages) {
-    try {
-      const details = await gmail.users.messages.get({
-        userId: "me",
-        id: m.id!,
-        format: "metadata",
-        metadataHeaders: ["From", "Subject", "List-Unsubscribe"],
-      });
+  while (remaining > 0) {
+    const list = await gmail.users.messages.list({
+      userId: "me",
+      q: "in:inbox",
+      maxResults: Math.min(remaining, 100),
+      pageToken,
+      includeSpamTrash: false,
+    });
 
-      const headers = details.data.payload?.headers || [];
-      const from = headers.find((h) => h.name?.toLowerCase() === "from")?.value || "unknown";
-      const subject = headers.find((h) => h.name?.toLowerCase() === "subject")?.value || "";
-      const listUnsub = headers.find((h) => h.name?.toLowerCase() === "list-unsubscribe")?.value;
-      const messageId = m.id!;
-      const internalDate = details.data.internalDate ? new Date(Number(details.data.internalDate)) : new Date();
-      const snippet = details.data.snippet || "";
+    const messages = list.data.messages || [];
+    if (!messages.length) break;
 
-      const item = {
-        user_id: user.id,
-        sender: from,
-        subject,
-        snippet,
-        date: internalDate.toISOString(),
-        unsubscribe_link: listUnsub || null,
-        message_id: messageId,
-      };
+    const batch = await Promise.all(
+      messages.map(async (m) => {
+        if (!m.id) return null;
 
+        try {
+          const details = await gmail.users.messages.get({
+            userId: "me",
+            id: m.id,
+            format: "metadata",
+            metadataHeaders: ["From", "Subject", "List-Unsubscribe"],
+          });
+
+          const headers = details.data.payload?.headers || [];
+          const from = headers.find((h) => h.name?.toLowerCase() === "from")?.value || "unknown";
+          const subject = headers.find((h) => h.name?.toLowerCase() === "subject")?.value || "";
+          const listUnsub = headers.find((h) => h.name?.toLowerCase() === "list-unsubscribe")?.value;
+          const internalDate = details.data.internalDate
+            ? new Date(Number(details.data.internalDate))
+            : new Date();
+
+          return {
+            user_id: user.id,
+            sender: from,
+            subject,
+            snippet: details.data.snippet || "",
+            date: internalDate.toISOString(),
+            unsubscribe_link: listUnsub || null,
+            message_id: m.id,
+          };
+        } catch (error) {
+          console.warn("Failed to fetch Gmail message metadata", m.id, error);
+          return null;
+        }
+      })
+    );
+
+    for (const item of batch) {
+      if (!item) continue;
       results.push(item);
 
       if (persist) {
         try {
           await upsertEmail(item);
-        } catch (err) {
-          console.warn("Failed to persist email", messageId, err);
+        } catch (error) {
+          console.warn("Failed to persist email", item.message_id, error);
         }
       }
-    } catch (err) {
-      console.warn("Failed to fetch message", m.id, err);
     }
+
+    remaining -= messages.length;
+    pageToken = list.data.nextPageToken || undefined;
+    if (!pageToken) break;
   }
 
-  return results.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  return results.sort((a, b) => {
+    const aTime = new Date(String(a.date)).getTime();
+    const bTime = new Date(String(b.date)).getTime();
+    return bTime - aTime;
+  });
 }
 
 export async function batchDeleteMessagesForUser(userId: string, messageIds: string[]) {
