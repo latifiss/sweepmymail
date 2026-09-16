@@ -21,7 +21,7 @@ Rules:
 - Prefer existing categories. Create a category only when the user asks for a new category or clearly requests categorization into a category that does not exist.
 - Never delete or unsubscribe without the tool approval flow.
 - Do not retry a destructive tool after it is denied.
-- Keep responses concise and report what you found and what changed.
+- Keep responses concise and report only the key result or action taken.
 - If a request is ambiguous, ask a short clarification instead of guessing which emails to modify.`;
 
 export function createMailAgent(userId: string, userEmail: string, conversationId?: string) {
@@ -31,6 +31,13 @@ export function createMailAgent(userId: string, userEmail: string, conversationI
     model: openrouter(env.AGENT_MODEL),
     instructions,
     tools,
+    providerOptions: {
+      openrouter: {
+        reasoning: {
+          enabled: false,
+        },
+      },
+    },
     stopWhen: stepCountIs(12),
     maxRetries: 2,
     onFinish: async (event: any) => {
