@@ -169,47 +169,48 @@ export function createAgentTools(userId: string, userEmail: string) {
     }),
 
     delete_emails: tool({
-      description: "Delete specific emails permanently from Gmail. This action requires explicit user confirmation before execution.",
+      description: "Permanently delete specific Gmail messages. This is destructive and always requires explicit user approval.",
+      needsApproval: true,
       inputSchema: z.object({
-        messageIds: z.array(z.string()).min(1).max(500),
-        confirmed: z.boolean().default(false),
+        messageIds: z.array(z.string()).min(1).max(100),
       }),
-      execute: async ({ messageIds, confirmed }) => {
-        if (!confirmed) {
-          return { requiresConfirmation: true, count: messageIds.length };
-        }
-        const result = await gmailService.batchDeleteMessagesForUser(userId, messageIds);
-        return { deleted: result.deleted };
-      },
+      execute: async ({ messageIds }) => gmailService.batchDeleteMessagesForUser(userId, messageIds),
     }),
 
     unsubscribe: tool({
-      description: "Unsubscribe from a sender using the unsubscribe link available in the user's synchronized email data. Requires explicit user confirmation.",
+      description: "Unsubscribe from a sender using a verified unsubscribe link stored on the user's emails. This is an external side effect and requires explicit user approval.",
+      needsApproval: true,
       inputSchema: z.object({
-        messageId: z.string().min(1),
-        confirmed: z.boolean().default(false),
+        messageId: z.string().optional(),
+        sender: z.string().optional(),
+      }).refine((input) => Boolean(input.messageId || input.sender), {
+        message: "messageId or sender is required",
       }),
-      execute: async ({ messageId, confirmed }) => {
-        const email = await getEmailByMessageId(userId, messageId);
-        if (!email) throw new Error("Email not found");
-        if (!email.unsubscribe_link) throw new Error("No unsubscribe link is available for this email");
-        if (!confirmed) {
-          return { requiresConfirmation: true, sender: email.sender, subject: email.subject };
-        }
-        await unsubscribeFromLink(email.unsubscribe_link);
-        return { unsubscribed: true, sender: email.sender };
-      },
-    }),
+      execute: async ({ messageId, sender }) => {
+        let link: string | null = null;
+        let resolvedSender = sender || "";
 
-    find_sender_emails: tool({
-      description: "Find synchronized emails from a sender. Use this before bulk sender actions.",
-      inputSchema: z.object({
-        sender: z.string().min(1),
-        limit: z.number().int().min(1).max(100).default(50),
-      }),
-      execute: async ({ sender, limit }) => {
-        const emails = await getEmailsBySenderLike(userId, sender);
-        return { count: emails.length, emails: formatEmails(emails, limit) };
+        if (messageId) {
+          const email = await getEmailByMessageId(userId, messageId);
+          link = email?.unsubscribe_link || null;
+          resolvedSender = resolvedSender || email?.sender || "";
+        }
+
+        if (!link && sender) {
+          const emails = await getEmailsBySenderLike(userId, sender, 50);
+          const email = emails.find((item) => Boolean(item.unsubscribe_link));
+          link = email?.unsubscribe_link || null;
+          resolvedSender = email?.sender || sender;
+        }
+
+        if (!link) throw new Error("No unsubscribe link was found for this sender");
+
+        const result = await unsubscribeFromLink(link, userEmail);
+        return {
+          sender: resolvedSender,
+          success: result.success,
+          message: result.message,
+        };
       },
     }),
   };
