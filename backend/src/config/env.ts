@@ -34,7 +34,7 @@ export const env = {
   GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI || "",
   JWT_SECRET: process.env.JWT_SECRET || "",
   OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY?.trim() || "",
-  AGENT_MODEL: process.env.AGENT_MODEL || "anthropic/claude-sonnet-4.6",
+  AGENT_MODEL: process.env.AGENT_MODEL || "google/gemma-4-26b-a4b-it:free",
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || "",
   DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY || "",
   SMTP_HOST: process.env.SMTP_HOST || "",
