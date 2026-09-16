@@ -75,7 +75,7 @@ export const auth = betterAuth({
   },
 });
 
-async function getGoogleAccountIdForEmail(email: string) {
+async function getGoogleAccountForEmail(email: string) {
   const userResult = await pool.query<{ id: string }>(
     'select "id" from "user" where lower("email") = lower($1) limit 1',
     [email]
@@ -89,18 +89,19 @@ async function getGoogleAccountIdForEmail(email: string) {
     [authUserId, "google"]
   );
 
-  const accountId = accountResult.rows[0]?.id;
-  if (!accountId) throw new Error("Google account is not connected");
+  const account = accountResult.rows[0];
+  if (!account) throw new Error("Google account is not connected");
 
-  return accountId;
+  return { authUserId, accountId: account.id };
 }
 
 export async function getGoogleAccessTokenForEmail(email: string) {
-  const accountId = await getGoogleAccountIdForEmail(email);
+  const { authUserId, accountId } = await getGoogleAccountForEmail(email);
 
   const token = await auth.api.getAccessToken({
     body: {
       accountId,
+      userId: authUserId,
     },
   });
 
