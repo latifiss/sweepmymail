@@ -1,6 +1,7 @@
 import express from "express";
 import morgan from "morgan";
 import cors from "cors";
+import { env } from "./config/env";
 import authRoutes from "./routes/authRoutes";
 import { betterAuthHandler } from "./routes/betterAuthRoutes";
 import emailRoutes from "./routes/emailRoutes";
@@ -12,24 +13,11 @@ import { handleLemonSqueezyWebhook } from "./controllers/subscriptionWebhookCont
 export function createApp() {
   const app = express();
 
-  const allowedOrigins = [
-    "http://localhost:4000",
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://mymagicmail.app",
-    "http://mymagicmail.com",
-    "http://themagicmail.app",
-    "https://mymagicmail.app",
-    "https://www.mymagicmail.app",
-    "https://mymagicmail.com",
-    "https://www.mymagicmail.com",
-  ];
-
   app.use(
     cors({
       origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
         if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) return callback(null, true);
+        if (env.AUTH_TRUSTED_ORIGINS.includes(origin)) return callback(null, true);
         return callback(new Error("Not allowed by CORS"));
       },
       credentials: true,
