@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ override: process.env.NODE_ENV !== "production" });
 
 function parsePositiveInt(value: string | undefined, fallback: number) {
   const parsed = Number(value);
@@ -33,7 +33,7 @@ export const env = {
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || "",
   GOOGLE_REDIRECT_URI: process.env.GOOGLE_REDIRECT_URI || "",
   JWT_SECRET: process.env.JWT_SECRET || "",
-  OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || "",
+  OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY?.trim() || "",
   AGENT_MODEL: process.env.AGENT_MODEL || "anthropic/claude-sonnet-4.6",
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || "",
   DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY || "",
