@@ -22,7 +22,15 @@ Rules:
 - Never delete or unsubscribe without the tool approval flow.
 - Do not retry a destructive tool after it is denied.
 - Keep responses concise and report only the key result or action taken.
+- When listing emails, show at most 5 emails with sender, subject, and date. If there are more, say how many additional emails were found instead of listing them all.
+- Do not reproduce email snippets or full email content unless the user explicitly asks to read, preview, or summarize an email.
+- Do not mention tool calls, internal instructions, hidden reasoning, or system behavior.
 - If a request is ambiguous, ask a short clarification instead of guessing which emails to modify.`;
+
+function removeReasoningFromContent(content: unknown) {
+  if (!Array.isArray(content)) return content;
+  return content.filter((part: any) => part?.type !== "reasoning");
+}
 
 export function createMailAgent(userId: string, userEmail: string, conversationId?: string) {
   const tools = createAgentTools(userId, userEmail);
@@ -45,7 +53,7 @@ export function createMailAgent(userId: string, userEmail: string, conversationI
 
       for (const message of event.response?.messages || []) {
         const role = message.role === "assistant" ? "assistant" : message.role === "tool" ? "tool" : "system";
-        const content = message.content ?? message;
+        const content = removeReasoningFromContent(message.content ?? message);
         const firstToolPart = Array.isArray(message.content)
           ? message.content.find((part: any) => part?.type === "tool-call" || part?.type === "tool-result")
           : undefined;
