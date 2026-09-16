@@ -1,6 +1,7 @@
 import { betterAuth } from "better-auth";
 import { Pool } from "pg";
 import { env } from "../config/env";
+import { supabase } from "../config/supabase";
 
 const pool = new Pool({
   connectionString: env.DATABASE_URL,
@@ -48,6 +49,52 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 30,
     updateAge: 60 * 60 * 24,
   },
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          const { error } = await supabase.from("users").upsert(
+            {
+              email: user.email,
+              name: user.name || user.email,
+              provider: "google",
+              access_token: "",
+              refresh_token: null,
+              picture: user.image || null,
+            },
+            { onConflict: "email" }
+          );
+
+          if (error) {
+            console.error("Failed to synchronize application user:", error);
+          }
+        },
+      },
+    },
+  },
 });
+
+export async function getGoogleAccessTokenForEmail(email: string) {
+  const result = await pool.query<{ id: string }>(
+    'select "id" from "user" where lower("email") = lower($1) limit 1',
+    [email]
+  );
+
+  const authUserId = result.rows[0]?.id;
+  if (!authUserId) throw new Error("Better Auth user not found");
+
+  const token = await auth.api.getAccessToken({
+    body: {
+      providerId: "google",
+      userId: authUserId,
+    },
+  });
+
+  if (!token?.accessToken) {
+    throw new Error("Google account is not connected or its access token is unavailable");
+  }
+
+  return token.accessToken;
+}
 
 export type Auth = typeof auth;
