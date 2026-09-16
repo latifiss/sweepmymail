@@ -9,16 +9,30 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     try {
-      const backendBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || ' '
-      const response = await fetch(`${backendBaseUrl}/auth/google/url`)
+      const backendBaseUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:7000'
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch Google auth URL')
-      }
+      const response = await fetch(
+        `${backendBaseUrl}/api/auth/sign-in/social`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            provider: 'google',
+            callbackURL: `${window.location.origin}/`,
+          }),
+        }
+      )
 
       const data = await response.json()
-      if (!data?.url) {
-        throw new Error('Backend did not return a Google auth URL')
+
+      if (!response.ok || !data?.url) {
+        throw new Error(
+          data?.message || data?.error || 'Failed to start Google sign-in'
+        )
       }
 
       window.location.href = data.url
