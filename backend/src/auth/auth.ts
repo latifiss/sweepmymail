@@ -112,6 +112,23 @@ export async function getGoogleAccessTokenForEmail(email: string) {
   return token.accessToken;
 }
 
+export async function refreshGoogleAccessTokenForEmail(email: string) {
+  const { authUserId, accountId } = await getGoogleAccountForEmail(email);
+
+  const token = await auth.api.refreshToken({
+    body: {
+      accountId,
+      userId: authUserId,
+    },
+  });
+
+  if (!token?.accessToken) {
+    throw new Error("Google access token refresh failed");
+  }
+
+  return token.accessToken;
+}
+
 export async function verifyGoogleGmailAccessForEmail(email: string) {
   const accessToken = await getGoogleAccessTokenForEmail(email);
   const oauth2Client = new google.auth.OAuth2(
