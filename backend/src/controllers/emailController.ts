@@ -10,6 +10,7 @@ import {
 import { applyAllCategoriesForUser } from "../services/categoryService";
 import { applyAllPriorityKeywordsForUser } from "../services/priorityService";
 import { enforceBatchSize, getSubscriptionContext, TierLimitError } from "../services/subscriptionService";
+import { env } from "../config/env";
 
 function toApiError(err: any) {
   const details = err?.response?.data || err?.errors || err?.stack || undefined;
@@ -41,10 +42,31 @@ function toApiError(err: any) {
   };
 }
 
-/**
- * GET /emails
- * Fetch latest from Gmail and return (also saved)
- */
+function requiredString(value: unknown, field: string) {
+  if (typeof value !== "string" || !value.trim()) throw new Error(`${field} is required`);
+  return value.trim();
+}
+
+function recipientList(value: unknown, field = "to") {
+  if (!Array.isArray(value) || value.length < 1 || value.length > 20) {
+    throw new Error(`${field} must contain between 1 and 20 recipients`);
+  }
+  return value.map((item) => requiredString(item, field));
+}
+
+function emailInput(body: any) {
+  return {
+    to: recipientList(body?.to),
+    cc: Array.isArray(body?.cc) ? body.cc.map((item: unknown) => requiredString(item, "cc")) : undefined,
+    bcc: Array.isArray(body?.bcc) ? body.bcc.map((item: unknown) => requiredString(item, "bcc")) : undefined,
+    subject: requiredString(body?.subject, "subject"),
+    body: requiredString(body?.body, "body"),
+    threadId: typeof body?.threadId === "string" && body.threadId.trim() ? body.threadId.trim() : undefined,
+    inReplyTo: typeof body?.inReplyTo === "string" && body.inReplyTo.trim() ? body.inReplyTo.trim() : undefined,
+    references: typeof body?.references === "string" && body.references.trim() ? body.references.trim() : undefined,
+  };
+}
+
 export const fetchAndGetEmails = async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   try {
@@ -61,10 +83,6 @@ export const fetchAndGetEmails = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * GET /emails/grouped
- * Return grouped summary (sender/domain counts + examples)
- */
 export const getGroupedEmails = async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   try {
@@ -75,12 +93,116 @@ export const getGroupedEmails = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * POST /emails/unsubscribe
- * Body: { messageId?, unsubscribeLink?, sender? }
- * If messageId provided, we use stored unsubscribeLink if any; else use provided link.
- * After successful unsubscribe, we record in Subscription collection.
- */
+export const getFullEmail = async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  try {
+    const message = await gmailService.getFullMessageForUser(userId, requiredString(req.params.messageId, "messageId"));
+    res.json({ ok: true, email: message });
+  } catch (err: any) {
+    const parsed = toApiError(err);
+    res.status(parsed.status).json({ ok: false, error: parsed.error, details: parsed.details });
+  }
+};
+
+export const generateEmail = async (req: Request, res: Response) => {
+  try {
+    if (!env.OPENROUTER_API_KEY) return res.status(500).json({ ok: false, error: "AI generation is not configured" });
+
+    const instruction = requiredString(req.body?.instruction, "instruction");
+    const recipientContext = typeof req.body?.recipientContext === "string" ? req.body.recipientContext.trim() : "";
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: env.AGENT_MODEL,
+        messages: [
+          {
+            role: "system",
+            content: "Write professional email drafts. Return valid JSON only with exactly two string fields: subject and body. Do not include markdown fences or commentary.",
+          },
+          {
+            role: "user",
+            content: `Instruction: ${instruction}\nRecipient context: ${recipientContext || "None"}`,
+          },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      return res.status(response.status).json({
+        ok: false,
+        error: payload?.error?.message || "AI generation failed",
+      });
+    }
+
+    const raw = payload?.choices?.[0]?.message?.content;
+    let parsed: any;
+    try {
+      parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    } catch {
+      return res.status(502).json({ ok: false, error: "AI returned an invalid email draft" });
+    }
+
+    if (typeof parsed?.subject !== "string" || typeof parsed?.body !== "string") {
+      return res.status(502).json({ ok: false, error: "AI returned an incomplete email draft" });
+    }
+
+    return res.json({ ok: true, subject: parsed.subject.trim(), body: parsed.body.trim() });
+  } catch (err: any) {
+    return res.status(502).json({ ok: false, error: err?.message || "AI generation failed" });
+  }
+};
+
+export const createDraft = async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  try {
+    const result = await gmailService.createDraftForUser(userId, emailInput(req.body));
+    res.status(201).json({ ok: true, draft: result });
+  } catch (err: any) {
+    const parsed = toApiError(err);
+    res.status(parsed.status).json({ ok: false, error: parsed.error, details: parsed.details });
+  }
+};
+
+export const updateDraft = async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  try {
+    const draftId = requiredString(req.params.draftId, "draftId");
+    const result = await gmailService.updateDraftForUser(userId, draftId, emailInput(req.body));
+    res.json({ ok: true, draft: result });
+  } catch (err: any) {
+    const parsed = toApiError(err);
+    res.status(parsed.status).json({ ok: false, error: parsed.error, details: parsed.details });
+  }
+};
+
+export const sendEmail = async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  try {
+    const result = await gmailService.sendMessageForUser(userId, emailInput(req.body));
+    res.json({ ok: true, result });
+  } catch (err: any) {
+    const parsed = toApiError(err);
+    res.status(parsed.status).json({ ok: false, error: parsed.error, details: parsed.details });
+  }
+};
+
+export const sendDraft = async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  try {
+    const result = await gmailService.sendDraftForUser(userId, requiredString(req.params.draftId, "draftId"));
+    res.json({ ok: true, result });
+  } catch (err: any) {
+    const parsed = toApiError(err);
+    res.status(parsed.status).json({ ok: false, error: parsed.error, details: parsed.details });
+  }
+};
+
 export const unsubscribe = async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   const { messageId, unsubscribeLink, sender } = req.body as { messageId?: string; unsubscribeLink?: string; sender?: string };
