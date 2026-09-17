@@ -41,6 +41,15 @@ const emailContentSchema = z.object({
   body: z.string().min(1).max(100000),
 });
 
+function splitAddresses(value: string) {
+  return value.split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+function addressKey(value: string) {
+  const match = value.match(/<([^>]+)>/);
+  return (match?.[1] || value).trim().toLowerCase();
+}
+
 export function createAgentTools(userId: string, userEmail: string) {
   return {
     get_recent_emails: tool({
@@ -180,16 +189,22 @@ export function createAgentTools(userId: string, userEmail: string) {
       execute: async ({ messageId, body, replyAll }) => {
         requireAgentConfiguration();
         const original = await gmailService.getFullMessageForUser(userId, messageId);
-        const from = original.from;
-        const to = replyAll
-          ? [from, ...[original.to, original.cc].filter(Boolean).flatMap((value) => String(value).split(","))]
-          : [from];
-        const uniqueTo = Array.from(new Set(to.map((value) => value.trim()).filter(Boolean)));
+        const self = userEmail.toLowerCase();
+        const sender = original.from;
+        const toCandidates = replyAll
+          ? [sender, ...splitAddresses(original.to)]
+          : [sender];
+        const ccCandidates = replyAll ? splitAddresses(original.cc) : [];
+        const uniqueTo = Array.from(new Map(toCandidates.map((value) => [addressKey(value), value])).values())
+          .filter((value) => addressKey(value) !== self);
+        const uniqueCc = Array.from(new Map(ccCandidates.map((value) => [addressKey(value), value])).values())
+          .filter((value) => addressKey(value) !== self && !uniqueTo.some((item) => addressKey(item) === addressKey(value)));
         const subject = original.subject.toLowerCase().startsWith("re:") ? original.subject : `Re: ${original.subject}`;
         const references = [original.references, original.messageIdHeader].filter(Boolean).join(" ");
 
         return gmailService.createDraftForUser(userId, {
-          to: uniqueTo,
+          to: uniqueTo.length ? uniqueTo : [sender],
+          cc: uniqueCc.length ? uniqueCc : undefined,
           subject,
           body,
           threadId: original.threadId || undefined,
