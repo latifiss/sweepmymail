@@ -1,6 +1,7 @@
 import { env } from './config/env';
 import { createApp } from "./app";
 import { startDailySummaryScheduler } from "./services/dailySummaryService";
+import { startScheduledEmailScheduler } from "./services/scheduledEmailService";
 
 const app = createApp();
 const PORT = parseInt(env.PORT, 10);
@@ -19,6 +20,8 @@ async function startServer() {
       console.log('✅ Supabase connection configured via environment variables');
       startDailySummaryScheduler();
       console.log("✅ Daily summary scheduler started (runs at 06:00 UTC)");
+      await startScheduledEmailScheduler();
+      console.log("✅ Scheduled email scheduler started (runs every 30 seconds)");
     });
   } catch (err) {
     console.error('Server startup failed:', err);
