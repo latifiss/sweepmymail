@@ -1,7 +1,13 @@
-    import { authMiddleware } from "../middlewares/authMiddleware";
+import { authMiddleware } from "../middlewares/authMiddleware";
 import {
   fetchAndGetEmails,
   getGroupedEmails,
+  getFullEmail,
+  generateEmail,
+  createDraft,
+  updateDraft,
+  sendEmail,
+  sendDraft,
   unsubscribe,
   rollup,
   batchDelete,
@@ -20,15 +26,18 @@ const router = express.Router();
 router.use(authMiddleware);
 
 router.get("/", fetchAndGetEmails);
-
 router.get("/grouped", getGroupedEmails);
-
 router.get("/by-sender", getBySender);
+router.get("/:messageId", getFullEmail);
+
+router.post("/generate", generateEmail);
+router.post("/drafts", createDraft);
+router.patch("/drafts/:draftId", updateDraft);
+router.post("/send", sendEmail);
+router.post("/drafts/:draftId/send", sendDraft);
 
 router.post("/unsubscribe", unsubscribe);
-
 router.post("/rollup", rollup);
-
 router.post("/delete", batchDelete);
 
 router.get("/categories", getCategories);
