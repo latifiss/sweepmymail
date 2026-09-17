@@ -2,14 +2,11 @@ import { env } from './config/env';
 import { createApp } from "./app";
 import { startDailySummaryScheduler } from "./services/dailySummaryService";
 import { startScheduledEmailScheduler } from "./services/scheduledEmailService";
+import { startAutomationScheduler } from "./services/automationService";
 
 const app = createApp();
 const PORT = parseInt(env.PORT, 10);
-
-if (isNaN(PORT) || PORT < 0 || PORT > 65535) {
-  console.error(`Invalid PORT: ${env.PORT}. Using default port 8000.`);
-  process.exit(1);
-}
+if (isNaN(PORT) || PORT < 0 || PORT > 65535) { console.error(`Invalid PORT: ${env.PORT}.`); process.exit(1); }
 
 async function startServer() {
   try {
@@ -19,14 +16,10 @@ async function startServer() {
       console.log(`Listening on port ${PORT}`);
       console.log('✅ Supabase connection configured via environment variables');
       startDailySummaryScheduler();
-      console.log("✅ Daily summary scheduler started (runs at 06:00 UTC)");
       await startScheduledEmailScheduler();
-      console.log("✅ Scheduled email scheduler started (runs every 30 seconds)");
+      await startAutomationScheduler();
+      console.log("✅ Daily summary, scheduled email, and inbox automation schedulers started");
     });
-  } catch (err) {
-    console.error('Server startup failed:', err);
-    process.exit(1);
-  }
+  } catch (err) { console.error('Server startup failed:', err); process.exit(1); }
 }
-
 startServer();
