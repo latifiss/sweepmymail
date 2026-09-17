@@ -34,6 +34,7 @@ export default function ScheduledPage() {
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [sendAt, setSendAt] = useState(localDateTimeValue(new Date(Date.now() + 60 * 60 * 1000)))
+  const [showApproval, setShowApproval] = useState(false)
 
   const headers = useMemo(() => token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : null, [token])
 
@@ -60,6 +61,7 @@ export default function ScheduledPage() {
   const save = async () => {
     if (!headers || !to.trim() || !subject.trim() || !body.trim() || !sendAt) return
     setBusy(true)
+    setShowApproval(false)
     setMessage('')
     try {
       const payload = {
@@ -134,7 +136,7 @@ export default function ScheduledPage() {
             <label>Send at<input type="datetime-local" value={sendAt} min={localDateTimeValue(new Date(Date.now() + 60 * 1000))} onChange={(e) => setSendAt(e.target.value)} style={{ display: 'block', width: '100%', marginTop: 6, padding: 12, border: '1px solid #ccc', borderRadius: 8 }} /></label>
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-            <button onClick={save} disabled={busy || !to.trim() || !subject.trim() || !body.trim()} style={{ padding: '12px 18px' }}>{editing ? 'Update schedule' : 'Schedule email'}</button>
+            <button onClick={() => setShowApproval(true)} disabled={busy || !to.trim() || !subject.trim() || !body.trim()} style={{ padding: '12px 18px' }}>{editing ? 'Update schedule' : 'Schedule email'}</button>
             {editing && <button onClick={resetForm} disabled={busy} style={{ padding: '12px 18px' }}>Cancel edit</button>}
           </div>
           {message && <p style={{ marginTop: 16 }}>{message}</p>}
@@ -163,6 +165,25 @@ export default function ScheduledPage() {
           ))}
         </section>
       </div>
+
+      {showApproval && (
+        <div onClick={() => setShowApproval(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', display: 'grid', placeItems: 'center', padding: 20 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: 16, padding: 24, maxWidth: 520, width: '100%' }}>
+            <h2 style={{ marginTop: 0 }}>{editing ? 'Update scheduled email?' : 'Schedule this email?'}</h2>
+            <p style={{ color: '#555' }}>Review the recipient, subject, and delivery time before confirming.</p>
+            <div style={{ background: '#f6f6f6', padding: 14, borderRadius: 10, lineHeight: 1.7 }}>
+              <strong>To:</strong> {to}<br />
+              <strong>Subject:</strong> {subject}<br />
+              <strong>Send at:</strong> {new Date(sendAt).toLocaleString()}<br />
+              <strong>Timezone:</strong> {Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 18 }}>
+              <button onClick={() => setShowApproval(false)} style={{ padding: '10px 16px' }}>Cancel</button>
+              <button onClick={save} disabled={busy} style={{ padding: '10px 16px', background: '#0a6f50', color: '#fff', border: 0, borderRadius: 8 }}>Confirm & Schedule</button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
