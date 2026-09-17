@@ -14,7 +14,11 @@ function senderMatches(email: any, config: Record<string, unknown>) {
 }
 
 function matches(email: any, automation: Automation) {
-  return automation.trigger_type === "new_email" && textMatches(email, automation.trigger_config) && senderMatches(email, automation.trigger_config);
+  if (automation.trigger_type !== "new_email") return false;
+  const emailTime = new Date(email.date || 0).getTime();
+  const automationTime = new Date(automation.created_at).getTime();
+  if (!Number.isFinite(emailTime) || emailTime < automationTime) return false;
+  return textMatches(email, automation.trigger_config) && senderMatches(email, automation.trigger_config);
 }
 
 async function executeAction(automation: Automation, email: any) {
@@ -45,7 +49,6 @@ export async function runInboxAutomations(userId?: string) {
   let evaluated = 0;
   let executed = 0;
   const errors: string[] = [];
-
   for (const automation of automations) {
     try {
       const emails = await gmailService.fetchGmailMessagesAndSave(automation.user_id, true, 100);
