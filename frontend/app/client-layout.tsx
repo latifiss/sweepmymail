@@ -9,10 +9,11 @@ export default function ClientLayout({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
-  const shouldShowBottomTabs = pathname === '/emails' || 
-                                pathname === '/subscriptions' || 
+  const shouldShowBottomTabs = pathname === '/emails' ||
+                                pathname === '/compose' ||
+                                pathname === '/subscriptions' ||
                                 pathname === '/info';
-  
+
   return (
     <>
       {children}
