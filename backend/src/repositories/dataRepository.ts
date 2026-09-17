@@ -74,6 +74,15 @@ function throwIfError(error: { message: string } | null, fallback: string) {
   if (error) throw new Error(error.message || fallback);
 }
 
+function isTransientSupabaseError(error: { message?: string } | null) {
+  const message = String(error?.message || "").toLowerCase();
+  return message.includes("520") || message.includes("502") || message.includes("503") || message.includes("504") || message.includes("web server is returning an unknown error") || message.includes("service unavailable") || message.includes("bad gateway") || message.includes("gateway timeout");
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function getUserByEmail(email: string): Promise<DbUser | null> {
   const { data, error } = await supabase.from("users").select("*").eq("email", email).maybeSingle();
   throwIfError(error, "Failed to fetch user by email");
@@ -186,8 +195,17 @@ export async function upsertEmail(payload: {
   message_id: string;
   archived?: boolean;
 }): Promise<void> {
-  const { error } = await supabase.from("emails").upsert(payload, { onConflict: "message_id" });
-  throwIfError(error, "Failed to upsert email");
+  const delays = [500, 1000, 2000];
+
+  for (let attempt = 0; attempt <= delays.length; attempt += 1) {
+    const { error } = await supabase.from("emails").upsert(payload, { onConflict: "message_id" });
+    if (!error) return;
+    if (!isTransientSupabaseError(error) || attempt === delays.length) {
+      throwIfError(error, "Failed to upsert email");
+      return;
+    }
+    await sleep(delays[attempt]);
+  }
 }
 
 export async function deleteEmailsForUserByMessageIds(userId: string, messageIds: string[]): Promise<void> {
@@ -398,5 +416,5 @@ export async function updatePriorityKeywordEmailCount(
     .eq("user_id", userId)
     .eq("id", keywordId);
   throwIfError(error, "Failed to update priority keyword email count");
+  return;
 }
-
