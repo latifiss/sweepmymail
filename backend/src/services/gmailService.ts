@@ -28,6 +28,18 @@ async function getGmailForUser(user: DbUser) {
   }
 }
 
+async function getGmailWithRefresh(user: DbUser, action: (gmail: ReturnType<typeof google.gmail>) => Promise<any>) {
+  let gmail = await getGmailForUser(user);
+  try {
+    return await action(gmail);
+  } catch (error) {
+    if (!isGmailUnauthorized(error)) throw error;
+    const accessToken = await refreshGoogleAccessTokenForEmail(user.email);
+    gmail = google.gmail({ version: "v1", auth: getOauthClient(accessToken) });
+    return action(gmail);
+  }
+}
+
 function getGmailErrorMessage(error: unknown, operation: string) {
   const err = error as any;
   const status = err?.response?.status ?? err?.code;
@@ -48,27 +60,100 @@ function sanitizeGmailLabelName(name: string) {
   return name.replace(/\//g, " ").trim().slice(0, 225) || "Rolled up";
 }
 
+function encodeBase64Url(value: string) {
+  return Buffer.from(value, "utf8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function decodeBase64Url(value: string) {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  return Buffer.from(normalized, "base64").toString("utf8");
+}
+
+function escapeHeaderValue(value: string) {
+  return value.replace(/[\r\n]+/g, " ").trim();
+}
+
+function buildRawMessage(input: {
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  body: string;
+  inReplyTo?: string;
+  references?: string;
+}) {
+  const lines = [
+    `To: ${input.to.map(escapeHeaderValue).join(", ")}`,
+    ...(input.cc?.length ? [`Cc: ${input.cc.map(escapeHeaderValue).join(", ")}`] : []),
+    ...(input.bcc?.length ? [`Bcc: ${input.bcc.map(escapeHeaderValue).join(", ")}`] : []),
+    `Subject: ${escapeHeaderValue(input.subject)}`,
+    ...(input.inReplyTo ? [`In-Reply-To: ${escapeHeaderValue(input.inReplyTo)}`] : []),
+    ...(input.references ? [`References: ${escapeHeaderValue(input.references)}`] : []),
+    "MIME-Version: 1.0",
+    "Content-Type: text/plain; charset=UTF-8",
+    "Content-Transfer-Encoding: 8bit",
+    "",
+    input.body,
+  ];
+
+  return encodeBase64Url(lines.join("\r\n"));
+}
+
+function getHeader(headers: any[] | undefined, name: string) {
+  return headers?.find((header) => header.name?.toLowerCase() === name.toLowerCase())?.value || "";
+}
+
+function collectBodyParts(part: any, plain: string[], html: string[]) {
+  if (!part) return;
+  const mimeType = part.mimeType || "";
+  if (part.body?.data) {
+    const decoded = decodeBase64Url(part.body.data);
+    if (mimeType === "text/plain") plain.push(decoded);
+    else if (mimeType === "text/html") html.push(decoded);
+  }
+  for (const child of part.parts || []) collectBodyParts(child, plain, html);
+}
+
+function stripHtml(value: string) {
+  return value
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .trim();
+}
+
 export async function ensureLabelForUser(userId: string, labelName: string) {
   const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
-  const gmail = await getGmailForUser(user);
 
   const desired = sanitizeGmailLabelName(labelName);
-  const existing = await gmail.users.labels.list({ userId: "me" });
-  const match = (existing.data.labels || []).find((l) => l.name === desired);
-  if (match?.id) return { labelId: match.id, labelName: desired };
+  return getGmailWithRefresh(user, async (gmail) => {
+    const existing = await gmail.users.labels.list({ userId: "me" });
+    const match = (existing.data.labels || []).find((l) => l.name === desired);
+    if (match?.id) return { labelId: match.id, labelName: desired };
 
-  const created = await gmail.users.labels.create({
-    userId: "me",
-    requestBody: {
-      name: desired,
-      labelListVisibility: "labelShow",
-      messageListVisibility: "show",
-    },
+    const created = await gmail.users.labels.create({
+      userId: "me",
+      requestBody: {
+        name: desired,
+        labelListVisibility: "labelShow",
+        messageListVisibility: "show",
+      },
+    });
+
+    if (!created.data.id) throw new Error("Failed to create label");
+    return { labelId: created.data.id, labelName: desired };
   });
-
-  if (!created.data.id) throw new Error("Failed to create label");
-  return { labelId: created.data.id, labelName: desired };
 }
 
 export async function fetchGmailMessagesAndSave(userId: string, persist = true, maxResults = 200) {
@@ -121,9 +206,9 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true, 
             });
 
             const headers = details.data.payload?.headers || [];
-            const from = headers.find((h) => h.name?.toLowerCase() === "from")?.value || "unknown";
-            const subject = headers.find((h) => h.name?.toLowerCase() === "subject")?.value || "";
-            const listUnsub = headers.find((h) => h.name?.toLowerCase() === "list-unsubscribe")?.value;
+            const from = getHeader(headers, "From") || "unknown";
+            const subject = getHeader(headers, "Subject");
+            const listUnsub = getHeader(headers, "List-Unsubscribe");
             const internalDate = details.data.internalDate
               ? new Date(Number(details.data.internalDate))
               : new Date();
@@ -172,15 +257,166 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true, 
   }
 }
 
+export async function getFullMessageForUser(userId: string, messageId: string) {
+  const user = await getUserById(userId);
+  if (!user) throw new Error("User not found");
+
+  return getGmailWithRefresh(user, async (gmail) => {
+    const response = await gmail.users.messages.get({
+      userId: "me",
+      id: messageId,
+      format: "full",
+    });
+
+    const message = response.data;
+    const headers = message.payload?.headers || [];
+    const plain: string[] = [];
+    const html: string[] = [];
+    collectBodyParts(message.payload, plain, html);
+
+    return {
+      messageId: message.id || messageId,
+      threadId: message.threadId || null,
+      from: getHeader(headers, "From"),
+      to: getHeader(headers, "To"),
+      cc: getHeader(headers, "Cc"),
+      bcc: getHeader(headers, "Bcc"),
+      subject: getHeader(headers, "Subject"),
+      date: getHeader(headers, "Date") || (message.internalDate ? new Date(Number(message.internalDate)).toISOString() : ""),
+      messageIdHeader: getHeader(headers, "Message-ID"),
+      references: getHeader(headers, "References"),
+      body: plain.join("\n\n").trim() || stripHtml(html.join("\n")),
+      snippet: message.snippet || "",
+      labelIds: message.labelIds || [],
+    };
+  });
+}
+
+export async function createDraftForUser(userId: string, input: {
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  body: string;
+  threadId?: string;
+  inReplyTo?: string;
+  references?: string;
+}) {
+  if (!input.to.length) throw new Error("At least one recipient is required");
+  const user = await getUserById(userId);
+  if (!user) throw new Error("User not found");
+
+  return getGmailWithRefresh(user, async (gmail) => {
+    const created = await gmail.users.drafts.create({
+      userId: "me",
+      requestBody: {
+        message: {
+          threadId: input.threadId,
+          raw: buildRawMessage(input),
+        },
+      },
+    });
+
+    if (!created.data.id) throw new Error("Gmail did not return a draft ID");
+    return {
+      draftId: created.data.id,
+      messageId: created.data.message?.id || null,
+      threadId: created.data.message?.threadId || input.threadId || null,
+    };
+  });
+}
+
+export async function updateDraftForUser(userId: string, draftId: string, input: {
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  body: string;
+  threadId?: string;
+  inReplyTo?: string;
+  references?: string;
+}) {
+  if (!input.to.length) throw new Error("At least one recipient is required");
+  const user = await getUserById(userId);
+  if (!user) throw new Error("User not found");
+
+  return getGmailWithRefresh(user, async (gmail) => {
+    const updated = await gmail.users.drafts.update({
+      userId: "me",
+      id: draftId,
+      requestBody: {
+        message: {
+          threadId: input.threadId,
+          raw: buildRawMessage(input),
+        },
+      },
+    });
+
+    return {
+      draftId: updated.data.id || draftId,
+      messageId: updated.data.message?.id || null,
+      threadId: updated.data.message?.threadId || input.threadId || null,
+    };
+  });
+}
+
+export async function sendDraftForUser(userId: string, draftId: string) {
+  const user = await getUserById(userId);
+  if (!user) throw new Error("User not found");
+
+  return getGmailWithRefresh(user, async (gmail) => {
+    const sent = await gmail.users.drafts.send({
+      userId: "me",
+      requestBody: { id: draftId },
+    });
+    return {
+      sent: true,
+      messageId: sent.data.id || null,
+      threadId: sent.data.threadId || null,
+    };
+  });
+}
+
+export async function sendMessageForUser(userId: string, input: {
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  body: string;
+  threadId?: string;
+  inReplyTo?: string;
+  references?: string;
+}) {
+  if (!input.to.length) throw new Error("At least one recipient is required");
+  const user = await getUserById(userId);
+  if (!user) throw new Error("User not found");
+
+  return getGmailWithRefresh(user, async (gmail) => {
+    const sent = await gmail.users.messages.send({
+      userId: "me",
+      requestBody: {
+        threadId: input.threadId,
+        raw: buildRawMessage(input),
+      },
+    });
+    return {
+      sent: true,
+      messageId: sent.data.id || null,
+      threadId: sent.data.threadId || input.threadId || null,
+    };
+  });
+}
+
 export async function batchDeleteMessagesForUser(userId: string, messageIds: string[]) {
   if (!messageIds.length) return { deleted: 0 };
   const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
-  const gmail = await getGmailForUser(user);
 
-  await gmail.users.messages.batchDelete({
-    userId: "me",
-    requestBody: { ids: messageIds },
+  await getGmailWithRefresh(user, async (gmail) => {
+    await gmail.users.messages.batchDelete({
+      userId: "me",
+      requestBody: { ids: messageIds },
+    });
   });
 
   await deleteEmailsForUserByMessageIds(user.id, messageIds);
@@ -196,15 +432,16 @@ export async function modifyMessagesForUser(
   if (!messageIds.length) return { modified: 0 };
   const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
-  const gmail = await getGmailForUser(user);
 
-  await gmail.users.messages.batchModify({
-    userId: "me",
-    requestBody: {
-      ids: messageIds,
-      addLabelIds: labelsToAdd,
-      removeLabelIds: labelsToRemove,
-    },
+  await getGmailWithRefresh(user, async (gmail) => {
+    await gmail.users.messages.batchModify({
+      userId: "me",
+      requestBody: {
+        ids: messageIds,
+        addLabelIds: labelsToAdd,
+        removeLabelIds: labelsToRemove,
+      },
+    });
   });
 
   return { modified: messageIds.length };
@@ -245,15 +482,21 @@ export async function getGroupedEmails(userId: string, limit = 100) {
 export async function getMessageIdsForSender(userId: string, senderMatch: string) {
   const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
-  const gmail = await getGmailForUser(user);
 
-  const q = `from:${senderMatch}`;
-  const list = await gmail.users.messages.list({ userId: "me", q, maxResults: 500 });
-  return (list.data.messages || []).map((m) => m.id!).filter(Boolean) as string[];
+  return getGmailWithRefresh(user, async (gmail) => {
+    const q = `from:${senderMatch}`;
+    const list = await gmail.users.messages.list({ userId: "me", q, maxResults: 500 });
+    return (list.data.messages || []).map((m) => m.id!).filter(Boolean) as string[];
+  });
 }
 
 export default {
   fetchGmailMessagesAndSave,
+  getFullMessageForUser,
+  createDraftForUser,
+  updateDraftForUser,
+  sendDraftForUser,
+  sendMessageForUser,
   batchDeleteMessagesForUser,
   modifyMessagesForUser,
   getGroupedEmails,
