@@ -99,6 +99,7 @@ const Cell = ({
             {lastEmails.map((email) => (
               <MailLine
                 key={email.messageId}
+                messageId={email.messageId}
                 date={formatDate(email.date)}
                 content={email.subject || email.snippet || 'No subject'}
               />
