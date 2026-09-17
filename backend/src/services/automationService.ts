@@ -45,18 +45,44 @@ async function executeAction(automation: Automation, email: any) {
 }
 
 export async function runInboxAutomations(userId?: string) {
-  const automations = (await listActiveAutomations()).filter((item) => !userId || item.user_id === userId);
+  const activeAutomations = await listActiveAutomations();
+  const automationsByUser = new Map<string, Automation[]>();
+
+  for (const automation of activeAutomations) {
+    if (userId && automation.user_id !== userId) continue;
+    const existing = automationsByUser.get(automation.user_id) || [];
+    existing.push(automation);
+    automationsByUser.set(automation.user_id, existing);
+  }
+
   let evaluated = 0;
   let executed = 0;
   const errors: string[] = [];
-  for (const automation of automations) {
+
+  for (const [automationUserId, automations] of automationsByUser) {
+    let emails: Array<Record<string, unknown>>;
     try {
-      const emails = await gmailService.fetchGmailMessagesAndSave(automation.user_id, true, 100);
+      // Refresh each user's inbox once per scheduler tick, then evaluate all of
+      // that user's automations against the same snapshot. This avoids making
+      // one full Gmail refresh per automation and greatly reduces API quota use.
+      emails = await gmailService.fetchGmailMessagesAndSave(automationUserId, true, 25);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Gmail inbox refresh failed";
+      for (const automation of automations) errors.push(`${automation.name}: ${message}`);
+      continue;
+    }
+
+    for (const automation of automations) {
       for (const email of emails) {
         evaluated += 1;
         if (!matches(email, automation)) continue;
-        const run = await claimAutomationRun(automation.id, email.message_id);
+
+        const messageId = String(email.message_id || "");
+        if (!messageId) continue;
+
+        const run = await claimAutomationRun(automation.id, messageId);
         if (!run) continue;
+
         try {
           await executeAction(automation, email);
           await markAutomationRunSucceeded(run.id);
@@ -67,11 +93,10 @@ export async function runInboxAutomations(userId?: string) {
           errors.push(`${automation.name}: ${message}`);
         }
       }
-    } catch (error) {
-      errors.push(`${automation.name}: ${error instanceof Error ? error.message : "automation failed"}`);
     }
   }
-  return { automations: automations.length, evaluated, executed, errors };
+
+  return { automations: activeAutomations.filter((item) => !userId || item.user_id === userId).length, evaluated, executed, errors };
 }
 
 export async function startAutomationScheduler() {
@@ -83,6 +108,7 @@ export async function startAutomationScheduler() {
       console.error("Automation scheduler tick failed:", error);
     }
   };
+
   await tick();
   return setInterval(tick, 60 * 1000);
 }
