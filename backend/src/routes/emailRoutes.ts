@@ -28,7 +28,6 @@ router.use(authMiddleware);
 router.get("/", fetchAndGetEmails);
 router.get("/grouped", getGroupedEmails);
 router.get("/by-sender", getBySender);
-router.get("/:messageId", getFullEmail);
 
 router.post("/generate", generateEmail);
 router.post("/drafts", createDraft);
@@ -47,5 +46,7 @@ router.delete("/categories/:id", deleteCategory);
 router.get("/priority-keywords", getPriorityKeywords);
 router.post("/priority-keywords", createPriorityKeywordAndApply);
 router.delete("/priority-keywords/:id", deletePriorityKeyword);
+
+router.get("/:messageId", getFullEmail);
 
 export default router;
