@@ -14,6 +14,7 @@ type Tab = {
 const tabs: Tab[] = [
   { id: "emails", label: "Emails", icon: "/icons/emails.svg", href: "/emails" },
   { id: "compose", label: "Compose", icon: "/icons/emails.svg", href: "/compose" },
+  { id: "scheduled", label: "Scheduled", icon: "/icons/emails.svg", href: "/scheduled" },
   { id: "subscriptions", label: "Subscriptions", icon: "/icons/subscriptions.svg", href: "/subscriptions" },
   { id: "info", label: "Info", icon: "/icons/info.svg", href: "/info" },
 ];
