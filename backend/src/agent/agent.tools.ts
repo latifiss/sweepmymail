@@ -11,6 +11,7 @@ import { applyCategoryToEmails, extractKeywords } from "../services/categoryServ
 import gmailService from "../services/gmailService";
 import { unsubscribeFromLink } from "../services/unsubscribeService";
 import { env } from "../config/env";
+import { cancelScheduledEmail, listUserScheduledEmails, scheduleEmail, updateScheduledEmail } from "../services/scheduledEmailService";
 
 function requireAgentConfiguration() {
   if (!env.OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY is not configured");
@@ -41,6 +42,11 @@ const emailContentSchema = z.object({
   body: z.string().min(1).max(100000),
 });
 
+const scheduleInputSchema = emailContentSchema.extend({
+  sendAt: z.string().min(1).describe("Future ISO 8601 timestamp. Include an explicit timezone/offset when the user gives local time."),
+  timezone: z.string().min(1).max(100).default("UTC"),
+});
+
 function splitAddresses(value: string) {
   return value.split(",").map((item) => item.trim()).filter(Boolean);
 }
@@ -54,316 +60,154 @@ export function createAgentTools(userId: string, userEmail: string) {
   return {
     get_recent_emails: tool({
       description: "Get the user's most recent inbox emails. Always use this tool whenever the user asks for latest, recent, newest, or current emails without specifying a search topic. Refresh from Gmail first so the results reflect the current inbox. Results include message IDs for follow-up actions. If the tool returns ok=false, report the returned error instead of claiming the user needs to authenticate.",
-      inputSchema: z.object({
-        limit: z.number().int().min(1).max(50).default(10),
-      }),
+      inputSchema: z.object({ limit: z.number().int().min(1).max(50).default(10) }),
       execute: async ({ limit }) => {
         requireAgentConfiguration();
-
         try {
           const emails = await gmailService.fetchGmailMessagesAndSave(userId, true, Math.max(limit, 20));
-          const sorted = [...emails].sort((a, b) => {
-            const aTime = new Date(a.date || 0).getTime();
-            const bTime = new Date(b.date || 0).getTime();
-            return bTime - aTime;
-          });
-
-          return {
-            ok: true,
-            count: Math.min(sorted.length, limit),
-            emails: formatEmails(sorted, limit),
-          };
+          const sorted = [...emails].sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+          return { ok: true, count: Math.min(sorted.length, limit), emails: formatEmails(sorted, limit) };
         } catch (error) {
-          console.error("get_recent_emails failed", {
-            userId,
-            userEmail,
-            error: getToolErrorMessage(error),
-          });
-
-          return {
-            ok: false,
-            count: 0,
-            emails: [],
-            error: getToolErrorMessage(error),
-          };
+          console.error("get_recent_emails failed", { userId, userEmail, error: getToolErrorMessage(error) });
+          return { ok: false, count: 0, emails: [], error: getToolErrorMessage(error) };
         }
       },
     }),
-
     search_emails: tool({
-      description: "Search the user's synchronized inbox by keywords across sender, subject, and email preview. Use this for topic, sender, or keyword searches and before bulk email actions when the user describes emails semantically. Results include message IDs for follow-up actions.",
-      inputSchema: z.object({
-        query: z.string().min(1).describe("Keywords or phrase to search for"),
-        limit: z.number().int().min(1).max(100).default(50),
-      }),
+      description: "Search the user's synchronized inbox by keywords across sender, subject, and email preview. Use this for topic, sender, or keyword searches and before bulk email actions when the user describes emails semantically.",
+      inputSchema: z.object({ query: z.string().min(1), limit: z.number().int().min(1).max(100).default(50) }),
       execute: async ({ query, limit }) => {
         requireAgentConfiguration();
         const emails = await getEmailsForUser(userId);
         const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
-        const matches = emails.filter((email) => {
-          const haystack = `${email.sender} ${email.subject} ${email.snippet}`.toLowerCase();
-          return terms.every((term) => haystack.includes(term));
-        });
-
-        return {
-          count: matches.length,
-          emails: formatEmails(matches, limit),
-        };
+        const matches = emails.filter((email) => terms.every((term) => `${email.sender} ${email.subject} ${email.snippet}`.toLowerCase().includes(term)));
+        return { count: matches.length, emails: formatEmails(matches, limit) };
       },
     }),
-
     read_email: tool({
-      description: "Read the full contents and headers of one email by its Gmail message ID. Use search_emails or get_recent_emails first when the user refers to an email without a message ID.",
-      inputSchema: z.object({
-        messageId: z.string().min(1),
-      }),
-      execute: async ({ messageId }) => {
-        requireAgentConfiguration();
-        return gmailService.getFullMessageForUser(userId, messageId);
-      },
+      description: "Read the full contents and headers of one email by Gmail message ID. Use search_emails or get_recent_emails first when the user refers to an email without a message ID.",
+      inputSchema: z.object({ messageId: z.string().min(1) }),
+      execute: async ({ messageId }) => { requireAgentConfiguration(); return gmailService.getFullMessageForUser(userId, messageId); },
     }),
-
     generate_email: tool({
       description: "Prepare email content from the user's request. Return a polished subject and body. Do not send or save anything in Gmail.",
-      inputSchema: z.object({
-        instruction: z.string().min(1).max(10000),
-        recipientContext: z.string().max(5000).optional(),
-      }),
-      execute: async ({ instruction, recipientContext }) => ({
-        ready: true,
-        instruction,
-        recipientContext: recipientContext || null,
-        note: "Use the instruction and recipient context to generate the subject and body in the assistant response. No Gmail action was performed.",
-      }),
+      inputSchema: z.object({ instruction: z.string().min(1).max(10000), recipientContext: z.string().max(5000).optional() }),
+      execute: async ({ instruction, recipientContext }) => ({ ready: true, instruction, recipientContext: recipientContext || null }),
     }),
-
     create_draft: tool({
-      description: "Create a Gmail draft. Use this when the user explicitly asks to draft, save, or compose an email without sending it. Never send a draft from this tool.",
+      description: "Create a Gmail draft. Use this when the user explicitly asks to save, draft, or compose an email without sending it.",
       inputSchema: emailContentSchema,
-      execute: async (input) => {
-        requireAgentConfiguration();
-        return gmailService.createDraftForUser(userId, input);
-      },
+      execute: async (input) => { requireAgentConfiguration(); return gmailService.createDraftForUser(userId, input); },
     }),
-
     update_draft: tool({
-      description: "Edit an existing Gmail draft. Use the exact draft ID supplied by the user or returned by a previous draft operation.",
-      inputSchema: emailContentSchema.extend({
-        draftId: z.string().min(1),
-      }),
-      execute: async ({ draftId, ...input }) => {
-        requireAgentConfiguration();
-        return gmailService.updateDraftForUser(userId, draftId, input);
-      },
+      description: "Edit an existing Gmail draft.",
+      inputSchema: emailContentSchema.extend({ draftId: z.string().min(1) }),
+      execute: async ({ draftId, ...input }) => { requireAgentConfiguration(); return gmailService.updateDraftForUser(userId, draftId, input); },
     }),
-
     send_email: tool({
-      description: "Send an email through Gmail. This is an external side effect and ALWAYS requires explicit user approval before execution. Use this for new messages or when the user explicitly asks to send a prepared email.",
+      description: "Send an email through Gmail. ALWAYS requires explicit user approval before execution.",
       needsApproval: true,
       inputSchema: emailContentSchema,
-      execute: async (input) => {
-        requireAgentConfiguration();
-        return gmailService.sendMessageForUser(userId, input);
-      },
+      execute: async (input) => { requireAgentConfiguration(); return gmailService.sendMessageForUser(userId, input); },
     }),
-
     send_draft: tool({
-      description: "Send an existing Gmail draft. This is an external side effect and ALWAYS requires explicit user approval before execution.",
+      description: "Send an existing Gmail draft. ALWAYS requires explicit user approval before execution.",
       needsApproval: true,
-      inputSchema: z.object({
-        draftId: z.string().min(1),
-      }),
-      execute: async ({ draftId }) => {
+      inputSchema: z.object({ draftId: z.string().min(1) }),
+      execute: async ({ draftId }) => { requireAgentConfiguration(); return gmailService.sendDraftForUser(userId, draftId); },
+    }),
+    schedule_email: tool({
+      description: "Schedule an email for future delivery. Scheduling is an external action, so ALWAYS requires explicit user approval before execution. The sendAt value must be a future ISO timestamp and timezone should identify the user's intended local timezone.",
+      needsApproval: true,
+      inputSchema: scheduleInputSchema,
+      execute: async ({ sendAt, timezone, ...input }) => {
         requireAgentConfiguration();
-        return gmailService.sendDraftForUser(userId, draftId);
+        return scheduleEmail({ userId, ...input, sendAt, timezone });
       },
     }),
-
+    list_scheduled_emails: tool({
+      description: "List the authenticated user's scheduled emails. Use this when the user asks what emails are scheduled or wants to find a scheduled message.",
+      inputSchema: z.object({}),
+      execute: async () => listUserScheduledEmails(userId),
+    }),
+    update_scheduled_email: tool({
+      description: "Edit an existing scheduled email before it sends.",
+      inputSchema: scheduleInputSchema.extend({ id: z.string().min(1) }),
+      execute: async ({ id, sendAt, timezone, ...input }) => updateScheduledEmail({ userId, id, ...input, sendAt, timezone }),
+    }),
+    cancel_scheduled_email: tool({
+      description: "Cancel a scheduled email before it sends.",
+      needsApproval: true,
+      inputSchema: z.object({ id: z.string().min(1) }),
+      execute: async ({ id }) => cancelScheduledEmail(userId, id),
+    }),
     reply_to_email: tool({
-      description: "Create a Gmail draft reply to an existing email. Use the original message ID. Set replyAll=true when the user explicitly requests reply-all. This tool creates a draft and does not send it.",
-      inputSchema: z.object({
-        messageId: z.string().min(1),
-        body: z.string().min(1).max(100000),
-        replyAll: z.boolean().default(false),
-      }),
+      description: "Create a Gmail draft reply to an existing email. Set replyAll=true when explicitly requested. This tool does not send.",
+      inputSchema: z.object({ messageId: z.string().min(1), body: z.string().min(1).max(100000), replyAll: z.boolean().default(false) }),
       execute: async ({ messageId, body, replyAll }) => {
         requireAgentConfiguration();
         const original = await gmailService.getFullMessageForUser(userId, messageId);
         const self = userEmail.toLowerCase();
-        const sender = original.from;
-        const toCandidates = replyAll
-          ? [sender, ...splitAddresses(original.to)]
-          : [sender];
+        const toCandidates = replyAll ? [original.from, ...splitAddresses(original.to)] : [original.from];
         const ccCandidates = replyAll ? splitAddresses(original.cc) : [];
-        const uniqueTo = Array.from(new Map(toCandidates.map((value) => [addressKey(value), value])).values())
-          .filter((value) => addressKey(value) !== self);
-        const uniqueCc = Array.from(new Map(ccCandidates.map((value) => [addressKey(value), value])).values())
-          .filter((value) => addressKey(value) !== self && !uniqueTo.some((item) => addressKey(item) === addressKey(value)));
+        const uniqueTo = Array.from(new Map(toCandidates.map((value) => [addressKey(value), value])).values()).filter((value) => addressKey(value) !== self);
+        const uniqueCc = Array.from(new Map(ccCandidates.map((value) => [addressKey(value), value])).values()).filter((value) => addressKey(value) !== self && !uniqueTo.some((item) => addressKey(item) === addressKey(value)));
         const subject = original.subject.toLowerCase().startsWith("re:") ? original.subject : `Re: ${original.subject}`;
         const references = [original.references, original.messageIdHeader].filter(Boolean).join(" ");
-
-        return gmailService.createDraftForUser(userId, {
-          to: uniqueTo.length ? uniqueTo : [sender],
-          cc: uniqueCc.length ? uniqueCc : undefined,
-          subject,
-          body,
-          threadId: original.threadId || undefined,
-          inReplyTo: original.messageIdHeader || undefined,
-          references: references || undefined,
-        });
+        return gmailService.createDraftForUser(userId, { to: uniqueTo.length ? uniqueTo : [original.from], cc: uniqueCc.length ? uniqueCc : undefined, subject, body, threadId: original.threadId || undefined, inReplyTo: original.messageIdHeader || undefined, references: references || undefined });
       },
     }),
-
     forward_email: tool({
-      description: "Create a Gmail draft forwarding an existing email to new recipients. Use the original message ID. This tool creates a draft and does not send it.",
-      inputSchema: z.object({
-        messageId: z.string().min(1),
-        to: recipientsSchema,
-        body: z.string().max(100000).optional(),
-      }),
+      description: "Create a Gmail draft forwarding an existing email to new recipients. This tool does not send.",
+      inputSchema: z.object({ messageId: z.string().min(1), to: recipientsSchema, body: z.string().max(100000).optional() }),
       execute: async ({ messageId, to, body }) => {
         requireAgentConfiguration();
         const original = await gmailService.getFullMessageForUser(userId, messageId);
         const subject = original.subject.toLowerCase().startsWith("fwd:") ? original.subject : `Fwd: ${original.subject}`;
-        const forwardedBody = [
-          body?.trim() || "",
-          "",
-          "---------- Forwarded message ----------",
-          `From: ${original.from}`,
-          `Date: ${original.date}`,
-          `Subject: ${original.subject}`,
-          `To: ${original.to}`,
-          original.cc ? `Cc: ${original.cc}` : "",
-          "",
-          original.body,
-        ].filter(Boolean).join("\n");
-
-        return gmailService.createDraftForUser(userId, {
-          to,
-          subject,
-          body: forwardedBody,
-        });
+        const forwardedBody = [body?.trim() || "", "", "---------- Forwarded message ----------", `From: ${original.from}`, `Date: ${original.date}`, `Subject: ${original.subject}`, `To: ${original.to}`, original.cc ? `Cc: ${original.cc}` : "", "", original.body].filter(Boolean).join("\n");
+        return gmailService.createDraftForUser(userId, { to, subject, body: forwardedBody });
       },
     }),
-
-    list_categories: tool({
-      description: "List the user's existing inbox categories before creating a new one.",
-      inputSchema: z.object({}),
-      execute: async () => listCategoriesForUser(userId),
-    }),
-
+    list_categories: tool({ description: "List the user's existing inbox categories before creating a new one.", inputSchema: z.object({}), execute: async () => listCategoriesForUser(userId) }),
     create_category: tool({
       description: "Create a Gmail-backed category and automatically apply it to matching synchronized emails.",
-      inputSchema: z.object({
-        label: z.string().min(1).max(100),
-        description: z.string().min(1).max(500),
-      }),
+      inputSchema: z.object({ label: z.string().min(1).max(100), description: z.string().min(1).max(500) }),
       execute: async ({ label, description }) => {
         const existing = await listCategoriesForUser(userId);
-        if (existing.some((category) => category.label.toLowerCase() === label.toLowerCase())) {
-          throw new Error(`Category '${label}' already exists`);
-        }
-
+        if (existing.some((category) => category.label.toLowerCase() === label.toLowerCase())) throw new Error(`Category '${label}' already exists`);
         const keywords = extractKeywords(`${label} ${description}`);
-        const category = await createCategory({
-          user_id: userId,
-          label: label.trim(),
-          description: description.trim(),
-          keywords,
-          email_count: 0,
-        });
+        const category = await createCategory({ user_id: userId, label: label.trim(), description: description.trim(), keywords, email_count: 0 });
         const count = await applyCategoryToEmails(userId, category);
-
-        return {
-          categoryId: category.id,
-          label: category.label,
-          matchedEmails: count,
-        };
+        return { categoryId: category.id, label: category.label, matchedEmails: count };
       },
     }),
-
     categorize_emails: tool({
-      description: "Apply an existing Gmail category to specific email message IDs. Use search_emails first to identify the correct emails.",
-      inputSchema: z.object({
-        messageIds: z.array(z.string()).min(1).max(500),
-        categoryLabel: z.string().min(1).max(100),
-      }),
+      description: "Apply an existing Gmail category to specific email message IDs. Use search_emails first.",
+      inputSchema: z.object({ messageIds: z.array(z.string()).min(1).max(500), categoryLabel: z.string().min(1).max(100) }),
       execute: async ({ messageIds, categoryLabel }) => {
         const categories = await listCategoriesForUser(userId);
         const category = categories.find((item) => item.label.toLowerCase() === categoryLabel.toLowerCase());
         if (!category) throw new Error(`Category '${categoryLabel}' does not exist`);
-
         const { labelId } = await gmailService.ensureLabelForUser(userId, category.label);
         const result = await gmailService.modifyMessagesForUser(userId, messageIds, [labelId], []);
         return { category: category.label, categorized: result.modified };
       },
     }),
-
-    archive_emails: tool({
-      description: "Archive specific emails by removing them from the Gmail inbox. Use search_emails first.",
-      inputSchema: z.object({
-        messageIds: z.array(z.string()).min(1).max(500),
-      }),
-      execute: async ({ messageIds }) => {
-        const result = await gmailService.modifyMessagesForUser(userId, messageIds, [], ["INBOX"]);
-        return { archived: result.modified };
-      },
-    }),
-
-    mark_important: tool({
-      description: "Mark specific emails as important in Gmail. Use search_emails first.",
-      inputSchema: z.object({
-        messageIds: z.array(z.string()).min(1).max(500),
-      }),
-      execute: async ({ messageIds }) => {
-        const result = await gmailService.modifyMessagesForUser(userId, messageIds, ["IMPORTANT"], []);
-        return { markedImportant: result.modified };
-      },
-    }),
-
-    delete_emails: tool({
-      description: "Permanently delete specific Gmail messages. This is destructive and always requires explicit user approval.",
-      needsApproval: true,
-      inputSchema: z.object({
-        messageIds: z.array(z.string()).min(1).max(100),
-      }),
-      execute: async ({ messageIds }) => gmailService.batchDeleteMessagesForUser(userId, messageIds),
-    }),
-
+    archive_emails: tool({ description: "Archive specific emails by removing them from the Gmail inbox. Use search_emails first.", inputSchema: z.object({ messageIds: z.array(z.string()).min(1).max(500) }), execute: async ({ messageIds }) => { const result = await gmailService.modifyMessagesForUser(userId, messageIds, [], ["INBOX"]); return { archived: result.modified }; } }),
+    mark_important: tool({ description: "Mark specific emails as important in Gmail. Use search_emails first.", inputSchema: z.object({ messageIds: z.array(z.string()).min(1).max(500) }), execute: async ({ messageIds }) => { const result = await gmailService.modifyMessagesForUser(userId, messageIds, ["IMPORTANT"], []); return { markedImportant: result.modified }; } }),
+    delete_emails: tool({ description: "Permanently delete specific Gmail messages. Destructive and always requires explicit user approval.", needsApproval: true, inputSchema: z.object({ messageIds: z.array(z.string()).min(1).max(100) }), execute: async ({ messageIds }) => gmailService.batchDeleteMessagesForUser(userId, messageIds) }),
     unsubscribe: tool({
-      description: "Unsubscribe from a sender using a verified unsubscribe link stored on the user's emails. This is an external side effect and requires explicit user approval.",
+      description: "Unsubscribe from a sender using a verified unsubscribe link. Requires explicit user approval.",
       needsApproval: true,
-      inputSchema: z.object({
-        messageId: z.string().optional(),
-        sender: z.string().optional(),
-      }).refine((input) => Boolean(input.messageId || input.sender), {
-        message: "messageId or sender is required",
-      }),
+      inputSchema: z.object({ messageId: z.string().optional(), sender: z.string().optional() }).refine((input) => Boolean(input.messageId || input.sender), { message: "messageId or sender is required" }),
       execute: async ({ messageId, sender }) => {
         let link: string | null = null;
         let resolvedSender = sender || "";
-
-        if (messageId) {
-          const email = await getEmailByMessageId(userId, messageId);
-          link = email?.unsubscribe_link || null;
-          resolvedSender = resolvedSender || email?.sender || "";
-        }
-
-        if (!link && sender) {
-          const emails = await getEmailsBySenderLike(userId, sender, 50);
-          const email = emails.find((item) => Boolean(item.unsubscribe_link));
-          link = email?.unsubscribe_link || null;
-          resolvedSender = email?.sender || sender;
-        }
-
+        if (messageId) { const email = await getEmailByMessageId(userId, messageId); link = email?.unsubscribe_link || null; resolvedSender = resolvedSender || email?.sender || ""; }
+        if (!link && sender) { const emails = await getEmailsBySenderLike(userId, sender, 50); const email = emails.find((item) => Boolean(item.unsubscribe_link)); link = email?.unsubscribe_link || null; resolvedSender = email?.sender || sender; }
         if (!link) throw new Error("No unsubscribe link was found for this sender");
-
         const result = await unsubscribeFromLink(link, userEmail);
-        return {
-          sender: resolvedSender,
-          success: result.success,
-          message: result.message,
-        };
+        return { sender: resolvedSender, success: result.success, message: result.message };
       },
     }),
   };
