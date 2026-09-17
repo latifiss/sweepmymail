@@ -31,6 +31,16 @@ function getToolErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Gmail request failed";
 }
 
+const recipientsSchema = z.array(z.string().min(3)).min(1).max(20);
+
+const emailContentSchema = z.object({
+  to: recipientsSchema,
+  cc: z.array(z.string().min(3)).max(20).optional(),
+  bcc: z.array(z.string().min(3)).max(20).optional(),
+  subject: z.string().min(1).max(998),
+  body: z.string().min(1).max(100000),
+});
+
 export function createAgentTools(userId: string, userEmail: string) {
   return {
     get_recent_emails: tool({
@@ -90,6 +100,134 @@ export function createAgentTools(userId: string, userEmail: string) {
           count: matches.length,
           emails: formatEmails(matches, limit),
         };
+      },
+    }),
+
+    read_email: tool({
+      description: "Read the full contents and headers of one email by its Gmail message ID. Use search_emails or get_recent_emails first when the user refers to an email without a message ID.",
+      inputSchema: z.object({
+        messageId: z.string().min(1),
+      }),
+      execute: async ({ messageId }) => {
+        requireAgentConfiguration();
+        return gmailService.getFullMessageForUser(userId, messageId);
+      },
+    }),
+
+    generate_email: tool({
+      description: "Prepare email content from the user's request. Return a polished subject and body. Do not send or save anything in Gmail.",
+      inputSchema: z.object({
+        instruction: z.string().min(1).max(10000),
+        recipientContext: z.string().max(5000).optional(),
+      }),
+      execute: async ({ instruction, recipientContext }) => ({
+        ready: true,
+        instruction,
+        recipientContext: recipientContext || null,
+        note: "Use the instruction and recipient context to generate the subject and body in the assistant response. No Gmail action was performed.",
+      }),
+    }),
+
+    create_draft: tool({
+      description: "Create a Gmail draft. Use this when the user explicitly asks to draft, save, or compose an email without sending it. Never send a draft from this tool.",
+      inputSchema: emailContentSchema,
+      execute: async (input) => {
+        requireAgentConfiguration();
+        return gmailService.createDraftForUser(userId, input);
+      },
+    }),
+
+    update_draft: tool({
+      description: "Edit an existing Gmail draft. Use the exact draft ID supplied by the user or returned by a previous draft operation.",
+      inputSchema: emailContentSchema.extend({
+        draftId: z.string().min(1),
+      }),
+      execute: async ({ draftId, ...input }) => {
+        requireAgentConfiguration();
+        return gmailService.updateDraftForUser(userId, draftId, input);
+      },
+    }),
+
+    send_email: tool({
+      description: "Send an email through Gmail. This is an external side effect and ALWAYS requires explicit user approval before execution. Use this for new messages or when the user explicitly asks to send a prepared email.",
+      needsApproval: true,
+      inputSchema: emailContentSchema,
+      execute: async (input) => {
+        requireAgentConfiguration();
+        return gmailService.sendMessageForUser(userId, input);
+      },
+    }),
+
+    send_draft: tool({
+      description: "Send an existing Gmail draft. This is an external side effect and ALWAYS requires explicit user approval before execution.",
+      needsApproval: true,
+      inputSchema: z.object({
+        draftId: z.string().min(1),
+      }),
+      execute: async ({ draftId }) => {
+        requireAgentConfiguration();
+        return gmailService.sendDraftForUser(userId, draftId);
+      },
+    }),
+
+    reply_to_email: tool({
+      description: "Create a Gmail draft reply to an existing email. Use the original message ID. Set replyAll=true when the user explicitly requests reply-all. This tool creates a draft and does not send it.",
+      inputSchema: z.object({
+        messageId: z.string().min(1),
+        body: z.string().min(1).max(100000),
+        replyAll: z.boolean().default(false),
+      }),
+      execute: async ({ messageId, body, replyAll }) => {
+        requireAgentConfiguration();
+        const original = await gmailService.getFullMessageForUser(userId, messageId);
+        const from = original.from;
+        const to = replyAll
+          ? [from, ...[original.to, original.cc].filter(Boolean).flatMap((value) => String(value).split(","))]
+          : [from];
+        const uniqueTo = Array.from(new Set(to.map((value) => value.trim()).filter(Boolean)));
+        const subject = original.subject.toLowerCase().startsWith("re:") ? original.subject : `Re: ${original.subject}`;
+        const references = [original.references, original.messageIdHeader].filter(Boolean).join(" ");
+
+        return gmailService.createDraftForUser(userId, {
+          to: uniqueTo,
+          subject,
+          body,
+          threadId: original.threadId || undefined,
+          inReplyTo: original.messageIdHeader || undefined,
+          references: references || undefined,
+        });
+      },
+    }),
+
+    forward_email: tool({
+      description: "Create a Gmail draft forwarding an existing email to new recipients. Use the original message ID. This tool creates a draft and does not send it.",
+      inputSchema: z.object({
+        messageId: z.string().min(1),
+        to: recipientsSchema,
+        body: z.string().max(100000).optional(),
+      }),
+      execute: async ({ messageId, to, body }) => {
+        requireAgentConfiguration();
+        const original = await gmailService.getFullMessageForUser(userId, messageId);
+        const subject = original.subject.toLowerCase().startsWith("fwd:") ? original.subject : `Fwd: ${original.subject}`;
+        const forwardedBody = [
+          body?.trim() || "",
+          "",
+          "---------- Forwarded message ----------",
+          `From: ${original.from}`,
+          `Date: ${original.date}`,
+          `Subject: ${original.subject}`,
+          `To: ${original.to}`,
+          original.cc ? `Cc: ${original.cc}` : "",
+          "",
+          original.body,
+        ].filter(Boolean).join("\n");
+
+        return gmailService.createDraftForUser(userId, {
+          to,
+          subject,
+          body: forwardedBody,
+        });
       },
     }),
 
