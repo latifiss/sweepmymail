@@ -1,0 +1,251 @@
+@use '../sass-utils' as ui;
+
+/// Right-hand panel showing mailbox stats and expandable sections.
+/// Mobile: full width. Desktop/tablet: fixed 365px column.
+.cupboard {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding-bottom: 40px;
+  background-color: ui.color(snow-drift);
+  border-right: 1px solid ui.color(quill-gray);
+  overflow-y: auto;
+
+  // Custom scrollbar — matches the sidebar.
+  scrollbar-width: thin;
+  scrollbar-color: ui.color(alto) transparent;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: ui.color(alto);
+    border-radius: 3px;
+
+    &:hover {
+      background-color: ui.color(dove-gray);
+    }
+  }
+
+  @include ui.respond-to(md) {
+    width: 365px;
+    flex: none;
+  }
+
+  // Height matches the main header (60px mobile, 68px desktop)
+  // so the identity pane aligns with the top bar across the page.
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: ui.space(2);
+    flex: none;
+    height: 60px;
+    padding: 0 12px;
+    border-bottom: 1px solid ui.color(quill-gray);
+
+    @include ui.respond-to(md) {
+      height: 68px;
+      padding: 0 20px;
+    }
+  }
+
+  &__identity {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__brand-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 16px;
+    height: 14px;
+  }
+
+  &__identity-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+  }
+
+  &__title {
+    font-family: ui.font(family-sans);
+    font-size: 20px;
+    font-weight: ui.font(weight-medium);
+    line-height: 24px;
+    color: ui.color(matterhorn);
+  }
+
+  &__email {
+    font-family: ui.font(family-sans);
+    font-size: 12px;
+    font-weight: ui.font(weight-normal);
+    line-height: 13px;
+    color: ui.color(matterhorn);
+  }
+
+  &__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 42px;
+    height: 40px;
+    padding: 0;
+    background-color: ui.color(white);
+    border: 1px solid ui.color(quill-gray);
+    color: ui.color(matterhorn);
+    cursor: pointer;
+    transition: color ui.motion(fast);
+
+    &:hover {
+      color: ui.color(orange);
+    }
+
+    &:focus {
+      outline: none;
+    }
+
+    &:focus-visible {
+      outline: 2px solid ui.semantic(primary);
+      outline-offset: 2px;
+      border-radius: ui.radius(sm);
+    }
+  }
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    flex: none;
+    border-bottom: 1px solid ui.color(quill-gray);
+  }
+
+  &__item-trigger {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: ui.space(2);
+    width: 100%;
+    padding: 16px 14px;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color ui.motion(fast);
+
+    &:hover:not(:disabled) {
+      background-color: ui.color(wild-sand);
+    }
+
+    &:focus {
+      outline: none;
+    }
+
+    &:focus-visible {
+      outline: 2px solid ui.semantic(primary);
+      outline-offset: -2px;
+    }
+
+    &:disabled {
+      cursor: default;
+
+      &:hover {
+        background-color: transparent;
+      }
+    }
+  }
+
+  &__item-heading {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  &__item-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    height: 22px;
+  }
+
+  &__item-title {
+    font-family: ui.font(family-head);
+    font-size: 22.87px;
+    font-weight: ui.font(weight-normal);
+    line-height: 1;
+    text-transform: uppercase;
+    color: ui.color(matterhorn);
+  }
+
+  &__item-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: ui.space(2);
+    width: 100%;
+  }
+
+  &__item-subtitle,
+  &__item-meta {
+    font-family: ui.font(family-sans);
+    font-size: 16px;
+    font-weight: ui.font(weight-medium);
+    line-height: 13px;
+    color: ui.color(matterhorn);
+  }
+
+  &__item-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 12px;
+    height: 12px;
+    color: ui.color(matterhorn);
+    transition: transform ui.motion(base);
+
+    &--open {
+      transform: rotate(180deg);
+    }
+  }
+
+  // `max-height` is set inline from measured JS content height to transition smoothly.
+  &__item-body {
+    overflow: hidden;
+    transition: max-height ui.motion(base);
+    will-change: max-height;
+  }
+
+  &__item-body-inner {
+    padding: 0 14px 16px;
+  }
+
+  &__category-list {
+    display: flex;
+    flex-direction: column;
+    gap: ui.space(3);
+    margin: 0 0 16px 0;
+    padding: 12px;
+    list-style: none;
+    border: 1px solid ui.color(quill-gray);
+  }
+
+  &__category-item {
+    font-family: ui.font(family-sans);
+    font-size: 16.2px;
+    font-weight: ui.font(weight-medium);
+    line-height: 24px;
+    color: ui.color(matterhorn);
+  }
+}

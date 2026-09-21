@@ -1,0 +1,42 @@
+@use '../sass-utils' as ui;
+
+.google-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background-color: ui.color(matterhorn);
+  color: ui.color(white);
+  font-family: ui.font(family-sans);
+  font-size: 16.2px;
+  font-weight: ui.font(weight-medium);
+  line-height: 24px;
+  cursor: pointer;
+  transition: background-color ui.motion(fast);
+
+  &:hover {
+    background-color: ui.color(saddle);
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ui.semantic(primary);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.google-button__label {
+  display: inline-flex;
+  align-items: center;
+}

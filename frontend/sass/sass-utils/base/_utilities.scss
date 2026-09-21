@@ -1,0 +1,134 @@
+@use 'sass:map';
+@use 'sass:meta';
+@use 'tokens' as t;
+@use 'functions' as fn;
+
+// ============================================================
+// Utility classes
+// Low-specificity helpers with !important where they need to
+// win over component styles. Consume sparingly in markup.
+// ============================================================
+
+// ------------------------------------------------------------
+// Accessibility
+// ------------------------------------------------------------
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+// ------------------------------------------------------------
+// Display
+// ------------------------------------------------------------
+.d-none         { display: none !important; }
+.d-inline       { display: inline !important; }
+.d-inline-block { display: inline-block !important; }
+.d-block        { display: block !important; }
+.d-flex         { display: flex !important; }
+.d-grid         { display: grid !important; }
+
+// ------------------------------------------------------------
+// Spacing
+// Generated from the numeric keys in t.$space only.
+// Named keys (xs, sm, md, …) are for SCSS consumption, not markup.
+// ------------------------------------------------------------
+@each $key, $val in t.$space {
+  @if meta.type-of($key) == 'number' {
+    .m-#{$key}  { margin: $val !important; }
+    .mt-#{$key} { margin-top: $val !important; }
+    .mb-#{$key} { margin-bottom: $val !important; }
+    .ml-#{$key} { margin-left: $val !important; }
+    .mr-#{$key} { margin-right: $val !important; }
+    .p-#{$key}  { padding: $val !important; }
+    .pt-#{$key} { padding-top: $val !important; }
+    .pb-#{$key} { padding-bottom: $val !important; }
+    .pl-#{$key} { padding-left: $val !important; }
+    .pr-#{$key} { padding-right: $val !important; }
+  }
+}
+
+// ------------------------------------------------------------
+// Text
+// ------------------------------------------------------------
+.text-center     { text-align: center !important; }
+.text-left       { text-align: left !important; }
+.text-right      { text-align: right !important; }
+.text-justify    { text-align: justify !important; }
+.text-uppercase  { text-transform: uppercase !important; }
+.text-lowercase  { text-transform: lowercase !important; }
+.text-capitalize { text-transform: capitalize !important; }
+
+.font-weight-light    { font-weight: fn.font(weight-light) !important; }
+.font-weight-normal   { font-weight: fn.font(weight-normal) !important; }
+.font-weight-semibold { font-weight: fn.font(weight-semibold) !important; }
+.font-weight-bold     { font-weight: fn.font(weight-bold) !important; }
+.font-italic          { font-style: italic !important; }
+
+.font-display { font-family: fn.font(family-head); }
+.font-sans    { font-family: fn.font(family-sans); }
+.font-mono    { font-family: fn.font(family-mono); }
+
+// ------------------------------------------------------------
+// Colors
+// ------------------------------------------------------------
+.text-primary   { color: fn.semantic(primary) !important; }
+.text-secondary { color: fn.semantic(secondary) !important; }
+.text-success   { color: fn.semantic(success) !important; }
+.text-danger    { color: fn.semantic(danger) !important; }
+.text-warning   { color: fn.semantic(warning) !important; }
+.text-info      { color: fn.semantic(info) !important; }
+
+.bg-primary   { background-color: fn.semantic(primary) !important; }
+.bg-secondary { background-color: fn.semantic(secondary) !important; }
+.bg-light     { background-color: fn.semantic(surface-alt) !important; }
+
+// ------------------------------------------------------------
+// Borders
+// ------------------------------------------------------------
+.border {
+  border:
+    fn.layout(border-width)
+    fn.layout(border-style)
+    fn.semantic(border) !important;
+}
+
+.border-top {
+  border-top:
+    fn.layout(border-width)
+    fn.layout(border-style)
+    fn.semantic(border) !important;
+}
+
+.border-bottom {
+  border-bottom:
+    fn.layout(border-width)
+    fn.layout(border-style)
+    fn.semantic(border) !important;
+}
+
+.rounded    { border-radius: fn.radius(lg) !important; }
+.rounded-sm { border-radius: fn.radius(sm) !important; }
+.rounded-lg { border-radius: fn.radius(xl) !important; }
+
+// ------------------------------------------------------------
+// Layout helpers
+// ------------------------------------------------------------
+.flex-wrap       { flex-wrap: wrap !important; }
+.flex-nowrap     { flex-wrap: nowrap !important; }
+.justify-center  { justify-content: center !important; }
+.justify-between { justify-content: space-between !important; }
+.align-center    { align-items: center !important; }
+.align-start     { align-items: flex-start !important; }
+
+.overflow-hidden { overflow: hidden !important; }
+.overflow-auto   { overflow: auto !important; }
+
+.opacity-50 { opacity: 0.5 !important; }
+.opacity-75 { opacity: 0.75 !important; }

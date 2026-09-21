@@ -1,0 +1,104 @@
+@use 'sass:map';
+@use 'sass:color';
+@use 'sass:math';
+@use 'sass:meta';
+@use 'tokens' as t;
+
+// ------------------------------------------------------------
+// Token accessors
+// ------------------------------------------------------------
+@function color($key) {
+  @return map.get(t.$color, $key);
+}
+
+@function semantic($key) {
+  @return map.get(t.$semantic, $key);
+}
+
+@function font($key) {
+  @return map.get(t.$font, $key);
+}
+
+@function space($key) {
+  @return map.get(t.$space, $key);
+}
+
+@function gradient($key) {
+  @return map.get(t.$gradient, $key);
+}
+
+@function radius($key) {
+  @return map.get(t.$radius, $key);
+}
+
+@function shadow($key) {
+  @return map.get(t.$shadow, $key);
+}
+
+@function motion($key) {
+  @return map.get(t.$motion, $key);
+}
+
+@function layout($key) {
+  @return map.get(t.$layout, $key);
+}
+
+@function z($key) {
+  @return map.get(t.$z, $key);
+}
+
+// ------------------------------------------------------------
+// Color helpers
+// ------------------------------------------------------------
+@function lighten-color($c, $amount) {
+  @return color.adjust($c, $lightness: math.percentage(math.div($amount, 100)));
+}
+
+@function darken-color($c, $amount) {
+  @return color.adjust($c, $lightness: -1 * math.percentage(math.div($amount, 100)));
+}
+
+@function alpha($c, $amount) {
+  @return color.change($c, $alpha: $amount);
+}
+
+@function mix-colors($a, $b, $weight: 50%) {
+  @return color.mix($a, $b, $weight);
+}
+
+// ------------------------------------------------------------
+// Contrast
+// ------------------------------------------------------------
+@function luminance($c) {
+  @return (color.red($c) * 0.299 + color.green($c) * 0.587 + color.blue($c) * 0.114) / 255;
+}
+
+@function text-contrast($bg) {
+  @return if(luminance($bg) > 0.5, #000, #fff);
+}
+
+@function is-light($c) {
+  @return luminance($c) > 0.5;
+}
+
+// ------------------------------------------------------------
+// Units
+// ------------------------------------------------------------
+@function rem($px, $base: 16) {
+  @return math.div($px, $base) * 1rem;
+}
+
+@function em($px, $base: 16) {
+  @return math.div($px, $base) * 1em;
+}
+
+@function strip-unit($n) {
+  @if meta.type-of($n) == 'number' and not math.is-unitless($n) {
+    @return math.div($n, ($n * 0 + 1));
+  }
+  @return $n;
+}
+
+@function aspect-ratio($w, $h) {
+  @return math.div($h, $w) * 100%;
+}

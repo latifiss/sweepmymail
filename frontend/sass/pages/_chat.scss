@@ -1,0 +1,236 @@
+@use '../sass-utils' as ui;
+
+.chat-page {
+  display: flex;
+  height: calc(100vh - 60px);
+  height: calc(100dvh - 60px);
+  overflow: hidden;
+  background-color: ui.color(white-snow-drift);
+
+  @include ui.respond-to(md) {
+    height: 100vh;
+    height: 100dvh;
+  }
+}
+
+.chat-page__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.chat-page__rail {
+  position: relative;
+  flex: none;
+
+  @media (max-width: 767.98px) {
+    display: none;
+  }
+}
+
+.chat-page__cupboard {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  bottom: 0;
+  width: 365px;
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform ui.motion(base),
+    opacity ui.motion(base);
+  will-change: transform, opacity;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.chat-page__cupboard--open {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.chat-page__main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.chat-page__header {
+  display: none;
+  flex: none;
+
+  @include ui.respond-to(md) {
+    display: block;
+  }
+}
+
+.chat-page__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 0;
+  padding: ui.space(5);
+}
+
+.chat-page__empty-greeting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  max-width: 459px;
+  text-align: center;
+}
+
+.chat-page__empty-hi {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  height: 34px;
+  margin-bottom: ui.space(2);
+  background-color: #ffb200;
+  font-family: ui.font(family-head);
+  font-size: 28px;
+  font-weight: ui.font(weight-normal);
+  line-height: 1;
+  text-transform: uppercase;
+  color: #162550;
+}
+
+.chat-page__empty-title {
+  font-family: ui.font(family-head);
+  font-size: 30px;
+  font-weight: ui.font(weight-normal);
+  line-height: 36px;
+  text-transform: uppercase;
+  text-align: center;
+  color: #162550;
+}
+
+.chat-page__empty-description {
+  margin: 0;
+  font-family: ui.font(family-sans);
+  font-size: 16px;
+  font-weight: ui.font(weight-medium);
+  line-height: 1.5;
+  text-align: center;
+  color: #162550;
+}
+
+.chat-page__thread {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: ui.space(6) ui.space(5) ui.space(4);
+  scroll-behavior: smooth;
+}
+
+.chat-page__thread-inner {
+  display: flex;
+  flex-direction: column;
+  gap: ui.space(5);
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.chat-page__thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: ui.space(4) ui.space(5);
+  background-color: ui.color(snow-drift);
+  border: 1px solid ui.color(quill-gray);
+  align-self: flex-start;
+  max-width: 720px;
+  height: 48px;
+}
+
+.chat-page__thinking-bar {
+  display: inline-block;
+  width: 6px;
+  height: 12px;
+  border-radius: 3px;
+  animation: chat-thinking-wave 1.1s ease-in-out infinite;
+
+  &--one {
+    background-color: #70d690;
+  }
+
+  &--two {
+    background-color: #ffb200;
+    animation-delay: 0.14s;
+  }
+
+  &--three {
+    background-color: #fc7ec7;
+    animation-delay: 0.28s;
+  }
+}
+
+@keyframes chat-thinking-wave {
+  0%,
+  100% {
+    transform: scaleY(0.4);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-page__thinking-bar {
+    animation: none;
+    transform: scaleY(1);
+    opacity: 0.7;
+  }
+}
+
+.chat-page__composer {
+  flex: none;
+  padding: ui.space(4) ui.space(5) ui.space(5);
+  background-color: ui.color(white-snow-drift);
+  border-top: 1px solid ui.color(quill-gray);
+}
+
+.chat-page__composer-inner {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+@media (max-width: 767.98px) {
+  .chat-page__thread {
+    padding: ui.space(4) ui.space(3) ui.space(3);
+  }
+
+  .chat-page__composer {
+    padding: ui.space(3);
+  }
+
+  .chat-page__empty-hi {
+    font-size: 22px;
+    height: 28px;
+  }
+
+  .chat-page__empty-title {
+    font-size: 22px;
+    line-height: 1.2;
+  }
+
+  .chat-page__empty-description {
+    font-size: 14px;
+  }
+}

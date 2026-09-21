@@ -1,0 +1,276 @@
+@use 'sass:map';
+
+// ============================================================
+// Design Tokens — single source of truth
+// Access via `t.$color`, `t.$semantic`, `t.$font`, `t.$space`, etc.
+// or through accessors in `functions` (e.g. `fn.color(black)`).
+// ============================================================
+
+// ------------------------------------------------------------
+// Color primitives
+// ------------------------------------------------------------
+$color: (
+  // Neutrals
+  black:            rgba(0, 0, 0, 1),
+  white:            rgba(255, 255, 255, 1),
+  white-02:         rgba(255, 255, 255, 0.002),
+  white-20:         rgba(255, 255, 255, 0.2),
+  white-90:         rgba(255, 255, 255, 0.9),
+  white-snow-drift: rgba(255, 255, 255, 1),
+  snow-drift:       rgba(248, 250, 247, 1),
+  alabaster:        rgba(250, 250, 250, 1),
+  wild-sand:        rgba(245, 245, 245, 1),
+  alto:             rgba(212, 212, 212, 1),
+  mercury:          rgba(229, 229, 229, 1),
+  mercury-60:       rgba(229, 229, 229, 0.6),
+  silver-chalice:   rgba(161, 161, 161, 1),
+  dove-gray:        rgba(107, 107, 107, 1),
+  dove-gray-50:     rgba(117, 109, 111, 0.5),
+  emperor:          rgba(82, 82, 82, 1),
+  tundora:          rgba(65, 65, 65, 1),
+  tundora-50:       rgba(64, 64, 64, 0.5),
+  mine-shaft:       rgba(58, 58, 58, 1),
+  shark:            rgba(34, 40, 43, 1),
+  woodsmoke:        rgba(23, 27, 29, 1),
+  cod-gray:         rgba(23, 23, 23, 1),
+  cod-gray-50:      rgba(23, 23, 23, 0.5),
+
+  // Cool
+  blue-chalk:       rgba(229, 221, 255, 1),
+  blue-romance:     rgba(204, 246, 222, 1),
+  cadet-blue:       rgba(159, 165, 186, 1),
+  cerulean:         rgba(0, 181, 207, 1),
+  cerulean-20:      rgba(0, 181, 207, 0.2),
+  dodger-blue:      rgba(44, 197, 247, 1),
+  regent-st-blue:   rgba(166, 212, 231, 1),
+  pattens-blue:     rgba(222, 247, 255, 1),
+  lily-white:       rgba(229, 249, 255, 1),
+  link-water:       rgba(211, 233, 243, 1),
+  pale-sky:         rgba(107, 114, 128, 1),
+  nevada:           rgba(98, 115, 123, 1),
+  royal-blue:       rgba(95, 68, 230, 1),
+  purple-heart:     rgba(70, 53, 218, 1),
+  lucky-point:      rgba(33, 24, 102, 1),
+  medium-purple:    rgba(146, 85, 227, 1),
+  perfume:          rgba(179, 165, 245, 1),
+
+  // Warm
+  orange:           rgba(255, 87, 26, 1),
+  ecstasy:          rgba(249, 115, 22, 1),
+  jaffa:            rgba(242, 153, 74, 1),
+  flame-pea:        rgba(212, 86, 45, 1),
+  hit-pink:         rgba(255, 171, 141, 1),
+  pippin:           rgba(255, 229, 220, 1),
+  watusi:           rgba(255, 221, 209, 1),
+  portica:          rgba(250, 226, 97, 1),
+  marigold-yellow:  rgba(249, 228, 125, 1),
+  golden-glow:      rgba(252, 236, 151, 1),
+  drover:           rgba(253, 241, 176, 1),
+  sunflower:        rgba(230, 191, 36, 1),
+  hot-toddy:        rgba(174, 133, 12, 1),
+  bronze-olive:     rgba(78, 52, 12, 1),
+
+  // Pink / Red
+  hot-pink:         rgba(255, 78, 175, 1),
+  persian-pink:     rgba(252, 126, 199, 1),
+  pink-lace:        rgba(255, 209, 234, 1),
+  pale-rose:        rgba(255, 220, 239, 1),
+  flamingo:         rgba(239, 68, 68, 1),
+  scarlet:          rgba(250, 36, 19, 1),
+  red:              rgba(250, 15, 0, 1),
+  red-berry:        rgba(153, 26, 0, 1),
+
+  // Green
+  green-haze:       rgba(0, 147, 68, 1),
+  mountain-meadow:  rgba(34, 197, 94, 1),
+  pastel-green:     rgba(112, 214, 146, 1),
+  screamin-green:   rgba(127, 248, 108, 1),
+  san-felix:        rgba(6, 88, 15, 1),
+  heavy-metal:      rgba(47, 58, 45, 1),
+
+  // Earth / dark accents
+  blackberry:       rgba(75, 0, 58, 1),
+  bleached-cedar:   rgba(60, 40, 67, 1),
+  coffee-bean:      rgba(42, 15, 20, 1),
+  coffee-bean-10:   rgba(42, 15, 20, 0.1),
+  empress:          rgba(117, 110, 112, 1),
+  empress-0:        rgba(118, 110, 112, 0),
+  empress-10:       rgba(118, 110, 112, 0.1),
+  empress-15:       rgba(118, 110, 112, 0.15),
+  empress-25:       rgba(118, 110, 112, 0.25),
+  gray-nurse:       rgba(236, 238, 234, 1),
+  gray-nurse-50:    rgba(240, 242, 239, 0.5),
+  quill-gray:       rgba(223, 224, 222, 1),
+  quill-gray-50:    rgba(223, 224, 222, 0.5),
+  matterhorn:       rgba(84, 65, 69, 1),
+  saddle:           rgba(78, 41, 36, 1),
+  livid-brown:      rgba(78, 33, 52, 1),
+  soapstone:        rgba(255, 251, 249, 1),
+  tuna:             rgba(58, 59, 68, 1),
+  storm-dust:       rgba(94, 96, 93, 1),
+);
+
+// ------------------------------------------------------------
+// Semantic roles
+// ------------------------------------------------------------
+$semantic: (
+  primary:         #0066cc,
+  primary-dark:    #0052a3,
+  primary-light:   #e8f2ff,
+
+  secondary:       #6c757d,
+  secondary-dark:  #5a6268,
+  secondary-light: #f5f6f7,
+
+  tertiary:        #ff407f,
+  tertiary-dark:   #df2965,
+  tertiary-light:  #fddae6,
+
+  success:         #28a745,
+  success-dark:    #218838,
+  success-light:   #d4edda,
+
+  danger:          #dc3545,
+  danger-dark:     #c82333,
+  danger-light:    #f8d7da,
+
+  warning:         #ffc107,
+  warning-dark:    #e0a800,
+  warning-light:   #fff3cd,
+
+  info:            #17a2b8,
+  info-dark:       #138496,
+  info-light:      #d1ecf1,
+
+  text:            #333333,
+  text-light:      #666666,
+  text-lighter:    #999999,
+  text-inverse:    #ffffff,
+
+  surface:         #ffffff,
+  surface-alt:     #f5f5f5,
+  surface-muted:   #e9ecef,
+  border:          #e0e0e0,
+  dark:            #343a40,
+);
+
+// ------------------------------------------------------------
+// Gradients
+// ------------------------------------------------------------
+$gradient: (
+  primary:         linear-gradient(to right, #0066cc, #0052a3),
+  primary-reverse: linear-gradient(to right, #0052a3, #0066cc),
+  primary-light:   linear-gradient(to right, #e8f2ff, #d4e7ff),
+  yellow:          linear-gradient(to right, #ffc000, #f5be17),
+  yellow-reverse:  linear-gradient(to right, #f5be17, #ffc000),
+);
+
+// ------------------------------------------------------------
+// Typography
+// ------------------------------------------------------------
+$font: (
+  family-sans: ('ABC Solar Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif),
+  family-head: ('Bungee', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif),
+  family-mono: ('Courier New', Courier, monospace),
+
+  size-xs:   0.75rem,
+  size-sm:   0.875rem,
+  size-base: 1rem,
+  size-lg:   1.25rem,
+
+  weight-light:     300,
+  weight-normal:    400,
+  weight-medium:    500,
+  weight-semibold:  600,
+  weight-bold:      700,
+  // Font ships only up to weight 800 — do not raise to 900.
+  weight-extrabold: 800,
+
+  line-tight: 1.4,
+  line-base:  1.6,
+  line-loose: 1.8,
+);
+
+// ------------------------------------------------------------
+// Spacing (8-pt grid)
+// Numeric keys are the canonical scale.
+// Named keys are aliases kept for legacy consumers.
+// ------------------------------------------------------------
+$space: (
+  0: 0,
+  1: 0.25rem,
+  2: 0.5rem,
+  3: 0.75rem,
+  4: 1rem,
+  5: 1.5rem,
+  6: 2rem,
+  7: 3rem,
+  8: 4rem,
+  9: 6rem,
+  10: 8rem,
+
+  xs:    0.25rem,
+  sm:    0.5rem,
+  base:  0.75rem,
+  md:    1rem,
+  lg:    1.5rem,
+  xl:    2rem,
+  xxl:   3rem,
+  xxxl:  4rem,
+  xxxxl: 6rem,
+);
+
+// ------------------------------------------------------------
+// Radii
+// ------------------------------------------------------------
+$radius: (
+  sm:   0.25rem,
+  md:   0.375rem,
+  lg:   0.5rem,
+  xl:   1rem,
+  full: 50%,
+);
+
+// ------------------------------------------------------------
+// Shadows
+// ------------------------------------------------------------
+$shadow: (
+  sm: 0 2px 4px rgba(0, 0, 0, 0.1),
+  md: 0 4px 8px rgba(0, 0, 0, 0.15),
+  lg: 0 8px 16px rgba(0, 0, 0, 0.15),
+  xl: 0 16px 32px rgba(0, 0, 0, 0.15),
+);
+
+// ------------------------------------------------------------
+// Motion
+// ------------------------------------------------------------
+$motion: (
+  fast: 0.15s ease,
+  base: 0.3s ease,
+  slow: 0.6s ease,
+);
+
+// ------------------------------------------------------------
+// Layout
+// ------------------------------------------------------------
+$layout: (
+  container-max:        1200px,
+  container-padding:    2rem,
+  container-padding-sm: 1rem,
+  border-width:         1px,
+  border-style:         solid,
+);
+
+// ------------------------------------------------------------
+// Z-index scale
+// ------------------------------------------------------------
+$z: (
+  base:           1,
+  sticky:         20,
+  dropdown:       1000,
+  fixed:          1030,
+  modal-backdrop: 1040,
+  modal:          1050,
+  popover:        1060,
+  tooltip:        1070,
+);

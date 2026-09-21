@@ -1,0 +1,51 @@
+@use '../sass-utils' as ui;
+
+/// Inline token rendered inside the prompt input when a trigger word is typed.
+/// Sized with relative units (`1em`) to match surrounding text baseline flow.
+.reference-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 1em;
+  padding: 0 4px;
+  transform: translateY(2px);
+  vertical-align: middle;
+  white-space: nowrap;
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 1em;
+    height: 1em;
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  &__label {
+    position: relative;
+    display: inline-block;
+    font-family: ui.font(family-head);
+    font-size: 1em;
+    font-weight: ui.font(weight-normal);
+    line-height: 1;
+    text-transform: uppercase;
+    color: ui.color(matterhorn);
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: -2px;
+      right: -2px;
+      bottom: 0;
+      height: 50%;
+      background-color: var(--reference-color);
+      z-index: -1;
+    }
+  }
+}

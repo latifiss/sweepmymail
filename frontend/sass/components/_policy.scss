@@ -1,0 +1,159 @@
+@use '../sass-utils' as ui;
+
+.policy {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  width: 100%;
+
+  @include ui.respond-to(md) {
+    gap: 56px;
+  }
+}
+
+.policy__header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.policy__title {
+  margin: 0;
+  font-family: ui.font(family-sans);
+  font-size: 36px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #2A0F14;
+
+  @include ui.respond-to(md) {
+    font-size: 52px;
+    line-height: 1.05;
+  }
+
+  @include ui.respond-to(lg) {
+    font-size: 60px;
+  }
+}
+
+.policy__updated {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #766E70;
+}
+
+.policy__intro {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.65;
+  color: #544145;
+
+  @include ui.respond-to(md) {
+    font-size: 18px;
+  }
+}
+
+.policy__body {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+
+  @include ui.respond-to(md) {
+    gap: 48px;
+  }
+}
+
+.policy__section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.policy__heading {
+  margin: 0;
+  font-family: ui.font(family-sans);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: #2A0F14;
+
+  @include ui.respond-to(md) {
+    font-size: 26px;
+  }
+}
+
+.policy__paragraph {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.75;
+  color: #2A0F14;
+
+  @include ui.respond-to(md) {
+    font-size: 17px;
+  }
+}
+
+.policy__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding-left: 20px;
+  list-style: disc;
+}
+
+.policy__list-item {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.65;
+  color: #2A0F14;
+
+  @include ui.respond-to(md) {
+    font-size: 17px;
+  }
+
+  &::marker {
+    color: #766E70;
+  }
+}
+
+.policy__footer {
+  padding-top: 24px;
+  border-top: 1px solid #DFE0DE;
+}
+
+.policy__contact {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.6;
+  color: #544145;
+}
+
+.policy__contact-link {
+  color: #2A0F14;
+  text-decoration: none;
+  border-bottom: 1px solid #2A0F14;
+  padding-bottom: 2px;
+  transition: color 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    color: #FF571A;
+    border-bottom-color: #FF571A;
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #2A0F14;
+    outline-offset: 3px;
+  }
+}

@@ -1,0 +1,115 @@
+// ------------------------------------------------------------
+// Font faces
+// Bungee ships a single regular weight.
+// ABC Solar Display ships in 5 weights × 2 styles.
+// ------------------------------------------------------------
+
+@font-face {
+  font-family: 'Bungee';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src:
+    url('/fonts/Bungee-Regular.woff2') format('woff2'),
+    url('/fonts/Bungee-Regular.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'ABC Solar Display';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src:
+    url('/fonts/ABCSolarDisplayTrial-Regular.woff2') format('woff2'),
+    url('/fonts/ABCSolarDisplayTrial-Regular.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'ABC Solar Display';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src:
+    url('/fonts/ABCSolarDisplayTrial-RegularItalic.woff2') format('woff2'),
+    url('/fonts/ABCSolarDisplayTrial-RegularItalic.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'ABC Solar Display';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src:
+    url('/fonts/ABCSolarDisplayTrial-Medium.woff2') format('woff2'),
+    url('/fonts/ABCSolarDisplayTrial-Medium.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'ABC Solar Display';
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src:
+    url('/fonts/ABCSolarDisplayTrial-MediumItalic.woff2') format('woff2'),
+    url('/fonts/ABCSolarDisplayTrial-MediumItalic.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'ABC Solar Display';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src:
+    url('/fonts/ABCSolarDisplayTrial-Semibold.woff2') format('woff2'),
+    url('/fonts/ABCSolarDisplayTrial-Semibold.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'ABC Solar Display';
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+  src:
+    url('/fonts/ABCSolarDisplayTrial-SemiboldItalic.woff2') format('woff2'),
+    url('/fonts/ABCSolarDisplayTrial-SemiboldItalic.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'ABC Solar Display';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src:
+    url('/fonts/ABCSolarDisplayTrial-Bold.woff2') format('woff2'),
+    url('/fonts/ABCSolarDisplayTrial-Bold.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'ABC Solar Display';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src:
+    url('/fonts/ABCSolarDisplayTrial-BoldItalic.woff2') format('woff2'),
+    url('/fonts/ABCSolarDisplayTrial-BoldItalic.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'ABC Solar Display';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src:
+    url('/fonts/ABCSolarDisplayTrial-Extrabold.woff2') format('woff2'),
+    url('/fonts/ABCSolarDisplayTrial-Extrabold.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'ABC Solar Display';
+  font-style: italic;
+  font-weight: 800;
+  font-display: swap;
+  src:
+    url('/fonts/ABCSolarDisplayTrial-ExtraboldItalic.woff2') format('woff2'),
+    url('/fonts/ABCSolarDisplayTrial-ExtraboldItalic.woff') format('woff');
+}

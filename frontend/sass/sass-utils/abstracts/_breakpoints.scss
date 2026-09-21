@@ -1,0 +1,60 @@
+@use 'sass:map';
+@use 'sass:list';
+
+// ------------------------------------------------------------
+// Breakpoints — min-width scale (mobile-first)
+// ------------------------------------------------------------
+$breakpoints: (
+  xs: 0,
+  sm: 576px,
+  md: 768px,
+  lg: 1024px,
+  xl: 1200px,
+  xxl: 1400px,
+);
+
+// Resolve a breakpoint key to its pixel value.
+// Errors loudly on unknown keys so typos fail at build time.
+@function breakpoint($key) {
+  @if not map.has-key($breakpoints, $key) {
+    @error "Unknown breakpoint `#{$key}`. Valid: #{map.keys($breakpoints)}";
+  }
+  @return map.get($breakpoints, $key);
+}
+
+// Mobile-first: `respond-to(md)` → @media (min-width: 768px)
+@mixin respond-to($key) {
+  $min: breakpoint($key);
+
+  @if $min == 0 {
+    @content;
+  } @else {
+    @media (min-width: $min) {
+      @content;
+    }
+  }
+}
+
+// Desktop-first escape hatch: `respond-below(md)` → @media (max-width: 767.98px)
+// Subtract 0.02px to avoid overlap with the min-width tier above.
+@mixin respond-below($key) {
+  $min: breakpoint($key);
+
+  @if $min == 0 {
+    @content;
+  } @else {
+    @media (max-width: ($min - 0.02px)) {
+      @content;
+    }
+  }
+}
+
+// Range query: `respond-between(md, lg)` → 768px … 1023.98px
+@mixin respond-between($from, $to) {
+  $min: breakpoint($from);
+  $max: breakpoint($to) - 0.02px;
+
+  @media (min-width: $min) and (max-width: $max) {
+    @content;
+  }
+}

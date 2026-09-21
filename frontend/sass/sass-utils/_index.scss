@@ -1,0 +1,25 @@
+// ============================================================
+// sass-utils — public API
+// Consumers: @use 'sass-utils' as ui;
+//
+// Everything a component needs comes through this barrel.
+// Internal modules are organized under `abstracts/`; new
+// partials should be forwarded here, not imported directly.
+// ============================================================
+
+// ------------------------------------------------------------
+// Abstracts — no CSS emitted, only definitions
+// ------------------------------------------------------------
+@forward 'abstracts/tokens';
+@forward 'abstracts/functions';
+@forward 'abstracts/breakpoints';
+@forward 'abstracts/mixins';
+@forward 'abstracts/placeholders';
+
+// ------------------------------------------------------------
+// Legacy aliases — zero-downtime migration bridge
+// TODO: remove this forward once every consumer is migrated
+// to the token-based API. Track via grep for `$mm-`,
+// `$primary-color`, `$font-family-*`, `space(` in src/.
+// ------------------------------------------------------------
+@forward 'legacy';

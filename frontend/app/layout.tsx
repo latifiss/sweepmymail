@@ -1,17 +1,21 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "../sass/style.scss";
-import Header from "@/components/headers/header";
+import ConditionalHeader from "@/components/conditional-header";
+import ConditionalFooter from "@/components/conditional-footer";
 import { Providers } from "./providers";
 import ClientLayout from "./client-layout";
 
 export const metadata: Metadata = {
   title: "MagicMail - AI Email Management | Clean Inbox, Clear Mind",
-  description: "AI-powered email cleaner that deletes spam, summarizes newsletters, auto-categorizes emails, and prioritizes what matters. Join 50,000+ users saving 2+ hours daily.",
-  keywords: "email cleaner, AI email assistant, spam removal, inbox organizer, email summary tool",
+  description:
+    "AI-powered email cleaner that deletes spam, summarizes newsletters, auto-categorizes emails, and prioritizes what matters. Join 50,000+ users saving 2+ hours daily.",
+  keywords:
+    "email cleaner, AI email assistant, spam removal, inbox organizer, email summary tool",
   openGraph: {
     title: "MagicMail - Transform Your Email Experience",
-    description: "Stop drowning in emails. Let AI clean your inbox, summarize newsletters, and highlight what's important.",
+    description:
+      "Stop drowning in emails. Let AI clean your inbox, summarize newsletters, and highlight what's important.",
     type: "website",
     locale: "en_US",
     url: "https://mymagicmail.app",
@@ -43,8 +47,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <Providers>
-          <Header />
+          <ConditionalHeader />
           <ClientLayout>{children}</ClientLayout>
+          <ConditionalFooter />
         </Providers>
       </body>
     </html>

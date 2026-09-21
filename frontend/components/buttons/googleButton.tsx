@@ -1,22 +1,26 @@
-'use client'
+"use client";
 
-import Image from 'next/image'
-import React from 'react'
+import type { ButtonHTMLAttributes } from 'react';
+import {GoogleIcon} from '@/public/icons/svg/index';
 
-const GoogleButton = () => {
-  return (
-    <button className='btn btn-google'
-        >
-          <Image 
-            src='/icons/google.svg'
-            alt='google' 
-            width={18} 
-            height={18} 
-            className="action-btn__icon" 
-          />
-          <span className="google-text">Continue with google</span>
-        </button>
-  )
+export interface GoogleButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  label?: string;
 }
 
-export default GoogleButton
+export default function GoogleButton({
+  label = 'Continue with Google',
+  className,
+  type = 'button',
+  ...rest
+}: GoogleButtonProps) {
+  const rootClassName = className
+    ? `google-button ${className}`
+    : 'google-button';
+
+  return (
+    <button type={type} className={rootClassName} {...rest}>
+      <GoogleIcon size={16} />
+      <span className="google-button__label">{label}</span>
+    </button>
+  );
+}

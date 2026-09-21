@@ -1,0 +1,166 @@
+// sass/pages/_try.scss
+@use '../sass-utils' as ui;
+
+// ------------------------------------------------------------
+// Try page
+// Renders every ChatResponse kind with fixture data and logs
+// any actions the user triggers.
+// ------------------------------------------------------------
+.try-page {
+  display: flex;
+  flex-direction: column;
+  gap: ui.space(6);
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: ui.space(7) ui.space(5);
+}
+
+.try-page__header {
+  display: flex;
+  flex-direction: column;
+  gap: ui.space(2);
+}
+
+.try-page__title {
+  margin: 0;
+  font-family: ui.font(family-head);
+  font-size: 28px;
+  font-weight: ui.font(weight-normal);
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: ui.color(matterhorn);
+}
+
+.try-page__lead {
+  margin: 0;
+  font-family: ui.font(family-sans);
+  font-size: 16px;
+  font-weight: ui.font(weight-medium);
+  line-height: 1.5;
+  color: ui.color(empress);
+}
+
+// ------------------------------------------------------------
+// Layout — responses on the left, log on the right
+// ------------------------------------------------------------
+.try-page__layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: ui.space(5);
+  align-items: start;
+
+  @include ui.respond-to(lg) {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+}
+
+.try-page__responses {
+  display: flex;
+  flex-direction: column;
+  gap: ui.space(6);
+  min-width: 0;
+}
+
+.try-page__section {
+  display: flex;
+  flex-direction: column;
+  gap: ui.space(3);
+  padding: ui.space(5);
+  background-color: transparent;
+  border: 1px solid ui.color(quill-gray);
+}
+
+.try-page__kind-label {
+  font-family: ui.font(family-sans);
+  font-size: 11px;
+  font-weight: ui.font(weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: ui.color(empress);
+}
+
+// ------------------------------------------------------------
+// Action log
+// ------------------------------------------------------------
+.try-page__log {
+  position: sticky;
+  top: ui.space(5);
+  display: flex;
+  flex-direction: column;
+  gap: ui.space(3);
+  padding: ui.space(4);
+  background-color: ui.color(snow-drift);
+  border: 1px solid ui.color(quill-gray);
+}
+
+.try-page__log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: ui.space(2);
+}
+
+.try-page__log-title {
+  font-family: ui.font(family-sans);
+  font-size: 12px;
+  font-weight: ui.font(weight-semibold);
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: ui.color(empress);
+}
+
+.try-page__log-clear {
+  padding: 4px 8px;
+  background: none;
+  border: 1px solid ui.color(quill-gray);
+  font-family: ui.font(family-sans);
+  font-size: 12px;
+  font-weight: ui.font(weight-medium);
+  color: ui.color(matterhorn);
+  cursor: pointer;
+  transition: background-color ui.motion(fast);
+
+  &:hover {
+    background-color: ui.color(wild-sand);
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ui.semantic(primary);
+    outline-offset: 2px;
+  }
+}
+
+.try-page__log-empty {
+  margin: 0;
+  font-family: ui.font(family-sans);
+  font-size: 13px;
+  font-weight: ui.font(weight-normal);
+  line-height: 1.5;
+  color: ui.color(empress);
+}
+
+.try-page__log-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.try-page__log-item {
+  font-family: ui.font(family-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: ui.color(matterhorn);
+  word-break: break-word;
+}

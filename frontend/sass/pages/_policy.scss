@@ -1,0 +1,51 @@
+@use '../sass-utils' as ui;
+
+.policy-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background-color: #F8FAF7;
+  color: #2A0F14;
+  font-family: ui.font(family-sans);
+  overflow-x: hidden;
+
+  padding-top: 58px;
+
+  @include ui.respond-to(md) {
+    padding-top: 68px;
+  }
+}
+
+.policy-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(42, 15, 20, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(42, 15, 20, 0.045) 1px, transparent 1px);
+  background-size: 58px 58px;
+  background-position: 0 0;
+
+  @include ui.respond-to(md) {
+    background-size: 68px 68px;
+  }
+}
+
+.policy-page > * {
+  position: relative;
+  z-index: 1;
+}
+
+.policy-page__inner {
+  max-width: 760px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 40px 20px 80px;
+
+  @include ui.respond-to(md) {
+    padding: 80px 24px 120px;
+  }
+}

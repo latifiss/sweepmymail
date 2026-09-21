@@ -7,9 +7,9 @@ import { usePathname } from "next/navigation";
 type Tab = { id: string; label: string; icon: string; href: string };
 const tabs: Tab[] = [
   { id: "emails", label: "Emails", icon: "/icons/emails.svg", href: "/emails" },
-  { id: "compose", label: "Compose", icon: "/icons/emails.svg", href: "/compose" },
-  { id: "scheduled", label: "Scheduled", icon: "/icons/emails.svg", href: "/scheduled" },
-  { id: "automations", label: "Automations", icon: "/icons/emails.svg", href: "/automations" },
+  // { id: "compose", label: "Compose", icon: "/icons/emails.svg", href: "/compose" },
+  // { id: "scheduled", label: "Scheduled", icon: "/icons/emails.svg", href: "/scheduled" },
+  // { id: "automations", label: "Automations", icon: "/icons/emails.svg", href: "/automations" },
   { id: "subscriptions", label: "Subscriptions", icon: "/icons/subscriptions.svg", href: "/subscriptions" },
   { id: "info", label: "Info", icon: "/icons/info.svg", href: "/info" },
 ];

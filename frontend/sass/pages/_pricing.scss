@@ -1,0 +1,210 @@
+@use '../sass-utils' as ui;
+
+.pricing-page {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: ui.space(8) ui.space(4);
+  background-color: ui.color(snow-drift);
+  overflow-x: hidden;
+
+  padding-top: calc(58px + #{ui.space(8)});
+
+  @include ui.respond-to(md) {
+    min-height: 100vh;
+    padding-top: calc(68px + #{ui.space(8)});
+  }
+}
+
+.pricing-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(42, 15, 20, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(42, 15, 20, 0.045) 1px, transparent 1px);
+  background-size: 58px 58px;
+  background-position: 0 0;
+
+  @include ui.respond-to(md) {
+    background-size: 68px 68px;
+  }
+}
+
+.pricing-page > * {
+  position: relative;
+  z-index: 1;
+}
+
+.pricing-page__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: ui.space(7);
+  width: 100%;
+  max-width: 799px;
+}
+
+.pricing-page__title {
+  margin: 0;
+  font-family: ui.font(family-head);
+  font-size: 36px;
+  font-weight: ui.font(weight-normal);
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+  color: #162550;
+}
+
+.pricing-page__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: ui.space(5);
+  width: 100%;
+
+  @include ui.respond-to(md) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.pricing-card {
+  display: flex;
+  flex-direction: column;
+  background-color: ui.color(white-snow-drift);
+}
+
+.pricing-card__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px ui.space(3);
+  border: 1px solid ui.color(quill-gray);
+  border-bottom: 0;
+
+  @include ui.respond-to(md) {
+    justify-content: flex-start;
+  }
+}
+
+.pricing-card__price-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px ui.space(3);
+  border: 1px solid ui.color(quill-gray);
+  border-bottom: 0;
+
+  @include ui.respond-to(md) {
+    justify-content: flex-start;
+  }
+}
+
+.pricing-card__price {
+  font-family: ui.font(family-head);
+  font-size: 42px;
+  font-weight: ui.font(weight-normal);
+  line-height: 1;
+  color: ui.color(matterhorn);
+}
+
+.pricing-card__period {
+  padding-bottom: 10px;
+  font-family: ui.font(family-sans);
+  font-size: 16.2px;
+  font-weight: ui.font(weight-medium);
+  line-height: 1;
+  color: ui.color(matterhorn);
+}
+
+.pricing-card__features {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: ui.space(3);
+  flex: 1;
+  margin: 0;
+  padding: 18px ui.space(3);
+  list-style: none;
+  border: 1px solid ui.color(quill-gray);
+
+  @include ui.respond-to(md) {
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+}
+
+.pricing-card__feature {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pricing-card__icon-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.pricing-card__feature-label {
+  font-family: ui.font(family-sans);
+  font-size: 16.2px;
+  font-weight: ui.font(weight-medium);
+  line-height: 1.5;
+  color: ui.color(matterhorn);
+}
+
+.pricing-card__icon {
+  display: inline-block;
+  flex: none;
+  min-width: 14px;
+  max-width: 14px;
+
+  &--house {
+    width: 12px;
+    height: 14px;
+    background-color: #f09797;
+    clip-path: polygon(50% 0, 100% 45%, 100% 100%, 0 100%, 0 45%);
+  }
+
+  &--dots {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background-color: #2f80ed;
+  }
+
+  &--keyhole {
+    width: 8px;
+    height: 14px;
+    border-radius: 4px;
+    background-color: #f2994a;
+  }
+
+  &--rainbow {
+    width: 14px;
+    height: 7px;
+    border-radius: 7px 7px 0 0;
+    background-color: #f14e3a;
+  }
+}
+
+.pricing-card__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px ui.space(3);
+  border: 1px solid ui.color(quill-gray);
+  border-top: 0;
+
+  > * {
+    width: 100%;
+  }
+}

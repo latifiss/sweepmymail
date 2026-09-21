@@ -1,0 +1,47 @@
+{
+  "title": "Terms & Conditions",
+  "lastUpdated": "May 1, 2026",
+  "intro": "These terms govern your use of MagicMail. By creating an account or using the service, you agree to them. If you don't agree, please don't use MagicMail.",
+  "sections": [
+    {
+      "heading": "1. Using MagicMail",
+      "paragraphs": [
+        "MagicMail is an AI agent that reads, sorts, and drafts replies to emails in your inbox. You can use it for personal or professional purposes, as long as you don't violate these terms or any applicable law.",
+        "You're responsible for keeping your account credentials secure. If you believe your account has been compromised, contact us immediately."
+      ]
+    },
+    {
+      "heading": "2. Your content",
+      "paragraphs": [
+        "You retain ownership of everything you send through MagicMail — your emails, drafts, and attachments. We don't claim any rights to your content.",
+        "We only access your email to provide the service. We never sell, rent, or share your content with third parties for advertising purposes."
+      ]
+    },
+    {
+      "heading": "3. Acceptable use",
+      "paragraphs": [
+        "You agree not to:"
+      ],
+      "list": [
+        "Use MagicMail to send spam or unsolicited bulk email",
+        "Impersonate another person or misrepresent your identity",
+        "Attempt to reverse-engineer, decompile, or disrupt the service",
+        "Use the service for any illegal purpose"
+      ]
+    },
+    {
+      "heading": "4. Billing and refunds",
+      "paragraphs": [
+        "Paid plans are billed monthly. You can cancel at any time and your plan will remain active until the end of the current billing period.",
+        "If you're not satisfied within the first 14 days of a paid plan, email us and we'll issue a full refund — no questions asked."
+      ]
+    },
+    {
+      "heading": "5. Changes to these terms",
+      "paragraphs": [
+        "We may update these terms from time to time. When we do, we'll change the 'last updated' date at the top of this page and notify you by email if the changes are significant."
+      ]
+    }
+  ],
+  "contactEmail": "hello@magicmail.app"
+}

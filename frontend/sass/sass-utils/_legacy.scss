@@ -1,0 +1,213 @@
+// ============================================================
+// LEGACY ALIASES — TODO: remove after migration completes
+// Maps every old $var name to the new token map.
+// ============================================================
+@use 'sass:map';
+@use 'abstracts/tokens' as t;
+
+// --- Old semantic names ---
+$primary-color:   map.get(t.$semantic, primary);
+$primary-dark:    map.get(t.$semantic, primary-dark);
+$primary-light:   map.get(t.$semantic, primary-light);
+$secondary-color: map.get(t.$semantic, secondary);
+$secondary-dark:  map.get(t.$semantic, secondary-dark);
+$secondary-light: map.get(t.$semantic, secondary-light);
+$tertiary-color:  map.get(t.$semantic, tertiary);
+$tertiary-dark:   map.get(t.$semantic, tertiary-dark);
+$tertiary-light:  map.get(t.$semantic, tertiary-light);
+$success-color:   map.get(t.$semantic, success);
+$success-dark:    map.get(t.$semantic, success-dark);
+$success-light:   map.get(t.$semantic, success-light);
+$danger-color:    map.get(t.$semantic, danger);
+$danger-dark:     map.get(t.$semantic, danger-dark);
+$danger-light:    map.get(t.$semantic, danger-light);
+$warning-color:   map.get(t.$semantic, warning);
+$warning-dark:    map.get(t.$semantic, warning-dark);
+$warning-light:   map.get(t.$semantic, warning-light);
+$info-color:      map.get(t.$semantic, info);
+$info-dark:       map.get(t.$semantic, info-dark);
+$info-light:      map.get(t.$semantic, info-light);
+
+$white:      map.get(t.$semantic, surface);
+$light-gray: map.get(t.$semantic, surface-alt);
+$gray:       map.get(t.$semantic, surface-muted);
+$gray-dark:  map.get(t.$semantic, secondary);
+$dark:       map.get(t.$semantic, dark);
+$black:      #000000;
+
+$text-color:   map.get(t.$semantic, text);
+$text-light:   map.get(t.$semantic, text-light);
+$text-lighter: map.get(t.$semantic, text-lighter);
+$text-white:   map.get(t.$semantic, text-inverse);
+
+$border-color: map.get(t.$semantic, border);
+$border-width: map.get(t.$layout, border-width);
+$border-style: map.get(t.$layout, border-style);
+
+// --- Fonts ---
+$font-family-sans: map.get(t.$font, family-sans);
+$font-family-head: map.get(t.$font, family-head);
+$font-family-mono: map.get(t.$font, family-mono);
+$font-family-base: $font-family-sans;
+$font-family-base-custom: $font-family-sans;
+
+$font-size-base: map.get(t.$font, size-base);
+$font-size-lg:   map.get(t.$font, size-lg);
+$font-size-sm:   map.get(t.$font, size-sm);
+$font-size-xs:   map.get(t.$font, size-xs);
+
+$font-weight-light:     map.get(t.$font, weight-light);
+$font-weight-normal:    map.get(t.$font, weight-normal);
+$font-weight-medium:    map.get(t.$font, weight-medium);
+$font-weight-semibold:  map.get(t.$font, weight-semibold);
+$font-weight-bold:      map.get(t.$font, weight-bold);
+$font-weight-extra-bold: map.get(t.$font, weight-extrabold);
+
+$line-height-base: map.get(t.$font, line-base);
+$line-height-lg:   map.get(t.$font, line-loose);
+$line-height-sm:   map.get(t.$font, line-tight);
+
+// --- Radii / Shadows / Motion ---
+$border-radius-sm:   map.get(t.$radius, sm);
+$border-radius-md:   map.get(t.$radius, md);
+$border-radius-lg:   map.get(t.$radius, lg);
+$border-radius-xl:   map.get(t.$radius, xl);
+$border-radius-full: map.get(t.$radius, full);
+
+$shadow-sm: map.get(t.$shadow, sm);
+$shadow-md: map.get(t.$shadow, md);
+$shadow-lg: map.get(t.$shadow, lg);
+$shadow-xl: map.get(t.$shadow, xl);
+
+$transition-fast: map.get(t.$motion, fast);
+$transition-base: map.get(t.$motion, base);
+$transition-slow: map.get(t.$motion, slow);
+
+// --- Layout / z-index ---
+$container-max-width:  map.get(t.$layout, container-max);
+$container-padding:    map.get(t.$layout, container-padding);
+$container-padding-sm: map.get(t.$layout, container-padding-sm);
+
+$z-index-sticky:         map.get(t.$z, sticky);
+$z-index-dropdown:       map.get(t.$z, dropdown);
+$z-index-fixed:          map.get(t.$z, fixed);
+$z-index-modal-backdrop: map.get(t.$z, modal-backdrop);
+$z-index-modal:          map.get(t.$z, modal);
+$z-index-popover:        map.get(t.$z, popover);
+$z-index-tooltip:        map.get(t.$z, tooltip);
+
+// --- Spacing (both naming schemes) ---
+$spacing-xs:   map.get(t.$space, xs);
+$spacing-sm:   map.get(t.$space, sm);
+$spacing-base: map.get(t.$space, base);
+$spacing-md:   map.get(t.$space, md);
+$spacing-lg:   map.get(t.$space, lg);
+$spacing-xl:   map.get(t.$space, xl);
+$spacing-xxl:  map.get(t.$space, xxl);
+$spacing-xxxl: map.get(t.$space, xxxl);
+$spacing-xxxxl:map.get(t.$space, xxxxl);
+
+// --- Breakpoints ---
+$breakpoint-xs: 0;
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1200px;
+$breakpoint-xxl: 1400px;
+
+// --- $mm-* direct aliases ---
+$mm-black:        map.get(t.$color, black);
+$mm-blackberry:   map.get(t.$color, blackberry);
+$mm-bleached-cedar: map.get(t.$color, bleached-cedar);
+$mm-blue-chalk:   map.get(t.$color, blue-chalk);
+$mm-blue-romance: map.get(t.$color, blue-romance);
+$mm-bronze-olive: map.get(t.$color, bronze-olive);
+$mm-coffee-bean:  map.get(t.$color, coffee-bean);
+$mm-coffee-bean-10: map.get(t.$color, coffee-bean-10);
+$mm-dove-gray-50: map.get(t.$color, dove-gray-50);
+$mm-drover:       map.get(t.$color, drover);
+$mm-empress:      map.get(t.$color, empress);
+$mm-empress-0:    map.get(t.$color, empress-0);
+$mm-empress-10:   map.get(t.$color, empress-10);
+$mm-empress-15:   map.get(t.$color, empress-15);
+$mm-empress-25:   map.get(t.$color, empress-25);
+$mm-flame-pea:    map.get(t.$color, flame-pea);
+$mm-golden-glow:  map.get(t.$color, golden-glow);
+$mm-gray-nurse:   map.get(t.$color, gray-nurse);
+$mm-gray-nurse-50:map.get(t.$color, gray-nurse-50);
+$mm-green-haze:   map.get(t.$color, green-haze);
+$mm-heavy-metal:  map.get(t.$color, heavy-metal);
+$mm-hit-pink:     map.get(t.$color, hit-pink);
+$mm-hot-pink:     map.get(t.$color, hot-pink);
+$mm-hot-toddy:    map.get(t.$color, hot-toddy);
+$mm-lily-white:   map.get(t.$color, lily-white);
+$mm-link-water:   map.get(t.$color, link-water);
+$mm-livid-brown:  map.get(t.$color, livid-brown);
+$mm-lucky-point:  map.get(t.$color, lucky-point);
+$mm-marigold-yellow: map.get(t.$color, marigold-yellow);
+$mm-matterhorn:   map.get(t.$color, matterhorn);
+$mm-orange:       map.get(t.$color, orange);
+$mm-pale-rose:    map.get(t.$color, pale-rose);
+$mm-pastel-green: map.get(t.$color, pastel-green);
+$mm-pattens-blue: map.get(t.$color, pattens-blue);
+$mm-perfume:      map.get(t.$color, perfume);
+$mm-persian-pink: map.get(t.$color, persian-pink);
+$mm-pink-lace:    map.get(t.$color, pink-lace);
+$mm-pippin:       map.get(t.$color, pippin);
+$mm-portica:      map.get(t.$color, portica);
+$mm-purple-heart: map.get(t.$color, purple-heart);
+$mm-quill-gray:   map.get(t.$color, quill-gray);
+$mm-quill-gray-50:map.get(t.$color, quill-gray-50);
+$mm-red-berry:    map.get(t.$color, red-berry);
+$mm-regent-st-blue:map.get(t.$color, regent-st-blue);
+$mm-royal-blue:   map.get(t.$color, royal-blue);
+$mm-saddle:       map.get(t.$color, saddle);
+$mm-san-felix:    map.get(t.$color, san-felix);
+$mm-snow-drift:   map.get(t.$color, snow-drift);
+$mm-soapstone:    map.get(t.$color, soapstone);
+$mm-storm-dust:   map.get(t.$color, storm-dust);
+$mm-sunflower:    map.get(t.$color, sunflower);
+$mm-tuna:         map.get(t.$color, tuna);
+$mm-watusi:       map.get(t.$color, watusi);
+$mm-white:        map.get(t.$color, white);
+$mm-white-02:     map.get(t.$color, white-02);
+$mm-white-20:     map.get(t.$color, white-20);
+$mm-white-90:     map.get(t.$color, white-90);
+$mm-white-snow-drift: map.get(t.$color, white-snow-drift);
+$mm-alabaster:    map.get(t.$color, alabaster);
+$mm-alto:         map.get(t.$color, alto);
+$mm-cadet-blue:   map.get(t.$color, cadet-blue);
+$mm-cerulean:     map.get(t.$color, cerulean);
+$mm-cerulean-20:  map.get(t.$color, cerulean-20);
+$mm-cod-gray-50:  map.get(t.$color, cod-gray-50);
+$mm-cod-gray:     map.get(t.$color, cod-gray);
+$mm-dodger-blue:  map.get(t.$color, dodger-blue);
+$mm-dove-gray:    map.get(t.$color, dove-gray);
+$mm-ecstasy:      map.get(t.$color, ecstasy);
+$mm-emperor:      map.get(t.$color, emperor);
+$mm-flamingo:     map.get(t.$color, flamingo);
+$mm-jaffa:        map.get(t.$color, jaffa);
+$mm-medium-purple:map.get(t.$color, medium-purple);
+$mm-mercury:      map.get(t.$color, mercury);
+$mm-mercury-60:   map.get(t.$color, mercury-60);
+$mm-mine-shaft:   map.get(t.$color, mine-shaft);
+$mm-mountain-meadow: map.get(t.$color, mountain-meadow);
+$mm-nevada:       map.get(t.$color, nevada);
+$mm-pale-sky:     map.get(t.$color, pale-sky);
+$mm-red:          map.get(t.$color, red);
+$mm-scarlet:      map.get(t.$color, scarlet);
+$mm-screamin-green:map.get(t.$color, screamin-green);
+$mm-shark:        map.get(t.$color, shark);
+$mm-silver-chalice:map.get(t.$color, silver-chalice);
+$mm-tundora:      map.get(t.$color, tundora);
+$mm-tundora-50:   map.get(t.$color, tundora-50);
+$mm-wild-sand:    map.get(t.$color, wild-sand);
+$mm-woodsmoke:    map.get(t.$color, woodsmoke);
+
+// --- Gradients ---
+$gradient-primary:         map.get(t.$gradient, primary);
+$gradient-primary-reverse: map.get(t.$gradient, primary-reverse);
+$gradient-primary-light:   map.get(t.$gradient, primary-light);
+$gradient-yellow:          map.get(t.$gradient, yellow);
+$gradient-yellow-reverse:  map.get(t.$gradient, yellow-reverse);
+

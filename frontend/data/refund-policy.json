@@ -1,0 +1,53 @@
+{
+  "title": "Refund Policy",
+  "lastUpdated": "May 1, 2026",
+  "intro": "We want you to be happy with MagicMail. If you're not, we'll make it right. This policy explains when and how refunds are issued.",
+  "sections": [
+    {
+      "heading": "1. Free plan",
+      "paragraphs": [
+        "The Free plan costs nothing and requires no payment information. There's nothing to refund, and you can stop using it at any time."
+      ]
+    },
+    {
+      "heading": "2. 14-day money-back guarantee",
+      "paragraphs": [
+        "If you upgrade to a paid plan and decide within the first 14 days that MagicMail isn't for you, email us and we'll issue a full refund — no questions asked.",
+        "The 14-day window starts on the day your first payment is processed. Refunds are issued to the original payment method and typically appear within 5–10 business days, depending on your bank."
+      ]
+    },
+    {
+      "heading": "3. After the 14-day window",
+      "paragraphs": [
+        "After the first 14 days, paid plans are non-refundable for the current billing period. You can cancel at any time, and your plan will remain active until the end of the period you've already paid for.",
+        "We don't issue partial refunds for unused time within a billing period."
+      ]
+    },
+    {
+      "heading": "4. Annual plans",
+      "paragraphs": [
+        "Annual plans follow the same 14-day guarantee. If you cancel within 14 days of your annual payment, you'll receive a full refund. After that, annual plans are non-refundable for the remainder of the year.",
+        "If you cancel an annual plan after the 14-day window, your plan stays active until the end of the annual period — you just won't be charged again."
+      ]
+    },
+    {
+      "heading": "5. Exceptional circumstances",
+      "paragraphs": [
+        "If something unusual happened — a billing error, a duplicate charge, or an extended outage that affected your use of the service — email us and we'll work it out. We handle these case by case and err on the side of the customer."
+      ]
+    },
+    {
+      "heading": "6. Chargebacks",
+      "paragraphs": [
+        "If you believe a charge was made in error, please contact us first before filing a chargeback with your bank. We can almost always resolve the issue faster than the chargeback process, and filing one without reaching out may result in your account being suspended while the dispute is resolved."
+      ]
+    },
+    {
+      "heading": "7. How to request a refund",
+      "paragraphs": [
+        "Email billing@magicmail.app with the subject line 'Refund request' and include the email address on your account. We'll confirm your request within one business day and process the refund within two."
+      ]
+    }
+  ],
+  "contactEmail": "billing@magicmail.app"
+}

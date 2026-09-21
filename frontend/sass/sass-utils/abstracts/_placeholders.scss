@@ -1,0 +1,27 @@
+@use 'mixins' as m;
+
+// ------------------------------------------------------------
+// Placeholder selectors
+// Extend-only patterns. These never emit CSS on their own —
+// they only appear in the output when `@extend`-ed.
+// ------------------------------------------------------------
+
+%button-reset {
+  @include m.button-reset;
+}
+
+%truncate {
+  @include m.truncate;
+}
+
+%flex-center {
+  @include m.flex-center;
+}
+
+%shadow {
+  @include m.shadow;
+}
+
+%transition {
+  @include m.transition;
+}

@@ -1,0 +1,126 @@
+@use '../sass-utils' as ui;
+
+/// Two-pane footer component: brand block on the left, multi-column links on the right.
+.footer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background-color: ui.color(white-snow-drift);
+  border-top: 1px solid ui.color(quill-gray);
+
+  @include ui.respond-to(md) {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: ui.space(6);
+    border-bottom: 1px solid ui.color(quill-gray);
+
+    @include ui.respond-to(md) {
+      flex: 0 0 50%;
+      padding: ui.space(8);
+      border-bottom: 0;
+      border-right: 1px solid ui.color(quill-gray);
+    }
+  }
+
+  &__logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    text-decoration: none;
+
+    &:focus {
+      outline: none;
+    }
+
+    &:focus-visible {
+      outline: 2px solid ui.semantic(primary);
+      outline-offset: 4px;
+      border-radius: ui.radius(sm);
+    }
+  }
+
+  &__content {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    flex: 1;
+  }
+
+  &__column {
+    display: flex;
+    flex-direction: column;
+    gap: ui.space(6);
+    padding: ui.space(5);
+    border-bottom: 1px solid ui.color(quill-gray);
+
+    &:nth-child(odd) {
+      border-right: 1px solid ui.color(quill-gray);
+    }
+
+    &:nth-last-child(-n + 2) {
+      border-bottom: 0;
+    }
+
+    @include ui.respond-to(md) {
+      padding: ui.space(6);
+    }
+  }
+
+  &__column-title {
+    margin: 0;
+    font-family: ui.font(family-sans);
+    font-size: ui.font(size-base);
+    font-weight: ui.font(weight-medium);
+    line-height: ui.font(line-base);
+    color: ui.semantic(text);
+  }
+
+  &__links {
+    display: flex;
+    flex-direction: column;
+    gap: ui.space(2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__item {
+    display: block;
+  }
+
+  &__link {
+    display: inline-flex;
+    align-items: center;
+    font-family: ui.font(family-sans);
+    font-size: ui.font(size-sm);
+    font-weight: ui.font(weight-normal);
+    line-height: 1.1;
+    letter-spacing: 0.03em;
+    color: ui.color(empress);
+    text-decoration: none;
+    transition: color ui.motion(fast);
+
+    &:focus {
+      outline: none;
+    }
+
+    &:focus-visible {
+      outline: 2px solid ui.semantic(primary);
+      outline-offset: 2px;
+      border-radius: ui.radius(sm);
+    }
+
+    &:hover {
+      color: ui.semantic(text);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: ui.color(matterhorn);
+    }
+  }
+}
