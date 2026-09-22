@@ -3,6 +3,7 @@ import { ToolLoopAgent, stepCountIs } from "ai";
 import { env } from "../config/env";
 import { createAgentTools } from "./agent.tools";
 import { addMessage } from "./agent.persistence";
+import { finishRequest } from "./agent.runtime";
 
 const openrouter = createOpenRouter({ apiKey: env.OPENROUTER_API_KEY });
 
@@ -39,7 +40,7 @@ function removeReasoningFromContent(content: unknown) {
   return content.filter((part: any) => part?.type !== "reasoning");
 }
 
-export function createMailAgent(userId: string, userEmail: string, conversationId?: string) {
+export function createMailAgent(userId: string, userEmail: string, conversationId?: string, requestId?: string) {
   const tools = createAgentTools(userId, userEmail);
 
   return new ToolLoopAgent({
@@ -50,7 +51,7 @@ export function createMailAgent(userId: string, userEmail: string, conversationI
     stopWhen: stepCountIs(12),
     maxRetries: 2,
     onFinish: async (event: any) => {
-      if (!conversationId) return;
+      if (requestId) {\n        const usage = event.usage || {};\n        await finishRequest(requestId, "completed", { inputTokens: usage.inputTokens || usage.promptTokens, outputTokens: usage.outputTokens || usage.completionTokens });\n      }\n      if (!conversationId) return;
       for (const message of event.response?.messages || []) {
         const role = message.role === "assistant" ? "assistant" : message.role === "tool" ? "tool" : "system";
         const content = removeReasoningFromContent(message.content ?? message);
