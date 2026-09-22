@@ -143,7 +143,10 @@ export default function Cupboard({
           ))}
         </ul>
       </AccordionItem>
-      <AccordionItem icon={<EmailsIcon />} title="automations" subtitle={automationsCount + " Automations"} meta="Active and paused" isAccordion={false} />\n      <AccordionItem icon={<SummaryIcon />} title="scheduled" subtitle={scheduledCount + " Scheduled emails"} meta="Pending delivery" isAccordion={false} />\n      <AccordionItem icon={<PrioritizeIcon />} title="usage" subtitle={requestsToday + "/" + requestLimit + " requests"} meta={tokensToday + "/" + tokenLimit + " tokens"} isAccordion={false} />\n    </aside>
+      <AccordionItem icon={<EmailsIcon />} title="automations" subtitle={automationsCount + " Automations"} meta="Active and paused" isAccordion={false} />
+      <AccordionItem icon={<SummaryIcon />} title="scheduled" subtitle={scheduledCount + " Scheduled emails"} meta="Pending delivery" isAccordion={false} />
+      <AccordionItem icon={<PrioritizeIcon />} title="usage" subtitle={requestsToday + "/" + requestLimit + " requests"} meta={tokensToday + "/" + tokenLimit + " tokens"} isAccordion={false} />
+    </aside>
   );
 }
 
