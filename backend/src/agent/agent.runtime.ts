@@ -38,7 +38,7 @@ export async function finishRequest(requestId: string, status: "completed"|"fail
   const input = Math.max(0, Math.floor(usage?.inputTokens || 0));
   const output = Math.max(0, Math.floor(usage?.outputTokens || 0));
   const total = input + output;
-  await pool.query("update agent_request_events set status=$2,input_tokens=$3,output_tokens=$4,total_tokens=$5,error_code=$6,completed_at=now() where request_id=$1", [requestId,status,input,output,total,errorCode||null]);
+  await pool.query("update agent_request_events set status=$2,input_tokens=case when $3 > 0 then $3 else input_tokens end,output_tokens=case when $4 > 0 then $4 else output_tokens end,total_tokens=case when $5 > 0 then $5 else total_tokens end,error_code=$6,completed_at=now() where request_id=$1", [requestId,status,input,output,total,errorCode||null]);
   if (total) await pool.query("update agent_usage_daily set input_tokens=input_tokens+$2,output_tokens=output_tokens+$3,total_tokens=total_tokens+$4,updated_at=now() where user_id=(select user_id from agent_request_events where request_id=$1) and usage_date=current_date", [requestId,input,output,total]);
 }
 
