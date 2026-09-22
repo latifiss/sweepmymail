@@ -91,7 +91,7 @@ export default function ChatPage() {
     const approvalMessage: AgentUIMessage = {
       id: "approval-" + Date.now(),
       role: "assistant",
-      parts: [{ type: "tool-approval-response", approvalId: approval.approvalId, approved }],
+      parts: [{ type: "tool-approval-response", approvalId: approval.approvalId, toolCallId: approval.toolCallId, approved }],
     };
     const next = [...uiMessages, approvalMessage];
     setUiMessages(next);
