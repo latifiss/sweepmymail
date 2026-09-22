@@ -25,8 +25,18 @@ export async function updateAgentConversation(id: string, patch: { title?: strin
 export async function deleteAgentConversation(id: string) { await request("/agent/conversations/" + encodeURIComponent(id), { method: "DELETE" }); }
 export async function getAgentContext() { return (await (await request("/agent/context")).json()).context as AgentContext; }
 
-function textOf(message: AgentUIMessage) { return message.parts.filter((part) => part.type === "text").map((part) => String(part.text || "")).join(""); }
-function toolOf(message: AgentUIMessage): any { return message.parts.find((part) => String(part.type || "").startsWith("tool-") || part.type === "dynamic-tool"); }
+function normalizeParts(value: unknown): Array<Record<string, unknown>> {
+  if (Array.isArray(value)) return value.filter((part): part is Record<string, unknown> => !!part && typeof part === "object");
+  if (value && typeof value === "object" && Array.isArray((value as any).parts)) return normalizeParts((value as any).parts);
+  return [];
+}
+
+function textOf(message: AgentUIMessage) {
+  return normalizeParts(message?.parts).filter((part) => part.type === "text").map((part) => String(part.text || "")).join("");
+}
+function toolOf(message: AgentUIMessage): any {
+  return normalizeParts(message?.parts).find((part) => String(part.type || "").startsWith("tool-") || part.type === "dynamic-tool");
+}
 function refFrom(value: any): EmailRef | null { const e = value?.email || value; const id = e?.messageId || e?.message_id; if (!id) return null; return { id: String(id), sender: String(e.sender || e.from || "Unknown sender"), senderEmail: String(e.senderEmail || e.fromEmail || ""), subject: String(e.subject || "(no subject)"), preview: String(e.snippet || e.preview || "").slice(0, 180), receivedAt: String(e.date || e.receivedAt || new Date().toISOString()) }; }
 
 export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; role: "user" | "agent"; content?: string; response?: ResponseBlock } | null {
@@ -42,8 +52,18 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
 
 export function storedMessagesToUI(messages: StoredAgentMessage[]): AgentUIMessage[] {
   return messages.flatMap((message) => {
-    if (message.content && typeof message.content === "object" && (message.role === "user" || message.role === "assistant" || message.role === "tool")) return [message.content as AgentUIMessage];
-    if (typeof message.content === "string") return [{ id: message.id, role: message.role === "user" ? "user" : message.role === "tool" ? "tool" : "assistant", parts: [{ type: "text", text: message.content }] }];
+    const role = message.role === "user" ? "user" : message.role === "tool" ? "tool" : "assistant";
+    const content: any = message.content;
+
+    if (typeof content === "string") {
+      return [{ id: message.id, role, parts: [{ type: "text", text: content }] }];
+    }
+
+    const parts = normalizeParts(content);
+    if (parts.length) {
+      return [{ id: String(content?.id || message.id), role, parts }];
+    }
+
     return [];
   });
 }
