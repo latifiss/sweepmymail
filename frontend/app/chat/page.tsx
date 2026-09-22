@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AltHeader from "@/components/headers/altHeader";
 import Sidebar from "@/components/sidebar";
 import Cupboard from "@/components/cupboard";
@@ -8,388 +8,156 @@ import PromptInput from "@/components/promptInput";
 import UserMessage from "@/components/chat/userMessage";
 import ChatResponse from "@/components/chat/chatResponse";
 import ThinkingIndicator from "@/components/chat/thinkingIndicator";
-import type {
-  ResponseAction,
-  ResponseBlock,
-} from "@/components/chat/chat-response-types";
+import type { ResponseAction, ResponseBlock } from "@/components/chat/chat-response-types";
+import { getAgentContext, getAgentConversation, listAgentConversations, createAgentConversation, deleteAgentConversation, updateAgentConversation, streamAgentMessage, storedMessagesToUI, uiMessageToChatMessage, type AgentConversation, type AgentUIMessage, type ApprovalRequest } from "@/lib/agent-api";
 
-type ChatMessage =
-  | { id: string; role: "user"; content: string }
-  | { id: string; role: "agent"; response: ResponseBlock };
+type ChatMessage = { id: string; role: "user" | "agent"; content?: string; response?: ResponseBlock };
 
-const THINKING_STAGES: Record<string, string[]> = {
-  summary: [
-    "Scanning your inbox",
-    "Reading emails",
-    "Extracting key points",
-    "Building summary",
-    "Preparing sources",
-  ],
-  "email-list": [
-    "Scanning your inbox",
-    "Filtering unread",
-    "Sorting by date",
-    "Preparing list",
-  ],
-  draft: [
-    "Reviewing conversation",
-    "Choosing tone",
-    "Writing draft",
-    "Formatting message",
-    "Preparing preview",
-  ],
-  schedule: [
-    "Checking calendar",
-    "Finding open slots",
-    "Confirming timezone",
-    "Preparing event",
-  ],
-  confirm: [
-    "Analyzing request",
-    "Estimating impact",
-    "Preparing confirmation",
-  ],
-  text: [
-    "Thinking",
-    "Reading your inbox",
-    "Preparing response",
-  ],
-};
+const DEFAULT_STAGES = ["Thinking", "Reading your inbox", "Preparing response"];
 
-const DEFAULT_STAGES = [
-  "Thinking",
-  "Reading your inbox",
-  "Preparing response",
-];
-
-function stagesFor(prompt: string): string[] {
-  const p = prompt.toLowerCase();
-  if (p.includes("summary") || p.includes("summarize")) return THINKING_STAGES.summary;
-  if (p.includes("draft") || p.includes("compose") || p.includes("reply")) return THINKING_STAGES.draft;
-  if (p.includes("archive") || p.includes("delete") || p.includes("clean")) return THINKING_STAGES.confirm;
-  if (p.includes("schedule") || p.includes("remind")) return THINKING_STAGES.schedule;
-  if (p.includes("email") || p.includes("inbox") || p.includes("unread")) return THINKING_STAGES["email-list"];
-  return THINKING_STAGES.text;
-}
-
-function fakeAgentReply(prompt: string): ResponseBlock {
-  const p = prompt.toLowerCase();
-
-  if (p.includes("summary") || p.includes("summarize")) {
-    return {
-      kind: "summary",
-      lead: "For the past 24 hours, 28 people sent you emails. Here's the summary:",
-      title: "Your week in review",
-      content:
-        "You received 42 emails this week [1]. Twelve were replies to threads you started [2]. Three invoices came through, one of which is overdue [3]. Overall, your inbox is 18% smaller than last week.",
-      citations: [
-        {
-          id: "e_201",
-          sender: "Inbox Digest",
-          senderEmail: "digest@magicmail.app",
-          subject: "Weekly totals",
-          preview: "42 received · 28 read · 14 unread",
-          receivedAt: "2026-09-19T08:00:00Z",
-        },
-        {
-          id: "e_202",
-          sender: "Alice Johnson",
-          senderEmail: "alice@example.com",
-          subject: "Re: Q3 planning doc",
-          preview: "Thanks for sending the draft — one small correction...",
-          receivedAt: "2026-09-18T14:32:00Z",
-        },
-        {
-          id: "e_203",
-          sender: "Marcus Reid",
-          senderEmail: "marcus@acme.co",
-          subject: "Invoice #4821 overdue",
-          preview: "Just a heads-up that this invoice is now 5 days past due...",
-          receivedAt: "2026-09-18T09:15:00Z",
-        },
-      ],
-    };
-  }
-
-  if (p.includes("draft") || p.includes("compose") || p.includes("reply")) {
-    return {
-      kind: "draft",
-      lead: "I've drafted a reply. Take a look:",
-      draft: {
-        id: `d_${Date.now()}`,
-        to: "team@acme.com",
-        subject: "Standup notes — Sep 20",
-        body: "Hi team,\n\nHere are today's notes:\n- Shipped the auth fix\n- Blocked on the pricing design\n- Alice will review tomorrow\n\nBest,\nJohn",
-      },
-    };
-  }
-
-  if (p.includes("archive") || p.includes("delete") || p.includes("clean")) {
-    return {
-      kind: "confirm",
-      lead: "I can archive all 42 promotions emails. Want me to?",
-      promptId: `p_${Date.now()}`,
-      question: "Archive all 42 emails from the promotions category?",
-    };
-  }
-
-  if (p.includes("schedule") || p.includes("remind")) {
-    return {
-      kind: "schedule",
-      lead: "Here's a time that works for you and Alice.",
-      event: {
-        id: `s_${Date.now()}`,
-        title: "Follow-up with Alice",
-        when: "Tomorrow, 2:00 PM",
-        duration: "30 minutes",
-      },
-    };
-  }
-
-  if (p.includes("email") || p.includes("inbox") || p.includes("unread")) {
-    return {
-      kind: "email-list",
-      lead: "Here are the unread emails from the past 24 hours.",
-      title: "Unread from this week",
-      emails: [
-        {
-          id: "e_101",
-          sender: "Alice Johnson",
-          senderEmail: "alice@example.com",
-          subject: "Q3 planning doc",
-          preview:
-            "Hey, attached is the draft we discussed. Let me know what you think...",
-          receivedAt: "2026-09-18T14:32:00Z",
-        },
-        {
-          id: "e_102",
-          sender: "Marcus Reid",
-          senderEmail: "marcus@acme.co",
-          subject: "Invoice #4821 overdue",
-          preview:
-            "Just a heads-up that this invoice is now 5 days past due. Could you...",
-          receivedAt: "2026-09-18T09:15:00Z",
-        },
-        {
-          id: "e_103",
-          sender: "Support Team",
-          senderEmail: "support@saas.io",
-          subject: "Your trial ends in 3 days",
-          preview:
-            "Your 14-day trial ends on September 22. Upgrade to keep access to...",
-          receivedAt: "2026-09-17T22:04:00Z",
-        },
-      ],
-    };
-  }
-
-  return {
-    kind: "text",
-    lead: "Let me check your inbox.",
-    content:
-      "I've categorized 132 emails from this week. Three of them look time-sensitive and I've flagged them for you.",
-  };
-}
+function textFromMessage(message: AgentUIMessage) { return message.parts.filter((part) => part.type === "text").map((part) => String(part.text || "")).join(""); }
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isCupboardOpen, setIsCupboardOpen] = useState(false);
-  const [thinkingStages, setThinkingStages] = useState<string[] | null>(null);
-  const [pendingResponse, setPendingResponse] = useState<ResponseBlock | null>(null);
+  const [uiMessages, setUiMessages] = useState<AgentUIMessage[]>([]);
+  const [conversations, setConversations] = useState<AgentConversation[]>([]);
+  const [conversationId, setConversationId] = useState<string>();
+  const [thinking, setThinking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [approval, setApproval] = useState<ApprovalRequest | null>(null);
+  const [cupboardOpen, setCupboardOpen] = useState(false);
+  const [context, setContext] = useState<any>(null);
+  const [email, setEmail] = useState("Gmail");
+  const abortRef = useRef<AbortController | null>(null);
 
-  const threadRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const shouldAutoScrollRef = useRef(true);
-
-  const isEmpty = messages.length === 0 && !thinkingStages && !pendingResponse;
-
-  useEffect(() => {
-    const el = threadRef.current;
-    if (!el) return;
-
-    const handleScroll = () => {
-      const distanceFromBottom =
-        el.scrollHeight - el.scrollTop - el.clientHeight;
-      shouldAutoScrollRef.current = distanceFromBottom < 40;
-    };
-
-    el.addEventListener("scroll", handleScroll, { passive: true });
-    return () => el.removeEventListener("scroll", handleScroll);
+  const refreshConversations = useCallback(async () => {
+    try { setConversations(await listAgentConversations()); } catch {}
   }, []);
 
-  const scrollToBottom = useCallback(() => {
-    if (!shouldAutoScrollRef.current) return;
-    const el = threadRef.current;
-    if (!el) return;
-    el.scrollTop = el.scrollHeight;
+  const loadConversation = useCallback(async (id: string) => {
+    setError(null); setThinking(false); setApproval(null);
+    try {
+      const data = await getAgentConversation(id);
+      const ui = storedMessagesToUI(data.messages);
+      setConversationId(data.conversation.id); setUiMessages(ui);
+      setMessages(ui.map(uiMessageToChatMessage).filter(Boolean) as ChatMessage[]);
+    } catch (e) { setError(e instanceof Error ? e.message : "Unable to load conversation"); }
   }, []);
 
   useEffect(() => {
-    if (!shouldAutoScrollRef.current) return;
-    bottomRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "end",
-    });
-  }, [messages.length, thinkingStages]);
+    let cancelled = false;
+    (async () => {
+      try {
+        const [items, ctx] = await Promise.all([listAgentConversations(), getAgentContext()]);
+        if (cancelled) return;
+        setConversations(items); setContext(ctx);
+        const newest = items.find((item) => item.status === "active");
+        if (newest) await loadConversation(newest.id);
+      } catch {}
+    })();
+    return () => { cancelled = true; abortRef.current?.abort(); };
+  }, [loadConversation]);
 
-  const handleThinkingComplete = useCallback(() => {
-    if (!pendingResponse) return;
+  const runAgent = useCallback(async (nextMessages: AgentUIMessage[], path = "/agent/chat") => {
+    abortRef.current?.abort();
+    const controller = new AbortController(); abortRef.current = controller;
+    setThinking(true); setError(null); setApproval(null);
+    try {
+      const result = await streamAgentMessage(nextMessages, conversationId, path, controller.signal);
+      if (result.conversationId && result.conversationId !== conversationId) setConversationId(result.conversationId);
+      setUiMessages(result.messages);
+      setMessages(result.messages.map(uiMessageToChatMessage).filter(Boolean) as ChatMessage[]);
+      setApproval(result.approval || null);
+      await refreshConversations();
+    } catch (e) {
+      if ((e as Error).name !== "AbortError") setError(e instanceof Error ? e.message : "Agent request failed");
+    } finally { setThinking(false); }
+  }, [conversationId, refreshConversations]);
 
-    const agentMessage: ChatMessage = {
-      id: `a_${Date.now()}`,
-      role: "agent",
-      response: pendingResponse,
+  const handleSubmit = useCallback(async (content: string) => {
+    if (!content.trim() || thinking) return;
+    let id = conversationId;
+    if (!id) {
+      const conversation = await createAgentConversation(); id = conversation.id; setConversationId(id);
+    }
+    const message: AgentUIMessage = { id: "user-" + Date.now(), role: "user", parts: [{ type: "text", text: content }] };
+    const next = [...uiMessages, message];
+    setUiMessages(next); setMessages(next.map(uiMessageToChatMessage).filter(Boolean) as ChatMessage[]);
+    await runAgent(next);
+  }, [conversationId, thinking, uiMessages, runAgent]);
+
+  const handleApproval = useCallback(async (approved: boolean) => {
+    if (!approval || !conversationId || thinking) return;
+    const approvalMessage: AgentUIMessage = {
+      id: "approval-" + Date.now(),
+      role: "assistant",
+      parts: [{ type: "tool-approval-response", approvalId: approval.approvalId, approved }],
     };
-
-    setMessages((prev) => [...prev, agentMessage]);
-    setThinkingStages(null);
-    setPendingResponse(null);
-  }, [pendingResponse]);
-
-  const handleSubmit = useCallback((content: string) => {
-    if (!content.trim()) return;
-
-    shouldAutoScrollRef.current = true;
-
-    const userMessage: ChatMessage = {
-      id: `u_${Date.now()}`,
-      role: "user",
-      content,
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-
-    const response = fakeAgentReply(content);
-    setPendingResponse(response);
-    setThinkingStages(stagesFor(content));
-  }, []);
+    const next = [...uiMessages, approvalMessage];
+    setUiMessages(next);
+    setApproval(null);
+    await runAgent(next, "/agent/chat/continue");
+  }, [approval, conversationId, thinking, uiMessages, runAgent]);
 
   const handleAction = useCallback((action: ResponseAction) => {
-    shouldAutoScrollRef.current = true;
-    const label = actionLabel(action);
+    if (action.type === "open-email") { window.open("https://mail.google.com/mail/u/0/#all/" + encodeURIComponent(action.emailId), "_blank", "noopener,noreferrer"); return; }
+    if (action.type === "confirm-send" || action.type === "schedule-accept" || action.type === "confirm") { void handleApproval(action.type === "confirm" ? action.choice === "yes" : true); return; }
+    if (action.type === "schedule-cancel") { void handleApproval(false); return; }
+    if (action.type === "continue-draft") return;
+  }, [handleApproval]);
 
-    const echoMessage: ChatMessage = {
-      id: `u_${Date.now()}`,
-      role: "user",
-      content: label,
-    };
+  const handleNewChat = useCallback(async () => {
+    abortRef.current?.abort();
+    const conversation = await createAgentConversation();
+    setConversationId(conversation.id); setUiMessages([]); setMessages([]); setApproval(null); setError(null);
+    await refreshConversations();
+  }, [refreshConversations]);
 
-    setMessages((prev) => [...prev, echoMessage]);
+  const handleDelete = useCallback(async (id: string) => {
+    await deleteAgentConversation(id);
+    if (id === conversationId) { setConversationId(undefined); setUiMessages([]); setMessages([]); setApproval(null); }
+    await refreshConversations();
+  }, [conversationId, refreshConversations]);
 
-    const response: ResponseBlock = {
-      kind: "text",
-      lead: "Got it.",
-      content: `You chose "${label}". I'll take care of that now.`,
-    };
+  const handleRename = useCallback(async (id: string) => {
+    const current = conversations.find((item) => item.id === id);
+    const title = window.prompt("Rename conversation", current?.title || "Conversation");
+    if (!title?.trim()) return;
+    await updateAgentConversation(id, { title: title.trim() }); await refreshConversations();
+  }, [conversations, refreshConversations]);
 
-    setPendingResponse(response);
-    setThinkingStages([
-      "Acknowledging",
-      "Processing request",
-      "Preparing response",
-    ]);
-  }, []);
+  const isEmpty = messages.length === 0 && !thinking && !error;
+  const chats = useMemo(() => conversations.filter((item) => item.status === "active").map((item) => ({ id: item.id, label: item.title })), [conversations]);
 
   return (
     <div className="chat-page">
       <div className="chat-page__body">
         <div className="chat-page__rail">
-          <Sidebar
-            plan="free"
-            onNewChat={() => setMessages([])}
-            onCupboard={() => setIsCupboardOpen(true)}
-            onSelectChat={(id) => console.log("select chat", id)}
-            onUpgrade={() => console.log("upgrade")}
-          />
-
-          <div
-            className={`chat-page__cupboard${
-              isCupboardOpen ? " chat-page__cupboard--open" : ""
-            }`}
-          >
-            <Cupboard
-              email="example@mail.com"
-              onClose={() => setIsCupboardOpen(false)}
-            />
+          <Sidebar chats={chats} plan="free" onNewChat={handleNewChat} onCupboard={() => setCupboardOpen(true)} onSelectChat={(id) => void loadConversation(id)} onUpgrade={() => window.location.assign("/pricing")} />
+          <div className={"chat-page__cupboard" + (cupboardOpen ? " chat-page__cupboard--open" : "")}>
+            <Cupboard email={email} mailsCount={context?.inbox?.syncedEmails} categoriesCount={context?.categories?.length} priorityCount={context?.inbox?.important} categories={(context?.categories || []).map((c: any) => c.label)} onClose={() => setCupboardOpen(false)} />
           </div>
         </div>
-
         <div className="chat-page__main">
-          <div className="chat-page__header">
-            <AltHeader />
-          </div>
-
+          <div className="chat-page__header"><AltHeader /></div>
+          {error && <div className="chat-page__error" role="alert">{error}</div>}
           {isEmpty ? (
-            <div className="chat-page__empty">
-              <div className="chat-page__empty-greeting">
-                <span className="chat-page__empty-hi">HI!</span>
-                <span className="chat-page__empty-title">
-                  I&apos;m your inbox agent.
-                </span>
-                <p className="chat-page__empty-description">
-                  Ask me to summarize your inbox, draft a reply, archive a
-                  category, or schedule a follow-up. I&apos;ll show you what I
-                  find.
-                </p>
-              </div>
-            </div>
+            <div className="chat-page__empty"><div className="chat-page__empty-greeting"><span className="chat-page__empty-hi">HI!</span><span className="chat-page__empty-title">I&apos;m your inbox agent.</span><p className="chat-page__empty-description">Ask me to summarize your inbox, draft a reply, archive a category, or schedule a follow-up. I&apos;ll show you what I find.</p></div></div>
           ) : (
-            <div className="chat-page__thread" ref={threadRef}>
+            <div className="chat-page__thread">
               <div className="chat-page__thread-inner">
-                {messages.map((message, index) => {
-                  const isLatest = index === messages.length - 1;
-                  return message.role === "user" ? (
-                    <UserMessage key={message.id} content={message.content} />
-                  ) : (
-                    <ChatResponse
-                      key={message.id}
-                      response={message.response}
-                      onAction={handleAction}
-                      onGrow={isLatest ? scrollToBottom : undefined}
-                    />
-                  );
-                })}
-
-                {thinkingStages && (
-                  <ThinkingIndicator
-                    stages={thinkingStages}
-                    stageDuration={1100}
-                    onComplete={handleThinkingComplete}
-                  />
-                )}
-
-                <div ref={bottomRef} />
+                {messages.map((message) => message.role === "user" ? <UserMessage key={message.id} content={message.content || ""} /> : <ChatResponse key={message.id} response={message.response!} onAction={handleAction} />)}
+                {approval && <ChatResponse response={{ kind: "confirm", lead: "This action needs your approval.", promptId: approval.approvalId, question: "Allow " + approval.toolName.replaceAll("_", " ") + " to run?" }} onAction={handleAction} /> }
+                {thinking && <ThinkingIndicator stages={DEFAULT_STAGES} stageDuration={900} onComplete={() => undefined} />}
               </div>
             </div>
           )}
-
-          <div className="chat-page__composer">
-            <div className="chat-page__composer-inner">
-              <PromptInput
-                email="example@gmail.com"
-                onSubmit={handleSubmit}
-              />
-            </div>
-          </div>
+          <div className="chat-page__composer"><div className="chat-page__composer-inner"><PromptInput email={email} onSubmit={handleSubmit} /></div></div>
         </div>
       </div>
     </div>
   );
 }
 
-function actionLabel(action: ResponseAction): string {
-  switch (action.type) {
-    case "open-email":
-      return `Open email ${action.emailId}`;
-    case "confirm-send":
-      return "Confirm and send the draft";
-    case "continue-draft":
-      return "Continue editing the draft";
-    case "schedule-accept":
-      return "Schedule the event";
-    case "schedule-cancel":
-      return "Cancel the event";
-    case "confirm":
-      return action.choice === "yes" ? "Yes, confirm" : "No, cancel";
-  }
-}
+void handleRename;
+void handleDelete;
