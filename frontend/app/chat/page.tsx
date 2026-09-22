@@ -133,7 +133,7 @@ export default function ChatPage() {
     <div className="chat-page">
       <div className="chat-page__body">
         <div className="chat-page__rail">
-          <Sidebar chats={chats} plan="free" onNewChat={handleNewChat} onCupboard={() => setCupboardOpen(true)} onSelectChat={(id) => void loadConversation(id)} onUpgrade={() => window.location.assign("/pricing")} />
+          <Sidebar chats={chats} plan="free" onNewChat={handleNewChat} onCupboard={() => setCupboardOpen(true)} onSelectChat={(id) => void loadConversation(id)} onRenameChat={(id) => void handleRename(id)} onDeleteChat={(id) => void handleDelete(id)} onUpgrade={() => window.location.assign("/pricing")} />
           <div className={"chat-page__cupboard" + (cupboardOpen ? " chat-page__cupboard--open" : "")}>
             <Cupboard email={email} mailsCount={context?.inbox?.syncedEmails} categoriesCount={context?.categories?.length} priorityCount={context?.inbox?.important} categories={(context?.categories || []).map((c: any) => c.label)} onClose={() => setCupboardOpen(false)} />
           </div>
