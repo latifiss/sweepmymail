@@ -6,7 +6,24 @@ export type MessageRole = "user" | "assistant" | "system" | "tool";
 export interface ConversationRecord { id:string; user_id:string; title:string; status:ConversationStatus; created_at:string; updated_at:string; }
 export interface MessageRecord { id:string; conversation_id:string; role:MessageRole; content:unknown; tool_name:string|null; tool_call_id:string|null; tool_input:unknown|null; tool_result:unknown|null; metadata:unknown; created_at:string; }
 
-function normalizeTitle(value?:string) { const title=value?.trim().replace(/\s+/g," "); if(!title) return "New conversation"; return title.length>120 ? `${title.slice(0,117)}...` : title; }
+function normalizeTitle(value?:string) {
+ const title=value?.trim().replace(/\\s+/g," ");
+ if(!title) return "New conversation";
+ const cleaned=title.replace(/^[@#]+/,"").replace(/[!?.,:;]+$/,"").trim();
+ if(!cleaned) return "New conversation";
+ const words=cleaned.split(" ");
+ const starters=new Set(["show","give","get","find","search","draft","write","create","send","read","summarize","summary","categorize","category","list","check","tell","help","delete","archive","schedule","prioritize","review","organize","compose","reply","forward"]);
+ let result=cleaned;
+ const first=words[0]?.toLowerCase();
+ if(starters.has(first)) {
+   const labels:Record<string,string>={show:"Inbox emails",give:"Email request",get:"Email request",find:"Email search",search:"Email search",draft:"Email draft",write:"Email draft",create:"Email draft",send:"Send email",read:"Read email",summarize:"Email summary",summary:"Email summary",categorize:"Email categorization",category:"Email categories",list:"Email list",check:"Inbox check",tell:"Email request",help:"Email request",delete:"Email cleanup",archive:"Email cleanup",schedule:"Scheduled email",prioritize:"Email prioritization",review:"Inbox review",organize:"Inbox organization",compose:"Email draft",reply:"Email reply",forward:"Email forward"};
+   const label=labels[first];
+   const remainder=words.slice(1).join(" ").replace(/\\s+/g," ").trim();
+   result=remainder ? `${label}: ${remainder}` : label;
+ }
+ result=result.charAt(0).toUpperCase()+result.slice(1);
+ return result.length>80 ? `${result.slice(0,77)}...` : result;
+}
 
 export async function createConversation(userId:string,title?:string){ const r=await pool.query<ConversationRecord>("insert into agent_conversations (user_id,title) values ($1,$2) returning id,user_id,title,status,created_at,updated_at",[userId,normalizeTitle(title)]); return r.rows[0]; }
 export async function getConversationForUser(userId:string,id:string){ const r=await pool.query<ConversationRecord>("select id,user_id,title,status,created_at,updated_at from agent_conversations where id=$1 and user_id=$2",[id,userId]); return r.rows[0]||null; }
@@ -21,4 +38,4 @@ export async function addMessage(payload:{conversationId:string;role:MessageRole
 }
 export async function listMessagesForConversation(userId:string,id:string){ const r=await pool.query<MessageRecord>("select m.id,m.conversation_id,m.role,m.content,m.tool_name,m.tool_call_id,m.tool_input,m.tool_result,m.metadata,m.created_at from agent_messages m inner join agent_conversations c on c.id=m.conversation_id where c.id=$1 and c.user_id=$2 order by m.created_at asc",[id,userId]); return r.rows; }
 export async function ensureConversationForUser(userId:string,id?:string){ if(id){const existing=await getConversationForUser(userId,id); if(!existing) throw new Error("Conversation not found"); if(existing.status==="archived") throw new Error("Conversation is archived"); return existing;} return createConversation(userId); }
-export async function setConversationTitleIfNew(userId:string,id:string,firstUserMessage:string){ const c=await getConversationForUser(userId,id); if(!c||c.title!=="New conversation") return c; return updateConversationTitle(userId,id,firstUserMessage); }
+export async function setConversationTitleIfNew(userId:string,id:string,firstUserMessage:string){ const c=await getConversationForUser(userId,id); if(!c||c.title!=="New conversation") return c; return updateConversationTitle(userId,id,normalizeTitle(firstUserMessage)); }
