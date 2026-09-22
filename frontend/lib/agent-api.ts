@@ -5,7 +5,7 @@ const baseUrl = () => process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:7
 export type AgentConversation = { id: string; user_id: string; title: string; status: "active" | "archived"; created_at: string; updated_at: string };
 export type StoredAgentMessage = { id: string; conversation_id: string; role: "user" | "assistant" | "system" | "tool"; content: unknown; metadata?: Record<string, unknown>; created_at: string };
 export type AgentContext = { inbox: { syncedEmails: number; unread: number; important: number }; categories: Array<{ id: string; label: string; emailCount: number }>; automations: { total: number; active: number; paused: number }; scheduled: { pending: number; total: number }; usage: { requestsToday: number; tokensToday: number; requestLimit: number; tokenLimit: number }; generatedAt: string };
-export type AgentUIMessage = { id: string; role: "user" | "assistant"; parts: Array<Record<string, unknown>> };
+export type AgentUIMessage = { id: string; role: "user" | "assistant" | "tool"; parts: Array<Record<string, unknown>> };
 export type ApprovalRequest = { approvalId: string; toolName: string; input: unknown; toolCallId?: string };
 
 async function request(path: string, init?: RequestInit) {
@@ -42,7 +42,7 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
 export function storedMessagesToUI(messages: StoredAgentMessage[]): AgentUIMessage[] {
   return messages.flatMap((message) => {
     if (message.content && typeof message.content === "object" && (message.role === "user" || message.role === "assistant" || message.role === "tool")) return [message.content as AgentUIMessage];
-    if (typeof message.content === "string") return [{ id: message.id, role: message.role === "user" ? "user" : "assistant", parts: [{ type: "text", text: message.content }] }];
+    if (typeof message.content === "string") return [{ id: message.id, role: message.role === "user" ? "user" : message.role === "tool" ? "tool" : "assistant", parts: [{ type: "text", text: message.content }] }];
     return [];
   });
 }
@@ -54,7 +54,7 @@ export async function streamAgentMessage(messages: AgentUIMessage[], conversatio
   const handle = (raw: string) => { const line = raw.trim(); if (!line || !line.startsWith("data:")) return; const payload = line.slice(5).trim(); if (!payload || payload === "[DONE]") return; let event: any; try { event = JSON.parse(payload); } catch { return; } onEvent?.(event);
     if (event.type === "text-start") { current = { id: String(event.id || "assistant-" + Date.now()), role: "assistant", parts: [{ type: "text", text: "" }] }; resultMessages.push(current); }
     else if (event.type === "text-delta") { if (!current) { current = { id: String(event.id || "assistant-" + Date.now()), role: "assistant", parts: [{ type: "text", text: "" }] }; resultMessages.push(current); } const p: any = current.parts.find((part) => part.type === "text"); if (p) p.text = String(p.text || "") + String(event.delta || ""); }
-    else if (event.type === "tool-approval-request" || event.type === "tool-input-available") { if (event.approvalId) approval = { approvalId: String(event.approvalId), toolName: String(event.toolName || ""), input: event.input, toolCallId: event.toolCallId ? String(event.toolCallId) : undefined }; }
+    else if (event.type === "tool-approval-request") { if (event.approvalId) { approval = { approvalId: String(event.approvalId), toolName: String(event.toolName || ""), input: event.input, toolCallId: event.toolCallId ? String(event.toolCallId) : undefined }; resultMessages.push({ id: "approval-request-" + String(event.approvalId), role: "assistant", parts: [{ type: "tool-approval-request", approvalId: String(event.approvalId), toolCallId: event.toolCallId, toolName: event.toolName, input: event.input }] }); } }
     else if (event.type === "finish") current = null;
     else if (event.type === "error") { current = null; resultMessages.push({ id: "error-" + Date.now(), role: "assistant", parts: [{ type: "text", text: String(event.errorText || event.message || "Agent request failed") }] }); }
   };
