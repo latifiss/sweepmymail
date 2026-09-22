@@ -54,9 +54,13 @@ export function createMailAgent(userId: string, userEmail: string, conversationI
       for (const message of event.response?.messages || []) {
         const role = message.role === "assistant" ? "assistant" : message.role === "tool" ? "tool" : "system";
         const content = removeReasoningFromContent(message.content ?? message);
-        const firstToolPart = Array.isArray(message.content)
-          ? message.content.find((part: any) => part?.type === "tool-call" || part?.type === "tool-result")
-          : undefined;
+        const parts = Array.isArray(message.content) ? message.content : [];
+        const firstToolPart = parts.find((part: any) => part?.type === "tool-call" || part?.type === "tool-result");
+        const messageIds = Array.from(new Set(parts.flatMap((part: any) => {
+          const value = part?.output ?? part?.result ?? part?.input;
+          const text = typeof value === "string" ? value : JSON.stringify(value ?? "");
+          return Array.from(text.matchAll(new RegExp("messageId[\\\\"': ]+([A-Za-z0-9_-]+)", "gi"))).map((match) => match[1]);
+        })));
         await addMessage({
           conversationId,
           role,
@@ -65,6 +69,7 @@ export function createMailAgent(userId: string, userEmail: string, conversationI
           toolCallId: firstToolPart?.toolCallId || null,
           toolInput: firstToolPart?.input || null,
           toolResult: firstToolPart?.output || null,
+          metadata: { executionState: message.role === "tool" ? "tool_result" : "completed", citations: messageIds.map((messageId) => ({ messageId })) },
         });
       }
     },
