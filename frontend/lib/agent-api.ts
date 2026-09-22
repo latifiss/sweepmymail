@@ -51,17 +51,23 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
 }
 
 export function storedMessagesToUI(messages: StoredAgentMessage[]): AgentUIMessage[] {
+  const seen = new Map<string, number>();
+
   return messages.flatMap((message) => {
     const role = message.role === "user" ? "user" : message.role === "tool" ? "tool" : "assistant";
     const content: any = message.content;
+    const baseId = String(message.id || content?.id || `message-${Date.now()}`);
+    const count = seen.get(baseId) || 0;
+    seen.set(baseId, count + 1);
+    const id = count === 0 ? baseId : `${baseId}-${count}`;
 
     if (typeof content === "string") {
-      return [{ id: message.id, role, parts: [{ type: "text", text: content }] }];
+      return [{ id, role, parts: [{ type: "text", text: content }] }];
     }
 
     const parts = normalizeParts(content);
     if (parts.length) {
-      return [{ id: String(content?.id || message.id), role, parts }];
+      return [{ id, role, parts }];
     }
 
     return [];
