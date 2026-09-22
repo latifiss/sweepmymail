@@ -129,7 +129,10 @@ export default function ChatPage() {
   }, [conversations, refreshConversations]);
 
   const isEmpty = messages.length === 0 && !thinking && !error;
-  const chats = useMemo(() => conversations.filter((item) => item.status === "active").map((item) => ({ id: item.id, label: item.title })), [conversations]);
+  const chats = useMemo(() => conversations
+    .filter((item) => item.status === "active")
+    .map((item) => ({ id: item.id, label: item.title?.trim() || "New conversation" })),
+    [conversations]);
 
   return (
     <div className="chat-page">
