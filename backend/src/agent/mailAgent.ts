@@ -58,9 +58,14 @@ export function createMailAgent(userId: string, userEmail: string, conversationI
         const parts = Array.isArray(message.content) ? message.content : [];
         const firstToolPart = parts.find((part: any) => part?.type === "tool-call" || part?.type === "tool-result");
         const messageIds = Array.from(new Set(parts.flatMap((part: any) => {
-          const value = part?.output ?? part?.result ?? part?.input;
-          const text = typeof value === "string" ? value : JSON.stringify(value ?? "");
-          return Array.from(text.matchAll(new RegExp("messageId[\\\\"': ]+([A-Za-z0-9_-]+)", "gi"))).map((match) => match[1]);
+          const found: string[] = [];
+          const visit = (value: any) => {
+            if (!value || typeof value !== "object") return;
+            if (typeof value.messageId === "string") found.push(value.messageId);
+            for (const child of Object.values(value)) visit(child);
+          };
+          visit(part?.output ?? part?.result ?? part?.input);
+          return found;
         })));
         await addMessage({
           conversationId,
