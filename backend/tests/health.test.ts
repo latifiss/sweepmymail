@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createApp } from "../src/app";
 
 test("GET / returns API health", { skip: !process.env.SUPABASE_URL || !process.env.DATABASE_URL }, async () => {
+  const { createApp } = await import("../src/app");
   const server = createApp().listen(0);
   try {
     const address = server.address();
