@@ -90,7 +90,7 @@ export default function ChatPage() {
     if (!approval || !conversationId || thinking) return;
     const approvalMessage: AgentUIMessage = {
       id: "approval-" + Date.now(),
-      role: "assistant",
+      role: "tool",
       parts: [{ type: "tool-approval-response", approvalId: approval.approvalId, toolCallId: approval.toolCallId, approved }],
     };
     const next = [...uiMessages, approvalMessage];
