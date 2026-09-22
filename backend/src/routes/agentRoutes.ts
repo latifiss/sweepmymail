@@ -39,7 +39,11 @@ async function handleChat(req:express.Request,res:express.Response,next:express.
     res.setHeader("Cache-Control","no-cache, no-transform");
     res.setHeader("X-Accel-Buffering","no");
     const abortController=new AbortController();
-    req.on("close",()=>abortController.abort());
+    const abortIfDisconnected = () => {
+      if (!res.writableEnded) abortController.abort();
+    };
+    req.on("aborted", abortIfDisconnected);
+    res.on("close", abortIfDisconnected);
     try{
       await pipeAgentUIStreamToResponse({response:res,agent:createMailAgent(user.id,user.email,conversation.id,requestId),uiMessages:messages,abortSignal:abortController.signal,sendReasoning:false});
       await finishRequest(requestId,abortController.signal.aborted?"aborted":"completed");
