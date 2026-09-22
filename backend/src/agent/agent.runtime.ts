@@ -2,6 +2,8 @@ import { pool } from "../auth/auth";
 import { env } from "../config/env";
 import crypto from "node:crypto";
 
+export const createRequestId = () => crypto.randomUUID();
+
 import { AgentRuntimeError, validateAgentInput } from "./agent.validation";
 export { AgentRuntimeError, validateAgentInput } from "./agent.validation";
 
