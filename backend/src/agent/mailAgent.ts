@@ -51,7 +51,14 @@ export function createMailAgent(userId: string, userEmail: string, conversationI
     stopWhen: stepCountIs(12),
     maxRetries: 2,
     onFinish: async (event: any) => {
-      if (requestId) {\n        const usage = event.usage || {};\n        await finishRequest(requestId, "completed", { inputTokens: usage.inputTokens || usage.promptTokens, outputTokens: usage.outputTokens || usage.completionTokens });\n      }\n      if (!conversationId) return;
+      if (requestId) {
+        const usage = event.usage || {};
+        await finishRequest(requestId, "completed", {
+          inputTokens: usage.inputTokens || usage.promptTokens,
+          outputTokens: usage.outputTokens || usage.completionTokens,
+        });
+      }
+      if (!conversationId) return;
       for (const message of event.response?.messages || []) {
         const role = message.role === "assistant" ? "assistant" : message.role === "tool" ? "tool" : "system";
         const content = removeReasoningFromContent(message.content ?? message);
