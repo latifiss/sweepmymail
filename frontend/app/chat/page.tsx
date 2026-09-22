@@ -9,6 +9,7 @@ import UserMessage from "@/components/chat/userMessage";
 import ChatResponse from "@/components/chat/chatResponse";
 import ThinkingIndicator from "@/components/chat/thinkingIndicator";
 import type { ResponseAction, ResponseBlock } from "@/components/chat/chat-response-types";
+import { getBetterAuthSession } from "@/lib/auth-session";
 import { getAgentContext, getAgentConversation, listAgentConversations, createAgentConversation, deleteAgentConversation, updateAgentConversation, streamAgentMessage, storedMessagesToUI, uiMessageToChatMessage, type AgentConversation, type AgentUIMessage, type ApprovalRequest } from "@/lib/agent-api";
 
 type ChatMessage = { id: string; role: "user" | "agent"; content?: string; response?: ResponseBlock };
@@ -48,7 +49,8 @@ export default function ChatPage() {
     let cancelled = false;
     (async () => {
       try {
-        const [items, ctx] = await Promise.all([listAgentConversations(), getAgentContext()]);
+        const [items, ctx, session] = await Promise.all([listAgentConversations(), getAgentContext(), getBetterAuthSession()]);
+        if (session?.user?.email) setEmail(session.user.email);
         if (cancelled) return;
         setConversations(items); setContext(ctx);
         const newest = items.find((item) => item.status === "active");
