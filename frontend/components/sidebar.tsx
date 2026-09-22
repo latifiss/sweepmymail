@@ -125,12 +125,6 @@ export default function Sidebar({
                   >
                     {chat.label}
                   </button>
-                  {(onRenameChat || onDeleteChat) && (
-                    <span className="sidebar__history-actions">
-                      {onRenameChat && <button type="button" aria-label={"Rename " + chat.label} onClick={() => onRenameChat(chat.id)}>Rename</button>}
-                      {onDeleteChat && <button type="button" aria-label={"Delete " + chat.label} onClick={() => onDeleteChat(chat.id)}>Delete</button>}
-                    </span>
-                  )}
                 </li>
               ))}
             </ul>
