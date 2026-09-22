@@ -41,7 +41,7 @@ async function handleChat(req:express.Request,res:express.Response,next:express.
     const abortController=new AbortController();
     req.on("close",()=>abortController.abort());
     try{
-      await pipeAgentUIStreamToResponse({response:res,agent:createMailAgent(user.id,user.email,conversation.id),uiMessages:messages,abortSignal:abortController.signal,sendReasoning:false});
+      await pipeAgentUIStreamToResponse({response:res,agent:createMailAgent(user.id,user.email,conversation.id,requestId),uiMessages:messages,abortSignal:abortController.signal,sendReasoning:false});
       await finishRequest(requestId,abortController.signal.aborted?"aborted":"completed");
     }catch(error){
       await finishRequest(requestId,abortController.signal.aborted?"aborted":"failed",undefined,error instanceof Error?error.name:null);
