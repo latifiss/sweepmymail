@@ -1,5 +1,5 @@
 import express from "express";
-import { pipeAgentUIStreamToResponse } from "ai";
+import { createAgentUIStream, pipeUIMessageStreamToResponse } from "ai";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { createMailAgent } from "../agent/mailAgent";
 import { createConversation, deleteConversation, ensureConversationForUser, getConversationForUser, listConversationsForUser, listMessagesForConversation, setConversationStatus, setConversationTitleIfNew, updateConversationTitle, addMessage } from "../agent/agent.persistence";
@@ -41,7 +41,14 @@ async function handleChat(req:express.Request,res:express.Response,next:express.
     const abortController=new AbortController();
     req.on("close",()=>abortController.abort());
     try{
-      await pipeAgentUIStreamToResponse({response:res,agent:createMailAgent(user.id,user.email,conversation.id,requestId),uiMessages:messages,abortSignal:abortController.signal,sendReasoning:false});
+      const stream = await createAgentUIStream({
+        agent:createMailAgent(user.id,user.email,conversation.id,requestId),
+        uiMessages:messages,
+        abortSignal:abortController.signal,
+        originalMessages:messages,
+        sendReasoning:false,
+      });
+      pipeUIMessageStreamToResponse({response:res,stream,status:200});
       await finishRequest(requestId,abortController.signal.aborted?"aborted":"completed");
     }catch(error){
       await finishRequest(requestId,abortController.signal.aborted?"aborted":"failed",undefined,error instanceof Error?error.name:null);
