@@ -103,8 +103,8 @@ export function createAgentTools(userId: string, userEmail: string) {
           );
           const sorted = [...emails].sort(
             (a, b) =>
-              new Date(b.date || 0).getTime() -
-              new Date(a.date || 0).getTime(),
+              new Date(String(b.date || 0)).getTime() -
+              new Date(String(a.date || 0)).getTime(),
           );
           return {
             ok: true,
