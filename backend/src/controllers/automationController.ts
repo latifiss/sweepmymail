@@ -30,7 +30,7 @@ function validate(body: any) {
     trigger_config: triggerConfig,
     action_type: actionType,
     action_config: actionConfig,
-    status: body?.status === "paused" ? "paused" : "active" as const,
+    status,
   };
 }
 
