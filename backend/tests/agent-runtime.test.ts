@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { AgentRuntimeError, validateAgentInput } from "../src/agent/agent.runtime";
+import { AgentRuntimeError, validateAgentInput } from "../src/agent/agent.validation";
 
 test("accepts a normal UI message array", () => {
   assert.doesNotThrow(() => validateAgentInput([{ role: "user", parts: [{ type: "text", text: "hello" }] }]));
