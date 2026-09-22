@@ -1,11 +1,11 @@
 import express from "express";
-import { createAgentUIStream, pipeUIMessageStreamToResponse } from "ai";
+import { pipeAgentUIStreamToResponse } from "ai";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { createMailAgent } from "../agent/mailAgent";
 import { createConversation, deleteConversation, ensureConversationForUser, getConversationForUser, listConversationsForUser, listMessagesForConversation, setConversationStatus, setConversationTitleIfNew, updateConversationTitle, addMessage } from "../agent/agent.persistence";
 import { env } from "../config/env";
 import { getAgentContext } from "../agent/agent.context";
-import { consumeAgentQuota, createRequestId, finishRequest, getAgentUsage, startRequest, validateAgentInput } from "../agent/agent.runtime";
+import { consumeAgentQuota, finishRequest, getAgentUsage, startRequest, validateAgentInput } from "../agent/agent.runtime";
 import { agentErrorResponse, getRequestId } from "../agent/agent.http";
 
 const router = express.Router();
@@ -41,14 +41,7 @@ async function handleChat(req:express.Request,res:express.Response,next:express.
     const abortController=new AbortController();
     req.on("close",()=>abortController.abort());
     try{
-      const stream = await createAgentUIStream({
-        agent:createMailAgent(user.id,user.email,conversation.id,requestId),
-        uiMessages:messages,
-        abortSignal:abortController.signal,
-        originalMessages:messages,
-        sendReasoning:false,
-      });
-      pipeUIMessageStreamToResponse({response:res,stream,status:200});
+      await pipeAgentUIStreamToResponse({response:res,agent:createMailAgent(user.id,user.email,conversation.id,requestId),uiMessages:messages,abortSignal:abortController.signal,sendReasoning:false});
       await finishRequest(requestId,abortController.signal.aborted?"aborted":"completed");
     }catch(error){
       await finishRequest(requestId,abortController.signal.aborted?"aborted":"failed",undefined,error instanceof Error?error.name:null);
