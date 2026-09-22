@@ -31,6 +31,7 @@ function refFrom(value: any): EmailRef | null { const e = value?.email || value;
 
 export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; role: "user" | "agent"; content?: string; response?: ResponseBlock } | null {
   if (message.role === "user") return { id: message.id, role: "user", content: textOf(message) };
+  if (message.role === "tool") return null;
   const text = textOf(message); const tool = toolOf(message); const name = String(tool?.toolName || tool?.name || ""); const output = tool?.output;
   const emails = Array.isArray(output?.emails) ? output.emails.map(refFrom).filter(Boolean) as EmailRef[] : []; const citation = refFrom(tool); const citations = citation ? [citation] : [];
   if (name.includes("get_recent_emails") || name.includes("search_emails")) return { id: message.id, role: "agent", response: { kind: "email-list", lead: text || "Here are the emails I found.", emails } };
