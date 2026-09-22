@@ -2,7 +2,6 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { ToolLoopAgent, stepCountIs } from "ai";
 import { env } from "../config/env";
 import { createAgentTools } from "./agent.tools";
-import { addMessage } from "./agent.persistence";
 import { finishRequest } from "./agent.runtime";
 
 const openrouter = createOpenRouter({ apiKey: env.OPENROUTER_API_KEY });
@@ -58,33 +57,7 @@ export function createMailAgent(userId: string, userEmail: string, conversationI
           outputTokens: usage.outputTokens || usage.completionTokens,
         });
       }
-      if (!conversationId) return;
-      for (const message of event.response?.messages || []) {
-        const role = message.role === "assistant" ? "assistant" : message.role === "tool" ? "tool" : "system";
-        const content = removeReasoningFromContent(message.content ?? message);
-        const parts = Array.isArray(message.content) ? message.content : [];
-        const firstToolPart = parts.find((part: any) => part?.type === "tool-call" || part?.type === "tool-result");
-        const messageIds = Array.from(new Set(parts.flatMap((part: any) => {
-          const found: string[] = [];
-          const visit = (value: any) => {
-            if (!value || typeof value !== "object") return;
-            if (typeof value.messageId === "string") found.push(value.messageId);
-            for (const child of Object.values(value)) visit(child);
-          };
-          visit(part?.output ?? part?.result ?? part?.input);
-          return found;
-        })));
-        await addMessage({
-          conversationId,
-          role,
-          content,
-          toolName: firstToolPart?.toolName || null,
-          toolCallId: firstToolPart?.toolCallId || null,
-          toolInput: firstToolPart?.input || null,
-          toolResult: firstToolPart?.output || null,
-          metadata: { executionState: message.role === "tool" ? "tool_result" : "completed", citations: messageIds.map((messageId) => ({ messageId })) },
-        });
-      }
+      return;
     },
   });
 }
