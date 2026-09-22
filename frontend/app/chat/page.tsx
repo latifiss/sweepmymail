@@ -161,5 +161,3 @@ export default function ChatPage() {
   );
 }
 
-void handleRename;
-void handleDelete;
