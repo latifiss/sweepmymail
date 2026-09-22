@@ -60,12 +60,12 @@ export default function ChatPage() {
     return () => { cancelled = true; abortRef.current?.abort(); };
   }, [loadConversation]);
 
-  const runAgent = useCallback(async (nextMessages: AgentUIMessage[], path = "/agent/chat") => {
+  const runAgent = useCallback(async (nextMessages: AgentUIMessage[], path = "/agent/chat", activeConversationId?: string) => {
     abortRef.current?.abort();
     const controller = new AbortController(); abortRef.current = controller;
     setThinking(true); setError(null); setApproval(null);
     try {
-      const result = await streamAgentMessage(nextMessages, conversationId, path, controller.signal);
+      const result = await streamAgentMessage(nextMessages, activeConversationId ?? conversationId, path, controller.signal);
       if (result.conversationId && result.conversationId !== conversationId) setConversationId(result.conversationId);
       setUiMessages(result.messages);
       setMessages(result.messages.map(uiMessageToChatMessage).filter(Boolean) as ChatMessage[]);
@@ -85,7 +85,7 @@ export default function ChatPage() {
     const message: AgentUIMessage = { id: "user-" + Date.now(), role: "user", parts: [{ type: "text", text: content }] };
     const next = [...uiMessages, message];
     setUiMessages(next); setMessages(next.map(uiMessageToChatMessage).filter(Boolean) as ChatMessage[]);
-    await runAgent(next);
+    await runAgent(next, "/agent/chat", id);
   }, [conversationId, thinking, uiMessages, runAgent]);
 
   const handleApproval = useCallback(async (approved: boolean) => {
