@@ -5,7 +5,7 @@ import { createMailAgent } from "../agent/mailAgent";
 import { createConversation, deleteConversation, ensureConversationForUser, getConversationForUser, listConversationsForUser, listMessagesForConversation, setConversationStatus, setConversationTitleIfNew, updateConversationTitle, addMessage } from "../agent/agent.persistence";
 import { env } from "../config/env";
 import { getAgentContext } from "../agent/agent.context";
-import { consumeAgentQuota, createRequestId, finishRequest, startRequest, validateAgentInput } from "../agent/agent.runtime";
+import { consumeAgentQuota, createRequestId, finishRequest, getAgentUsage, startRequest, validateAgentInput } from "../agent/agent.runtime";
 import { agentErrorResponse, getRequestId } from "../agent/agent.http";
 
 const router = express.Router();
@@ -17,7 +17,7 @@ router.patch("/conversations/:conversationId", authMiddleware, async (req,res,ne
 router.delete("/conversations/:conversationId", authMiddleware, async (req,res,next)=>{try{const user=(req as any).user;if(!await deleteConversation(user.id,req.params.conversationId))return res.status(404).json({error:{code:"CONVERSATION_NOT_FOUND",message:"Conversation not found"}});res.status(204).send();}catch(e){next(e);}});
 
 router.get("/context", authMiddleware, async (req,res,next)=>{try{const user=(req as any).user;res.json({context:await getAgentContext(user.id)});}catch(e){next(e);}});
-router.get("/usage", authMiddleware, async (req,res,next)=>{try{const user=(req as any).user;res.json({usage:await getAgentContext(user.id).then((context)=>context.usage)});}catch(e){next(e);}});
+router.get("/usage", authMiddleware, async (req,res,next)=>{try{const user=(req as any).user;res.json({usage:await getAgentUsage(user.id)});}catch(e){next(e);}});
 
 async function handleChat(req:express.Request,res:express.Response,next:express.NextFunction){
   const requestId=getRequestId(req);
