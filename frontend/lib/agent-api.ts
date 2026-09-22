@@ -6,7 +6,7 @@ export type AgentConversation = { id: string; user_id: string; title: string; st
 export type StoredAgentMessage = { id: string; conversation_id: string; role: "user" | "assistant" | "system" | "tool"; content: unknown; metadata?: Record<string, unknown>; created_at: string };
 export type AgentContext = { inbox: { syncedEmails: number; unread: number; important: number }; categories: Array<{ id: string; label: string; emailCount: number }>; automations: { total: number; active: number; paused: number }; scheduled: { pending: number; total: number }; usage: { requestsToday: number; tokensToday: number; requestLimit: number; tokenLimit: number }; generatedAt: string };
 export type AgentUIMessage = { id: string; role: "user" | "assistant"; parts: Array<Record<string, unknown>> };
-export type ApprovalRequest = { approvalId: string; toolName: string; input: unknown };
+export type ApprovalRequest = { approvalId: string; toolName: string; input: unknown; toolCallId?: string };
 
 async function request(path: string, init?: RequestInit) {
   const response = await fetch(baseUrl() + path, { ...init, credentials: "include", headers: { "Content-Type": "application/json", ...(init?.headers || {}) }, cache: "no-store" });
@@ -54,7 +54,7 @@ export async function streamAgentMessage(messages: AgentUIMessage[], conversatio
   const handle = (raw: string) => { const line = raw.trim(); if (!line || !line.startsWith("data:")) return; const payload = line.slice(5).trim(); if (!payload || payload === "[DONE]") return; let event: any; try { event = JSON.parse(payload); } catch { return; } onEvent?.(event);
     if (event.type === "text-start") { current = { id: String(event.id || "assistant-" + Date.now()), role: "assistant", parts: [{ type: "text", text: "" }] }; resultMessages.push(current); }
     else if (event.type === "text-delta") { if (!current) { current = { id: String(event.id || "assistant-" + Date.now()), role: "assistant", parts: [{ type: "text", text: "" }] }; resultMessages.push(current); } const p: any = current.parts.find((part) => part.type === "text"); if (p) p.text = String(p.text || "") + String(event.delta || ""); }
-    else if (event.type === "tool-approval-request" || event.type === "tool-input-available") { if (event.approvalId) approval = { approvalId: String(event.approvalId), toolName: String(event.toolName || ""), input: event.input }; }
+    else if (event.type === "tool-approval-request" || event.type === "tool-input-available") { if (event.approvalId) approval = { approvalId: String(event.approvalId), toolName: String(event.toolName || ""), input: event.input, toolCallId: event.toolCallId ? String(event.toolCallId) : undefined }; }
     else if (event.type === "finish") current = null;
     else if (event.type === "error") { current = null; resultMessages.push({ id: "error-" + Date.now(), role: "assistant", parts: [{ type: "text", text: String(event.errorText || event.message || "Agent request failed") }] }); }
   };
