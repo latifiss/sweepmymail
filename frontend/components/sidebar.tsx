@@ -25,8 +25,6 @@ export interface SidebarProps {
   onCupboard?: () => void;
   onSelectChat?: (id: string) => void;
   onUpgrade?: () => void;
-  onRenameChat?: (id: string) => void;
-  onDeleteChat?: (id: string) => void;
   className?: string;
 }
 
@@ -56,8 +54,6 @@ export default function Sidebar({
   onCupboard,
   onSelectChat,
   onUpgrade,
-  onRenameChat,
-  onDeleteChat,
   className,
 }: SidebarProps): ReactNode {
   const rootClassName = className ? `sidebar ${className}` : "sidebar";
