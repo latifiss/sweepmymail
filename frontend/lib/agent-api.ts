@@ -45,6 +45,14 @@ function decodeHtmlEntities(value: string) {
   return textarea.value;
 }
 
+function cleanEmailText(value: unknown) {
+  return decodeHtmlEntities(String(value ?? ""))
+    .replace(/[\\u200B-\\u200D\\u2060\\uFEFF\\u00AD\\u034F]/g, "")
+    .replace(/[\\u202A-\\u202E\\u2066-\\u2069]/g, "")
+    .replace(/\\s+/g, " ")
+    .trim();
+}
+
 function parseEmailListFromText(text: string): { title?: string; lead?: string; emails: EmailRef[] } | null {
   const normalized = text
     .replace(/return { id: message.id, role: "agent", response: { kind: "text", content: text || "Done.", citations } };\\*/g, "*")
@@ -84,7 +92,19 @@ function parseEmailListFromText(text: string): { title?: string; lead?: string; 
   return { title, lead, emails };
 }
 
-function refFrom(value: any): EmailRef | null { const e = value?.email || value; const id = e?.messageId || e?.message_id; if (!id) return null; return { id: String(id), sender: decodeHtmlEntities(String(e.sender || e.from || "Unknown sender")), senderEmail: decodeHtmlEntities(String(e.senderEmail || e.fromEmail || "")), subject: decodeHtmlEntities(String(e.subject || "(no subject)")), preview: decodeHtmlEntities(String(e.snippet || e.preview || "")).slice(0, 180), receivedAt: String(e.date || e.receivedAt || new Date().toISOString()) }; }
+function refFrom(value: any): EmailRef | null {
+  const e = value?.email || value;
+  const id = e?.messageId || e?.message_id;
+  if (!id) return null;
+  return {
+    id: String(id),
+    sender: cleanEmailText(e.sender || e.from || "Unknown sender"),
+    senderEmail: cleanEmailText(e.senderEmail || e.fromEmail || ""),
+    subject: cleanEmailText(e.subject || "(no subject)"),
+    preview: cleanEmailText(e.snippet || e.preview || "").slice(0, 180),
+    receivedAt: String(e.date || e.receivedAt || new Date().toISOString()),
+  };
+}
 
 export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; role: "user" | "agent"; content?: string; response?: ResponseBlock } | null {
   if (message.role === "user") return { id: message.id, role: "user", content: textOf(message) };
