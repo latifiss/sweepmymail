@@ -33,39 +33,33 @@ function dedupeChatMessages(items: ChatMessage[]) {
       item.role === "agent" &&
       item.response?.kind === "text" &&
       Boolean(item.response.citations?.length) &&
-      /\\b(marked|archived)\\b/i.test(item.response.content)
+      /\b(marked|archived)\b/i.test(item.response.content)
   );
+
   const seen = new Set<string>();
 
   return items.filter((item) => {
     if (item.role !== "agent" || !item.response) return true;
 
-    if (item.response.kind === "email-list") {
-      const emails = item.response.emails || [];
-      const fingerprint =
-        "email-list:" +
-        emails.map((email) => `${email.senderEmail}|${email.subject}|${email.receivedAt}`).join(";");
-      if (seen.has(fingerprint)) return false;
-      seen.add(fingerprint);
-      return true;
+    // When Gmail returned structured email data, the cards are the complete
+    // response. Never render the model's duplicate prose alongside them.
+    if (hasStructuredEmailList) {
+      if (item.response.kind === "email-list") {
+        const emails = item.response.emails || [];
+        const fingerprint =
+          "email-list:" +
+          emails.map((email) => `${email.id}|${email.senderEmail}|${email.subject}|${email.receivedAt}`).join(";");
+        if (seen.has(fingerprint)) return false;
+        seen.add(fingerprint);
+        return true;
+      }
+      return false;
     }
 
     if (item.response.kind === "text") {
       const content = String(item.response.content || "").trim();
 
-      if (hasStructuredEmailList) {
-        const looksLikeEmailSummary =
-          /here are (your|the) (latest|recent)? ?emails/i.test(content) ||
-          /i found \\d+ emails/i.test(content) ||
-          /\\b(?:the )?(?:latest|recent) emails\\b/i.test(content) ||
-          /\\*\\*From:\\*\\*/i.test(content) ||
-          /\\*\\*Subject:\\*\\*/i.test(content) ||
-          /would you like me to (read|show) the full/i.test(content) ||
-          /let me summarize (them|the emails)/i.test(content);
-        if (looksLikeEmailSummary) return false;
-      }
-
-      if (hasStructuredAction && !item.response.citations?.length && /\\b(marked|archived)\\b/i.test(content)) {
+      if (hasStructuredAction && !item.response.citations?.length && /\b(marked|archived)\b/i.test(content)) {
         return false;
       }
 
@@ -75,7 +69,12 @@ function dedupeChatMessages(items: ChatMessage[]) {
         if (repeatsAction) return false;
       }
 
-      const actionKey = content.toLowerCase().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
+      const actionKey = content
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
       if (actionKey && seen.has("text:" + actionKey)) return false;
       if (actionKey) seen.add("text:" + actionKey);
     }
