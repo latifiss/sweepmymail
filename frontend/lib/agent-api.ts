@@ -47,7 +47,7 @@ function decodeHtmlEntities(value: string) {
 
 function parseEmailListFromText(text: string): { title?: string; lead?: string; emails: EmailRef[] } | null {
   const normalized = text
-    .replace(/\\\*/g, "*")
+    .replace(/return { id: message.id, role: "agent", response: { kind: "text", content: text || "Done.", citations } };\\*/g, "*")
     .replace(/\\-/g, "-")
     .replace(/\\([@])/g, "$1")
     .replace(/<\s*(?:mailto:)?([^>]+)>/g, "$1")
