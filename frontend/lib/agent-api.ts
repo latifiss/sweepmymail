@@ -233,7 +233,38 @@ export async function streamAgentMessage(messages: AgentUIMessage[], conversatio
         });
       }
     }
-    else if (event.type === "tool-approval-request") { if (event.approvalId) { approval = { approvalId: String(event.approvalId), toolName: String(event.toolName || ""), input: event.input, toolCallId: event.toolCallId ? String(event.toolCallId) : undefined }; resultMessages.push({ id: "approval-request-" + String(event.approvalId), role: "assistant", parts: [{ type: "tool-approval-request", approvalId: String(event.approvalId), toolCallId: event.toolCallId, toolName: event.toolName, input: event.input }] }); } }
+    else if (event.type === "tool-approval-request") {
+      if (event.approvalId) {
+        const approvalId = String(event.approvalId);
+        const toolName = String(event.toolName || "");
+        const toolCallId = event.toolCallId ? String(event.toolCallId) : "";
+        approval = { approvalId, toolName, input: event.input, toolCallId: toolCallId || undefined };
+
+        if (!current) {
+          current = { id: String(event.messageId || "assistant-" + Date.now()), role: "assistant", parts: [{ type: "text", text: "" }] };
+          resultMessages.push(current);
+        }
+
+        const existing = current.parts.find((part: any) => part.toolCallId === toolCallId);
+        if (existing) {
+          Object.assign(existing, {
+            state: "approval-requested",
+            approval: { id: approvalId },
+            toolName,
+            input: event.input ?? existing.input ?? {},
+          });
+        } else {
+          current.parts.push({
+            type: "tool-" + toolName,
+            state: "approval-requested",
+            toolCallId,
+            toolName,
+            input: event.input ?? {},
+            approval: { id: approvalId },
+          });
+        }
+      }
+    }
     else if (event.type === "finish") current = null;
     else if (event.type === "error") { current = null; resultMessages.push({ id: "error-" + Date.now(), role: "assistant", parts: [{ type: "text", text: String(event.errorText || event.message || "Agent request failed") }] }); }
   };
