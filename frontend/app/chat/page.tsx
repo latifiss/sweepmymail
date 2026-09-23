@@ -28,6 +28,13 @@ function dedupeChatMessages(items: ChatMessage[]) {
   const hasStructuredSchedule = items.some(
     (item) => item.role === "agent" && item.response?.kind === "schedule"
   );
+  const hasStructuredAction = items.some(
+    (item) =>
+      item.role === "agent" &&
+      item.response?.kind === "text" &&
+      Boolean(item.response.citations?.length) &&
+      /\\b(marked|archived)\\b/i.test(item.response.content)
+  );
   const seen = new Set<string>();
 
   return items.filter((item) => {
@@ -53,6 +60,10 @@ function dedupeChatMessages(items: ChatMessage[]) {
           /\*\*Subject:\*\*/i.test(content) ||
           /would you like me to (read|show) the full/i.test(content);
         if (looksLikeEmailSummary) return false;
+      }
+
+      if (hasStructuredAction && !item.response.citations?.length && /\\b(marked|archived)\\b/i.test(content)) {
+        return false;
       }
 
       if (hasStructuredDraft || hasStructuredSchedule) {
