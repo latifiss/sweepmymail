@@ -100,10 +100,15 @@ export async function streamAgentMessage(messages: AgentUIMessage[], conversatio
     }
     else if (event.type === "tool-output-available" || event.type === "tool-result") {
       const toolCallId = String(event.toolCallId || "");
+      const rawOutput = event.output ?? event.result;
+      let output = rawOutput;
+      if (typeof output === "string") {
+        try { output = JSON.parse(output); } catch {}
+      }
       const part: any = current?.parts.find((item: any) => item.toolCallId === toolCallId);
       if (part) {
         part.state = "output-available";
-        part.output = event.output ?? event.result;
+        part.output = output;
       } else if (current) {
         current.parts.push({
           type: "tool-" + String(event.toolName || ""),
@@ -111,7 +116,7 @@ export async function streamAgentMessage(messages: AgentUIMessage[], conversatio
           toolCallId,
           toolName: String(event.toolName || ""),
           input: {},
-          output: event.output ?? event.result,
+          output,
         });
       }
     }
