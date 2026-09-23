@@ -178,7 +178,15 @@ export function createAgentTools(userId: string, userEmail: string) {
       inputSchema: emailContentSchema,
       execute: async (input) => {
         requireAgentConfiguration();
-        return gmailService.createDraftForUser(userId, input);
+        const created = await gmailService.createDraftForUser(userId, input);
+        return {
+          ...created,
+          to: input.to,
+          cc: input.cc || [],
+          bcc: input.bcc || [],
+          subject: input.subject,
+          body: input.body,
+        };
       },
     }),
 
@@ -485,16 +493,28 @@ export function createAgentTools(userId: string, userEmail: string) {
       inputSchema: z.object({
         messageIds: z.array(z.string()).min(1).max(500),
       }),
-      execute: async ({ messageIds }) => ({
-        archived: (
+      execute: async ({ messageIds }) => {
+        const emails = (await getEmailsForUser(userId))
+          .filter((email) => messageIds.includes(email.message_id))
+          .map((email) => ({
+            messageId: email.message_id,
+            sender: email.sender,
+            subject: email.subject,
+            snippet: typeof email.snippet === "string" ? email.snippet.slice(0, 180) : "",
+            date: email.date,
+          }));
+
+        const archived = (
           await gmailService.modifyMessagesForUser(
             userId,
             messageIds,
             [],
             ["INBOX"],
           )
-        ).modified,
-      }),
+        ).modified;
+
+        return { archived, emails };
+      },
     }),
 
     mark_important: tool({
@@ -502,16 +522,28 @@ export function createAgentTools(userId: string, userEmail: string) {
       inputSchema: z.object({
         messageIds: z.array(z.string()).min(1).max(500),
       }),
-      execute: async ({ messageIds }) => ({
-        markedImportant: (
+      execute: async ({ messageIds }) => {
+        const emails = (await getEmailsForUser(userId))
+          .filter((email) => messageIds.includes(email.message_id))
+          .map((email) => ({
+            messageId: email.message_id,
+            sender: email.sender,
+            subject: email.subject,
+            snippet: typeof email.snippet === "string" ? email.snippet.slice(0, 180) : "",
+            date: email.date,
+          }));
+
+        const modified = (
           await gmailService.modifyMessagesForUser(
             userId,
             messageIds,
             ["IMPORTANT"],
             [],
           )
-        ).modified,
-      }),
+        ).modified;
+
+        return { markedImportant: modified, emails };
+      },
     }),
 
     delete_emails: tool({
