@@ -122,6 +122,43 @@ export function storedMessagesToUI(messages: StoredAgentMessage[]): AgentUIMessa
   });
 }
 
+export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; role: "user" | "agent"; content?: string; response?: ResponseBlock } | null {
+  const text = textOf(message).trim();
+  if (message.role === "user") return { id: message.id, role: "user", content: text };
+
+  const part = toolOf(message);
+  if (part) {
+    const toolName = String(part.toolName || String(part.type || "").replace(/^tool-/, ""));
+    let output: any = part.output;
+    if (typeof output === "string") {
+      try { output = JSON.parse(output); } catch {}
+    }
+
+    if (toolName.includes("get_recent_emails") || toolName.includes("search_emails") || toolName.includes("list_emails")) {
+      const raw = Array.isArray(output?.emails) ? output.emails : Array.isArray(output) ? output : [];
+      const emails = raw.map(refFrom).filter(Boolean) as EmailRef[];
+      if (emails.length) return { id: message.id, role: "agent", response: { kind: "email-list", lead: "Here are the emails I found.", emails } };
+    }
+
+    if (toolName.includes("create_draft") || toolName.includes("draft_email")) {
+      const draft = output?.draft || output;
+      if (draft?.id) return { id: message.id, role: "agent", response: { kind: "draft", lead: "Here's the draft.", draft: { id: String(draft.id), to: String(draft.to || ""), cc: draft.cc ? String(draft.cc) : undefined, subject: String(draft.subject || ""), body: String(draft.body || "") } } };
+    }
+
+    if (toolName.includes("schedule")) {
+      const event = output?.event || output;
+      if (event?.id) return { id: message.id, role: "agent", response: { kind: "schedule", lead: "Here's the scheduled email.", event: { id: String(event.id), title: String(event.title || "Scheduled email"), when: String(event.when || event.scheduledAt || ""), duration: String(event.duration || "") } } };
+    }
+  }
+
+  if (text) {
+    const parsedEmails = parseEmailListFromText(text);
+    if (parsedEmails) return { id: message.id, role: "agent", response: { kind: "email-list", lead: parsedEmails.lead || "Here are the emails I found.", title: parsedEmails.title, emails: parsedEmails.emails } };
+    return { id: message.id, role: "agent", response: { kind: "text", content: text } };
+  }
+  return null;
+}
+
 export async function streamAgentMessage(messages: AgentUIMessage[], conversationId?: string, path = "/agent/chat", signal?: AbortSignal, onEvent?: (event: any) => void) {
   const response = await request(path, { method: "POST", body: JSON.stringify({ conversationId, messages }), signal });
   if (!response.body) throw new Error("Agent returned an empty response");
