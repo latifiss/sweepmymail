@@ -123,12 +123,28 @@ export default function ChatPage() {
 
   const handleApproval = useCallback(async (approved: boolean) => {
     if (!approval || !conversationId || thinking) return;
-    const approvalMessage: AgentUIMessage = {
-      id: "approval-" + Date.now(),
-      role: "tool",
-      parts: [{ type: "tool-approval-response", approvalId: approval.approvalId, toolCallId: approval.toolCallId, approved }],
-    };
-    const next = [...uiMessages, approvalMessage];
+
+    const next = uiMessages.map((message) => ({
+      ...message,
+      parts: message.parts.map((part: any) => {
+        if (
+          part.toolCallId === approval.toolCallId ||
+          (part.approval && part.approval.id === approval.approvalId)
+        ) {
+          return {
+            ...part,
+            state: "approval-responded",
+            approval: {
+              ...(part.approval || {}),
+              id: approval.approvalId,
+              approved,
+            },
+          };
+        }
+        return part;
+      }),
+    }));
+
     setUiMessages(next);
     setApproval(null);
     await runAgent(next, "/agent/chat/continue");
