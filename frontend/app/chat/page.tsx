@@ -18,6 +18,20 @@ const DEFAULT_STAGES = ["Thinking", "Reading your inbox", "Preparing response"];
 
 function textFromMessage(message: AgentUIMessage) { return message.parts.filter((part) => part.type === "text").map((part) => String(part.text || "")).join(""); }
 
+function dedupeChatMessages(items: ChatMessage[]) {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (item.role !== "agent" || !item.response) return true;
+    if (item.response.kind === "email-list") {
+      const emails = item.response.emails || [];
+      const fingerprint = "email-list:" + emails.map((email) => `${email.id}|${email.senderEmail}|${email.subject}|${email.receivedAt}`).join(";");
+      if (seen.has(fingerprint)) return false;
+      seen.add(fingerprint);
+    }
+    return true;
+  });
+}
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [uiMessages, setUiMessages] = useState<AgentUIMessage[]>([]);
@@ -41,7 +55,7 @@ export default function ChatPage() {
       const data = await getAgentConversation(id);
       const ui = storedMessagesToUI(data.messages);
       setConversationId(data.conversation.id); setUiMessages(ui);
-      setMessages(ui.map(uiMessageToChatMessage).filter(Boolean) as ChatMessage[]);
+      setMessages(dedupeChatMessages(ui.map(uiMessageToChatMessage).filter(Boolean) as ChatMessage[]));
     } catch (e) { setError(e instanceof Error ? e.message : "Unable to load conversation"); }
   }, []);
 
@@ -68,7 +82,7 @@ export default function ChatPage() {
       const result = await streamAgentMessage(nextMessages, activeConversationId ?? conversationId, path, controller.signal);
       if (result.conversationId && result.conversationId !== conversationId) setConversationId(result.conversationId);
       setUiMessages(result.messages);
-      setMessages(result.messages.map(uiMessageToChatMessage).filter(Boolean) as ChatMessage[]);
+      setMessages(dedupeChatMessages(result.messages.map(uiMessageToChatMessage).filter(Boolean) as ChatMessage[]));
       setApproval(result.approval || null);
       await refreshConversations();
     } catch (e) {
@@ -138,7 +152,7 @@ export default function ChatPage() {
     <div className="chat-page">
       <div className="chat-page__body">
         <div className="chat-page__rail">
-          <Sidebar chats={chats} plan="free" onNewChat={handleNewChat} onCupboard={() => setCupboardOpen(true)} onSelectChat={(id) => void loadConversation(id)} onRenameChat={(id) => void handleRename(id)} onDeleteChat={(id) => void handleDelete(id)} onUpgrade={() => window.location.assign("/pricing")} />
+          <Sidebar chats={chats} plan="free" onNewChat={handleNewChat} onCupboard={() => setCupboardOpen(true)} onSelectChat={(id) => void loadConversation(id)} onUpgrade={() => window.location.assign("/pricing")} />
           <div className={"chat-page__cupboard" + (cupboardOpen ? " chat-page__cupboard--open" : "")}>
             <Cupboard email={email} mailsCount={context?.inbox?.syncedEmails} categoriesCount={context?.categories?.length} priorityCount={context?.inbox?.important} categories={(context?.categories || []).map((c: any) => c.label)} automationsCount={context?.automations?.total} scheduledCount={context?.scheduled?.pending} requestsToday={context?.usage?.requestsToday} requestLimit={context?.usage?.requestLimit} tokensToday={context?.usage?.tokensToday} tokenLimit={context?.usage?.tokenLimit} onClose={() => setCupboardOpen(false)} />
           </div>
