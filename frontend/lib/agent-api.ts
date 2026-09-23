@@ -37,6 +37,45 @@ function textOf(message: AgentUIMessage) {
 function toolOf(message: AgentUIMessage): any {
   return normalizeParts(message?.parts).find((part) => String(part.type || "").startsWith("tool-") || part.type === "dynamic-tool");
 }
+function parseEmailListFromText(text: string): { title?: string; lead?: string; emails: EmailRef[] } | null {
+  const normalized = text
+    .replace(/\\\*/g, "*")
+    .replace(/\\-/g, "-")
+    .replace(/\\([@])/g, "$1")
+    .replace(/<\s*(?:mailto:)?([^>]+)>/g, "$1")
+    .replace(/\\s+/g, " ")
+    .trim();
+
+  const emailPattern = /(?:^|\\n)\\*\\*([^*<]+?)\\s*<([^>]+)>\\*\\*\\s*[-•]?\\s*Subject:\s*["“]?(.+?)["”]?\\s*[-•]?\\s*Date:\s*(.+?)(?=\\n|$)/g;
+  const emails: EmailRef[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = emailPattern.exec(normalized))) {
+    const sender = match[1].trim();
+    const senderEmail = match[2].trim();
+    const subject = match[3].trim().replace(/^["“]|["”]$/g, "");
+    const receivedAtRaw = match[4].trim();
+    const parsedDate = new Date(receivedAtRaw);
+    emails.push({
+      id: `parsed-email-${emails.length}-${senderEmail}-${subject}`,
+      sender,
+      senderEmail,
+      subject,
+      preview: "",
+      receivedAt: Number.isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString(),
+    });
+  }
+
+  if (!emails.length) return null;
+
+  const first = normalized.split(/\\n+/).map((line) => line.trim()).filter(Boolean);
+  const titleLine = first.find((line) => /^\\*\\*[^*]+\\*\\*$/.test(line) && !line.includes("<"));
+  const title = titleLine?.replace(/^\\*\\*|\\*\\*$/g, "").trim();
+  const firstEmailIndex = first.findIndex((line) => line.includes("<") && line.includes(">") && /Subject:/i.test(normalized.slice(normalized.indexOf(line))));
+  const lead = first.find((line) => /here are (your )?(recent )?emails|here are the emails/i.test(line) && !/^\\*\\*[^*]+\\*\\*$/.test(line))?.replace(/^\\*\\*|\\*\\*$/g, "").trim();
+
+  return { title, lead, emails };
+}
+
 function refFrom(value: any): EmailRef | null { const e = value?.email || value; const id = e?.messageId || e?.message_id; if (!id) return null; return { id: String(id), sender: String(e.sender || e.from || "Unknown sender"), senderEmail: String(e.senderEmail || e.fromEmail || ""), subject: String(e.subject || "(no subject)"), preview: String(e.snippet || e.preview || "").slice(0, 180), receivedAt: String(e.date || e.receivedAt || new Date().toISOString()) }; }
 
 export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; role: "user" | "agent"; content?: string; response?: ResponseBlock } | null {
@@ -47,6 +86,19 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
   if (name.includes("get_recent_emails") || name.includes("search_emails")) return { id: message.id, role: "agent", response: { kind: "email-list", lead: "Here are the emails I found.", emails } };
   if (name.includes("create_draft") || name.includes("reply_to_email") || name.includes("forward_email")) { const d = output?.draft || output; const draft: EmailDraft = { id: String(d?.draftId || d?.id || tool?.toolCallId || message.id), to: String(d?.to || d?.recipients || ""), cc: d?.cc ? String(d.cc) : undefined, subject: String(d?.subject || ""), body: String(d?.body || text || "") }; return { id: message.id, role: "agent", response: { kind: "draft", lead: text || "I created the draft.", draft } }; }
   if (name.includes("schedule_email")) { const e = output?.scheduledEmail || output?.event || output; const event: ScheduleEvent = { id: String(e?.id || tool?.toolCallId || message.id), title: String(e?.subject || e?.title || "Scheduled email"), when: String(e?.sendAt || e?.when || ""), duration: "" }; return { id: message.id, role: "agent", response: { kind: "schedule", lead: text || "The email is ready to schedule.", event } }; }
+  const parsedEmails = parseEmailListFromText(text);
+  if (parsedEmails) {
+    return {
+      id: message.id,
+      role: "agent",
+      response: {
+        kind: "email-list",
+        lead: parsedEmails.lead || "Here are the emails I found.",
+        title: parsedEmails.title,
+        emails: parsedEmails.emails,
+      },
+    };
+  }
   return { id: message.id, role: "agent", response: { kind: "text", content: text || "Done.", citations } };
 }
 
