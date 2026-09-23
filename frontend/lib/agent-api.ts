@@ -267,18 +267,36 @@ export async function streamAgentMessage(messages: AgentUIMessage[], conversatio
       if (typeof output === "string") {
         try { output = JSON.parse(output); } catch {}
       }
-      const part: any = current?.parts.find((item: any) => item.toolCallId === toolCallId);
-      if (part) {
-        part.state = "output-available";
-        part.output = output;
-      } else if (current) {
-        current.parts.push({
-          type: "tool-" + String(event.toolName || ""),
-          state: "output-available",
-          toolCallId,
-          toolName: String(event.toolName || ""),
-          input: {},
-          output,
+
+      const existingPart: any = current?.parts.find((item: any) => item.toolCallId === toolCallId);
+      const toolName = String(
+        event.toolName ||
+        existingPart?.toolName ||
+        (existingPart?.type ? String(existingPart.type).replace(/^tool-/, "") : "")
+      );
+
+      if (existingPart) {
+        existingPart.state = "output-available";
+        existingPart.output = output;
+        existingPart.toolName = toolName;
+      }
+
+      // Keep tool output in its own assistant message. This prevents the model's
+      // prose and the structured UI result from being merged into one broken block.
+      const toolMessageId = "tool-result-" + (toolCallId || Date.now());
+      const alreadyAdded = resultMessages.some((message) => message.id === toolMessageId);
+      if (!alreadyAdded) {
+        resultMessages.push({
+          id: toolMessageId,
+          role: "assistant",
+          parts: [{
+            type: "tool-" + toolName,
+            state: "output-available",
+            toolCallId,
+            toolName,
+            input: existingPart?.input ?? {},
+            output,
+          }],
         });
       }
     }
