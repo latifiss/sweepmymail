@@ -81,6 +81,109 @@ function dedupeChatMessages(items: ChatMessage[]) {
 
     return true;
   });
+}function dedupeChatMessages(items: ChatMessage[]) {
+  const hasStructuredEmailList = items.some(
+    (item) => item.role === "agent" && item.response?.kind === "email-list"
+  );
+  const hasStructuredDraft = items.some(
+    (item) => item.role === "agent" && item.response?.kind === "draft"
+  );
+  const hasStructuredSchedule = items.some(
+    (item) => item.role === "agent" && item.response?.kind === "schedule"
+  );
+  const hasStructuredAction = items.some(
+    (item) =>
+      item.role === "agent" &&
+      item.response?.kind === "text" &&
+      Boolean(item.response.citations?.length) &&
+      /\b(marked|archived)\b/i.test(item.response.content)
+  );
+
+  const seen = new Set<string>();
+
+  return items.filter((item) => {
+    if (item.role !== "agent" || !item.response) return true;
+
+    // When Gmail returned structured email data, the cards are the complete
+    // response. Never render the model's duplicate prose alongside them.
+    if (hasStructuredEmailList) {
+      if (item.response.kind === "email-list") {
+        const emails = item.response.emails || [];
+        const fingerprint =
+          "email-list:" +
+          emails.map((email) => `${email.id}|${email.senderEmail}|${email.subject}|${email.receivedAt}`).join(";");
+        if (seen.has(fingerprint)) return false;
+        seen.add(fingerprint);
+        return true;
+      }
+      return false;
+    }
+
+    if (item.response.kind === "text") {
+      const content = String(item.response.content || "").trim();
+
+      if (hasStructuredAction && !item.response.citations?.length && /\b(marked|archived)\b/i.test(content)) {
+        return false;
+      }
+
+      if (hasStructuredDraft || hasStructuredSchedule) {
+        const repeatsAction =
+          /^(done[.!]?|i'?ve created|i created|created|draft .* (created|saved)|the draft .* (saved|created)|would you like me to (send|review|edit)|here'?s your draft)/i.test(content);
+        if (repeatsAction) return false;
+      }
+
+      const actionKey = content
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (actionKey && seen.has("text:" + actionKey)) return false;
+      if (actionKey) seen.add("text:" + actionKey);
+    }
+
+    return true;
+  });
+}
+
+function groupAgentResponses(items: ChatMessage[]) {
+  const result: ChatMessage[] = [];
+
+  for (const item of items) {
+    const previous = result[result.length - 1];
+
+    if (
+      previous?.role === "agent" &&
+      previous.response?.kind === "text" &&
+      item.role === "agent" &&
+      item.response?.kind === "text"
+    ) {
+      const previousResponse = previous.response;
+      const currentResponse = item.response;
+      const citations = [
+        ...(previousResponse.citations || []),
+        ...(currentResponse.citations || []),
+      ];
+      const seen = new Set<string>();
+
+      previous.response = {
+        ...previousResponse,
+        content: [previousResponse.content, currentResponse.content]
+          .filter(Boolean)
+          .join("\n\n"),
+        citations: citations.filter((citation) => {
+          if (seen.has(citation.id)) return false;
+          seen.add(citation.id);
+          return true;
+        }),
+      };
+      continue;
+    }
+
+    result.push({ ...item });
+  }
+
+  return result;
 }
 
 export default function ChatPage() {
@@ -232,7 +335,7 @@ export default function ChatPage() {
           ) : (
             <div className="chat-page__thread">
               <div className="chat-page__thread-inner">
-                {messages.map((message) => message.role === "user" ? <UserMessage key={message.id} content={message.content || ""} /> : <ChatResponse key={message.id} response={message.response!} onAction={handleAction} />)}
+                {groupAgentResponses(messages).map((message) => message.role === "user" ? <UserMessage key={message.id} content={message.content || ""} /> : <ChatResponse key={message.id} response={message.response!} onAction={handleAction} />)}
                 {approval && <ChatResponse response={{ kind: "confirm", lead: "This action needs your approval.", promptId: approval.approvalId, question: "Allow " + approval.toolName.replaceAll("_", " ") + " to run?" }} onAction={handleAction} /> }
                 {thinking && <ThinkingIndicator stages={DEFAULT_STAGES} stageDuration={900} onComplete={() => undefined} />}
               </div>
