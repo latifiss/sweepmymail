@@ -89,27 +89,80 @@ function refFrom(value: any): EmailRef | null { const e = value?.email || value;
 export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; role: "user" | "agent"; content?: string; response?: ResponseBlock } | null {
   if (message.role === "user") return { id: message.id, role: "user", content: textOf(message) };
   if (message.role === "tool") return null;
-  const text = textOf(message); const tool = toolOf(message); const name = String(tool?.toolName || tool?.name || ""); const output = tool?.output;
-  const emails = Array.isArray(output?.emails) ? output.emails.map(refFrom).filter(Boolean) as EmailRef[] : []; const citation = refFrom(tool); const citations = citation ? [citation] : [];
-  if (name.includes("get_recent_emails") || name.includes("search_emails")) return { id: message.id, role: "agent", response: { kind: "email-list", lead: "Here are the emails I found.", emails } };
-  if (name.includes("create_draft") || name.includes("reply_to_email") || name.includes("forward_email")) { const d = output?.draft || output; const draft: EmailDraft = { id: String(d?.draftId || d?.id || tool?.toolCallId || message.id), to: String(d?.to || d?.recipients || ""), cc: d?.cc ? String(d.cc) : undefined, subject: String(d?.subject || ""), body: String(d?.body || text || "") }; return { id: message.id, role: "agent", response: { kind: "draft", lead: text || "I created the draft.", draft } }; }
-  if (name.includes("schedule_email")) { const e = output?.scheduledEmail || output?.event || output; const event: ScheduleEvent = { id: String(e?.id || tool?.toolCallId || message.id), title: String(e?.subject || e?.title || "Scheduled email"), when: String(e?.sendAt || e?.when || ""), duration: "" }; return { id: message.id, role: "agent", response: { kind: "schedule", lead: text || "The email is ready to schedule.", event } }; }
+
+  const text = textOf(message);
+  const tool = toolOf(message);
+  const name = String(tool?.toolName || tool?.name || "");
+  const output = tool?.output;
+  const emails = Array.isArray(output?.emails) ? output.emails.map(refFrom).filter(Boolean) as EmailRef[] : [];
+  const citation = refFrom(tool);
+  const citations = citation ? [citation] : [];
+
+  if (name.includes("get_recent_emails") || name.includes("search_emails")) {
+    return { id: message.id, role: "agent", response: { kind: "email-list", lead: "", emails } };
+  }
+
+  if (name.includes("create_draft") || name.includes("reply_to_email") || name.includes("forward_email")) {
+    const d = output?.draft || output;
+    const draft: EmailDraft = {
+      id: String(d?.draftId || d?.id || tool?.toolCallId || message.id),
+      to: Array.isArray(d?.to) ? d.to.join(", ") : String(d?.to || d?.recipients || ""),
+      cc: Array.isArray(d?.cc) ? d.cc.join(", ") : d?.cc ? String(d.cc) : undefined,
+      subject: String(d?.subject || ""),
+      body: String(d?.body || ""),
+    };
+    if (!draft.to && !draft.subject && !draft.body) return null;
+    return { id: message.id, role: "agent", response: { kind: "draft", lead: "", draft } };
+  }
+
+  if (name.includes("schedule_email")) {
+    const e = output?.scheduledEmail || output?.event || output;
+    const event: ScheduleEvent = {
+      id: String(e?.id || tool?.toolCallId || message.id),
+      title: String(e?.subject || e?.title || "Scheduled email"),
+      when: String(e?.sendAt || e?.when || ""),
+      duration: "",
+    };
+    return { id: message.id, role: "agent", response: { kind: "schedule", lead: "", event } };
+  }
+
+  if (name.includes("mark_important")) {
+    const actionEmails = Array.isArray(output?.emails) ? output.emails.map(refFrom).filter(Boolean) as EmailRef[] : [];
+    return {
+      id: message.id,
+      role: "agent",
+      response: {
+        kind: "text",
+        content: actionEmails.length === 1 ? "Marked the email as important." : "Marked the emails as important.",
+        citations: actionEmails,
+      },
+    };
+  }
+
+  if (name.includes("archive_emails")) {
+    const actionEmails = Array.isArray(output?.emails) ? output.emails.map(refFrom).filter(Boolean) as EmailRef[] : [];
+    return {
+      id: message.id,
+      role: "agent",
+      response: {
+        kind: "text",
+        content: actionEmails.length === 1 ? "Archived the email." : "Archived the emails.",
+        citations: actionEmails,
+      },
+    };
+  }
+
   const parsedEmails = parseEmailListFromText(text);
   if (parsedEmails) {
     return {
       id: message.id,
       role: "agent",
-      response: {
-        kind: "email-list",
-        lead: parsedEmails.lead || "Here are the emails I found.",
-        title: parsedEmails.title,
-        emails: parsedEmails.emails,
-      },
+      response: { kind: "email-list", lead: parsedEmails.lead || "", title: parsedEmails.title, emails: parsedEmails.emails },
     };
   }
+
   return { id: message.id, role: "agent", response: { kind: "text", content: text || "Done.", citations } };
 }
-
 export function storedMessagesToUI(messages: StoredAgentMessage[]): AgentUIMessage[] {
   const seen = new Map<string, number>();
 
