@@ -55,39 +55,56 @@ function cleanEmailText(value: unknown) {
 
 function parseEmailListFromText(text: string): { title?: string; lead?: string; emails: EmailRef[] } | null {
   const normalized = text
-    .replace(/return { id: message.id, role: "agent", response: { kind: "text", content: text || "Done.", citations } };\\*/g, "*")
+    .replace(/\\\\/g, "\\")
     .replace(/\\-/g, "-")
     .replace(/\\([@])/g, "$1")
-    .replace(/<\s*(?:mailto:)?([^>]+)>/g, "$1")
-    .replace(/\\s+/g, " ")
+    .replace(/<\\s*(?:mailto:)?([^>]+)>/g, "$1")
+    .replace(/[\\u200B-\\u200D\\u2060\\uFEFF\\u00AD\\u034F]/g, "")
+    .replace(/[\\u202A-\\u202E\\u2066-\\u2069]/g, "")
+    .replace(/\\r/g, "")
     .trim();
 
-  const emailPattern = /(?:^|\\n)\\*\\*([^*<]+?)\\s*<([^>]+)>\\*\\*\\s*[-•]?\\s*Subject:\s*["“]?(.+?)["”]?\\s*[-•]?\\s*Date:\s*(.+?)(?=\\n|$)/g;
+  // Only parse explicit email-list rows. Never turn general prose summaries into cards.
+  const lines = normalized
+    .split(/\\n+/)
+    .map((line) => line.replace(/^\\s*[-•]\\s*/, "").trim())
+    .filter(Boolean);
+
   const emails: EmailRef[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = emailPattern.exec(normalized))) {
-    const sender = decodeHtmlEntities(match[1].trim());
-    const senderEmail = decodeHtmlEntities(match[2].trim());
-    const subject = decodeHtmlEntities(match[3].trim().replace(/^["“]|["”]$/g, ""));
-    const receivedAtRaw = match[4].trim();
-    const parsedDate = new Date(receivedAtRaw);
+  const rowPattern = /^(?:\\*\\*)?([^*<>\\n]+?)\\s*<([^>\\s]+)>\\s*(?:\\*\\*)?(?:[-|:]\\s*)?(?:Subject:\\s*)?(.+?)(?:\\s*[-|]\\s*(?:Date|Received|Time):\\s*(.+))?\\s*(?:\\*\\*)?$/i;
+
+  for (const line of lines) {
+    if (!line.includes("<") || !line.includes(">") || !line.includes("@")) continue;
+    const match = line.match(rowPattern);
+    if (!match) continue;
+
+    const sender = cleanEmailText(match[1]);
+    const senderEmail = cleanEmailText(match[2]);
+    const subject = cleanEmailText(match[3]).replace(/^["“]|["”]$/g, "");
+    const dateRaw = cleanEmailText(match[4] || "");
+
+    if (!sender || !senderEmail.includes("@") || !subject) continue;
+
+    const parsedDate = new Date(dateRaw);
     emails.push({
       id: `parsed-email-${emails.length}-${senderEmail}-${subject}`,
       sender,
       senderEmail,
       subject,
-      preview: decodeHtmlEntities(""),
-      receivedAt: Number.isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString(),
+      preview: "",
+      receivedAt: dateRaw && !Number.isNaN(parsedDate.getTime())
+        ? parsedDate.toISOString()
+        : new Date().toISOString(),
     });
   }
 
   if (!emails.length) return null;
 
-  const first = normalized.split(/\\n+/).map((line) => line.trim()).filter(Boolean);
-  const titleLine = first.find((line) => /^\\*\\*[^*]+\\*\\*$/.test(line) && !line.includes("<"));
+  const lead = lines.find((line) => /^here are\\b|^i found \\d+ emails\\b/i.test(line)) || "";
+  const titleLine = lines.find(
+    (line) => /^\\*\\*[^*]+\\*\\*$/.test(line) && !line.includes("<")
+  );
   const title = titleLine?.replace(/^\\*\\*|\\*\\*$/g, "").trim();
-  const firstEmailIndex = first.findIndex((line) => line.includes("<") && line.includes(">") && /Subject:/i.test(normalized.slice(normalized.indexOf(line))));
-  const lead = first.find((line) => /here are (your )?(recent )?emails|here are the emails/i.test(line) && !/^\\*\\*[^*]+\\*\\*$/.test(line))?.replace(/^\\*\\*|\\*\\*$/g, "").trim();
 
   return { title, lead, emails };
 }
