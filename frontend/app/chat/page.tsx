@@ -270,7 +270,32 @@ export default function ChatPage() {
           ) : (
             <div className="chat-page__thread">
               <div className="chat-page__thread-inner">
-                {groupAgentResponses(messages).map((message) => message.role === "user" ? <UserMessage key={message.id} content={message.content || ""} /> : <ChatResponse key={message.id} response={message.response!} onAction={handleAction} />)}
+                {messages.map((message, index) => {
+  if (message.role === "user") {
+    return <UserMessage key={message.id} content={message.content || ""} />;
+  }
+
+  const previous = messages[index - 1];
+  const startsAssistantGroup = !previous || previous.role === "user";
+  if (!startsAssistantGroup) return null;
+
+  const group = [];
+  for (let i = index; i < messages.length && messages[i].role === "agent"; i++) {
+    group.push(messages[i]);
+  }
+
+  return (
+    <div key={message.id} className="chat-page__assistant-response">
+      {group.map((item) => (
+        <ChatResponse
+          key={item.id}
+          response={item.response!}
+          onAction={handleAction}
+        />
+      ))}
+    </div>
+  );
+})}
                 {approval && <ChatResponse response={{ kind: "confirm", lead: "This action needs your approval.", promptId: approval.approvalId, question: "Allow " + approval.toolName.replaceAll("_", " ") + " to run?" }} onAction={handleAction} /> }
                 {thinking && <ThinkingIndicator stages={DEFAULT_STAGES} stageDuration={900} onComplete={() => undefined} />}
               </div>
