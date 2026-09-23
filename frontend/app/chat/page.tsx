@@ -19,15 +19,34 @@ const DEFAULT_STAGES = ["Thinking", "Reading your inbox", "Preparing response"];
 function textFromMessage(message: AgentUIMessage) { return message.parts.filter((part) => part.type === "text").map((part) => String(part.text || "")).join(""); }
 
 function dedupeChatMessages(items: ChatMessage[]) {
+  const hasStructuredEmailList = items.some(
+    (item) => item.role === "agent" && item.response?.kind === "email-list"
+  );
   const seen = new Set<string>();
+
   return items.filter((item) => {
     if (item.role !== "agent" || !item.response) return true;
+
     if (item.response.kind === "email-list") {
       const emails = item.response.emails || [];
-      const fingerprint = "email-list:" + emails.map((email) => `${email.id}|${email.senderEmail}|${email.subject}|${email.receivedAt}`).join(";");
+      const fingerprint =
+        "email-list:" +
+        emails.map((email) => `${email.senderEmail}|${email.subject}|${email.receivedAt}`).join(";");
       if (seen.has(fingerprint)) return false;
       seen.add(fingerprint);
+      return true;
     }
+
+    if (hasStructuredEmailList && item.response.kind === "text") {
+      const content = String(item.response.content || "").trim();
+      const looksLikeEmailSummary =
+        /here are (your|the) (latest|recent)? ?emails/i.test(content) ||
+        /\*\*From:\*\*/i.test(content) ||
+        /\*\*Subject:\*\*/i.test(content) ||
+        /would you like me to (read|show) the full/i.test(content);
+      if (looksLikeEmailSummary) return false;
+    }
+
     return true;
   });
 }
