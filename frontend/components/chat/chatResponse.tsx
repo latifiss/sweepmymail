@@ -36,7 +36,9 @@ export default function ChatResponse({
 }: ChatResponseProps): ReactNode {
   const rootClassName = className
     ? `chat-response ${className}`
-    : "chat-response";
+    : response.kind === "text"
+      ? "chat-response chat-response--plain"
+      : "chat-response";
 
   const leadText = response.lead ?? "";
   const [blockRevealed, setBlockRevealed] = useState(!stream);
