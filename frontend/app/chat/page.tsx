@@ -22,6 +22,12 @@ function dedupeChatMessages(items: ChatMessage[]) {
   const hasStructuredEmailList = items.some(
     (item) => item.role === "agent" && item.response?.kind === "email-list"
   );
+  const hasStructuredDraft = items.some(
+    (item) => item.role === "agent" && item.response?.kind === "draft"
+  );
+  const hasStructuredSchedule = items.some(
+    (item) => item.role === "agent" && item.response?.kind === "schedule"
+  );
   const seen = new Set<string>();
 
   return items.filter((item) => {
@@ -37,14 +43,27 @@ function dedupeChatMessages(items: ChatMessage[]) {
       return true;
     }
 
-    if (hasStructuredEmailList && item.response.kind === "text") {
+    if (item.response.kind === "text") {
       const content = String(item.response.content || "").trim();
-      const looksLikeEmailSummary =
-        /here are (your|the) (latest|recent)? ?emails/i.test(content) ||
-        /\*\*From:\*\*/i.test(content) ||
-        /\*\*Subject:\*\*/i.test(content) ||
-        /would you like me to (read|show) the full/i.test(content);
-      if (looksLikeEmailSummary) return false;
+
+      if (hasStructuredEmailList) {
+        const looksLikeEmailSummary =
+          /here are (your|the) (latest|recent)? ?emails/i.test(content) ||
+          /\*\*From:\*\*/i.test(content) ||
+          /\*\*Subject:\*\*/i.test(content) ||
+          /would you like me to (read|show) the full/i.test(content);
+        if (looksLikeEmailSummary) return false;
+      }
+
+      if (hasStructuredDraft || hasStructuredSchedule) {
+        const repeatsAction =
+          /^(done[.!]?|i'?ve created|i created|created|draft .* (created|saved)|the draft .* (saved|created)|would you like me to (send|review|edit)|here'?s your draft)/i.test(content);
+        if (repeatsAction) return false;
+      }
+
+      const actionKey = content.toLowerCase().replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
+      if (actionKey && seen.has("text:" + actionKey)) return false;
+      if (actionKey) seen.add("text:" + actionKey);
     }
 
     return true;
