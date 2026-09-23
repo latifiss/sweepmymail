@@ -44,7 +44,7 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
   if (message.role === "tool") return null;
   const text = textOf(message); const tool = toolOf(message); const name = String(tool?.toolName || tool?.name || ""); const output = tool?.output;
   const emails = Array.isArray(output?.emails) ? output.emails.map(refFrom).filter(Boolean) as EmailRef[] : []; const citation = refFrom(tool); const citations = citation ? [citation] : [];
-  if (name.includes("get_recent_emails") || name.includes("search_emails")) return { id: message.id, role: "agent", response: { kind: "email-list", lead: text || "Here are the emails I found.", emails } };
+  if (name.includes("get_recent_emails") || name.includes("search_emails")) return { id: message.id, role: "agent", response: { kind: "email-list", lead: "Here are the emails I found.", emails } };
   if (name.includes("create_draft") || name.includes("reply_to_email") || name.includes("forward_email")) { const d = output?.draft || output; const draft: EmailDraft = { id: String(d?.draftId || d?.id || tool?.toolCallId || message.id), to: String(d?.to || d?.recipients || ""), cc: d?.cc ? String(d.cc) : undefined, subject: String(d?.subject || ""), body: String(d?.body || text || "") }; return { id: message.id, role: "agent", response: { kind: "draft", lead: text || "I created the draft.", draft } }; }
   if (name.includes("schedule_email")) { const e = output?.scheduledEmail || output?.event || output; const event: ScheduleEvent = { id: String(e?.id || tool?.toolCallId || message.id), title: String(e?.subject || e?.title || "Scheduled email"), when: String(e?.sendAt || e?.when || ""), duration: "" }; return { id: message.id, role: "agent", response: { kind: "schedule", lead: text || "The email is ready to schedule.", event } }; }
   return { id: message.id, role: "agent", response: { kind: "text", content: text || "Done.", citations } };
@@ -81,6 +81,40 @@ export async function streamAgentMessage(messages: AgentUIMessage[], conversatio
   const handle = (raw: string) => { const line = raw.trim(); if (!line || !line.startsWith("data:")) return; const payload = line.slice(5).trim(); if (!payload || payload === "[DONE]") return; let event: any; try { event = JSON.parse(payload); } catch { return; } onEvent?.(event);
     if (event.type === "text-start") { current = { id: String(event.id || "assistant-" + Date.now()), role: "assistant", parts: [{ type: "text", text: "" }] }; resultMessages.push(current); }
     else if (event.type === "text-delta") { if (!current) { current = { id: String(event.id || "assistant-" + Date.now()), role: "assistant", parts: [{ type: "text", text: "" }] }; resultMessages.push(current); } const p: any = current.parts.find((part) => part.type === "text"); if (p) p.text = String(p.text || "") + String(event.delta || ""); }
+    else if (event.type === "tool-input-available" || event.type === "tool-call") {
+      if (!current) {
+        current = { id: String(event.messageId || "assistant-" + Date.now()), role: "assistant", parts: [{ type: "text", text: "" }] };
+        resultMessages.push(current);
+      }
+      const toolName = String(event.toolName || "");
+      const toolCallId = String(event.toolCallId || event.id || "");
+      if (toolCallId) {
+        current.parts.push({
+          type: "tool-" + toolName,
+          state: "input-available",
+          toolCallId,
+          toolName,
+          input: event.input ?? event.args ?? {},
+        });
+      }
+    }
+    else if (event.type === "tool-output-available" || event.type === "tool-result") {
+      const toolCallId = String(event.toolCallId || "");
+      const part: any = current?.parts.find((item: any) => item.toolCallId === toolCallId);
+      if (part) {
+        part.state = "output-available";
+        part.output = event.output ?? event.result;
+      } else if (current) {
+        current.parts.push({
+          type: "tool-" + String(event.toolName || ""),
+          state: "output-available",
+          toolCallId,
+          toolName: String(event.toolName || ""),
+          input: {},
+          output: event.output ?? event.result,
+        });
+      }
+    }
     else if (event.type === "tool-approval-request") { if (event.approvalId) { approval = { approvalId: String(event.approvalId), toolName: String(event.toolName || ""), input: event.input, toolCallId: event.toolCallId ? String(event.toolCallId) : undefined }; resultMessages.push({ id: "approval-request-" + String(event.approvalId), role: "assistant", parts: [{ type: "tool-approval-request", approvalId: String(event.approvalId), toolCallId: event.toolCallId, toolName: event.toolName, input: event.input }] }); } }
     else if (event.type === "finish") current = null;
     else if (event.type === "error") { current = null; resultMessages.push({ id: "error-" + Date.now(), role: "assistant", parts: [{ type: "text", text: String(event.errorText || event.message || "Agent request failed") }] }); }
