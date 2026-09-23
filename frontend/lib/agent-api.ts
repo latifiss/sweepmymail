@@ -47,9 +47,9 @@ function decodeHtmlEntities(value: string) {
 
 function cleanEmailText(value: unknown) {
   return decodeHtmlEntities(String(value ?? ""))
-    .replace(/[\\u200B-\\u200D\\u2060\\uFEFF\\u00AD\\u034F]/g, "")
-    .replace(/[\\u202A-\\u202E\\u2066-\\u2069]/g, "")
-    .replace(/\\s+/g, " ")
+    .replace(/[\u200B-\u200D\u2060\uFEFF\u00AD\u034F]/g, "")
+    .replace(/[\u202A-\u202E\u2066-\u2069]/g, "")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
@@ -59,15 +59,15 @@ function parseEmailListFromText(text: string): { title?: string; lead?: string; 
     .replace(/\\-/g, "-")
     .replace(/\\([@])/g, "$1")
     .replace(/<\\s*(?:mailto:)?([^>]+)>/g, "$1")
-    .replace(/[\\u200B-\\u200D\\u2060\\uFEFF\\u00AD\\u034F]/g, "")
-    .replace(/[\\u202A-\\u202E\\u2066-\\u2069]/g, "")
+    .replace(/[\u200B-\u200D\u2060\uFEFF\u00AD\u034F]/g, "")
+    .replace(/[\u202A-\u202E\u2066-\u2069]/g, "")
     .replace(/\\r/g, "")
     .trim();
 
   // Only parse explicit email-list rows. Never turn general prose summaries into cards.
   const lines = normalized
-    .split(/\\n+/)
-    .map((line) => line.replace(/^\\s*[-•]\\s*/, "").trim())
+    .split(/\n+/)
+    .map((line) => line.replace(/^\s*[-•]\s*/, "").trim())
     .filter(Boolean);
 
   const emails: EmailRef[] = [];
@@ -135,7 +135,19 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
   const citation = refFrom(tool);
   const citations = citation ? [citation] : [];
 
-  if (name.includes("get_recent_emails") || name.includes("search_emails")) {
+  if (emails.length > 0 && (
+    name.includes("get_recent_emails") ||
+    name.includes("search_emails") ||
+    name.includes("list_recent_emails") ||
+    name.includes("list_emails") ||
+    name.includes("find_emails")
+  )) {
+    return { id: message.id, role: "agent", response: { kind: "email-list", lead: "", emails } };
+  }
+
+  // Some agent tool names vary between implementations. A structured emails array
+  // is authoritative and should always win over the model's raw text.
+  if (emails.length > 0) {
     return { id: message.id, role: "agent", response: { kind: "email-list", lead: "", emails } };
   }
 
