@@ -37,6 +37,14 @@ function textOf(message: AgentUIMessage) {
 function toolOf(message: AgentUIMessage): any {
   return normalizeParts(message?.parts).find((part) => String(part.type || "").startsWith("tool-") || part.type === "dynamic-tool");
 }
+function decodeHtmlEntities(value: string) {
+  if (!value.includes("&")) return value;
+  const textarea = typeof document !== "undefined" ? document.createElement("textarea") : null;
+  if (!textarea) return value.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+  textarea.innerHTML = value;
+  return textarea.value;
+}
+
 function parseEmailListFromText(text: string): { title?: string; lead?: string; emails: EmailRef[] } | null {
   const normalized = text
     .replace(/\\\*/g, "*")
@@ -50,9 +58,9 @@ function parseEmailListFromText(text: string): { title?: string; lead?: string; 
   const emails: EmailRef[] = [];
   let match: RegExpExecArray | null;
   while ((match = emailPattern.exec(normalized))) {
-    const sender = match[1].trim();
-    const senderEmail = match[2].trim();
-    const subject = match[3].trim().replace(/^["“]|["”]$/g, "");
+    const sender = decodeHtmlEntities(match[1].trim());
+    const senderEmail = decodeHtmlEntities(match[2].trim());
+    const subject = decodeHtmlEntities(match[3].trim().replace(/^["“]|["”]$/g, ""));
     const receivedAtRaw = match[4].trim();
     const parsedDate = new Date(receivedAtRaw);
     emails.push({
@@ -60,7 +68,7 @@ function parseEmailListFromText(text: string): { title?: string; lead?: string; 
       sender,
       senderEmail,
       subject,
-      preview: "",
+      preview: decodeHtmlEntities(""),
       receivedAt: Number.isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString(),
     });
   }
