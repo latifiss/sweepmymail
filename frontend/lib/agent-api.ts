@@ -35,7 +35,10 @@ function textOf(message: AgentUIMessage) {
   return normalizeParts(message?.parts).filter((part) => part.type === "text").map((part) => String(part.text || "")).join("");
 }
 function toolOf(message: AgentUIMessage): any {
-  return normalizeParts(message?.parts).find((part) => String(part.type || "").startsWith("tool-") || part.type === "dynamic-tool");
+  return normalizeParts(message?.parts).find((part) => {
+    const type = String(part.type || "");
+    return type.startsWith("tool-") || type === "dynamic-tool" || type === "tool-result" || type === "tool-output-available";
+  });
 }
 function decodeHtmlEntities(value: string) {
   if (!value.includes("&")) return value;
@@ -129,7 +132,14 @@ export function storedMessagesToUI(messages: StoredAgentMessage[]): AgentUIMessa
       return [{ id, role, parts: [{ type: "text", text: content }] }];
     }
 
-    const parts = normalizeParts(content);
+    const parts = normalizeParts(content).map((part: any) => {
+      const type = String(part.type || "");
+      if (type === "tool-result" || type === "tool-output-available") {
+        const toolName = String(part.toolName || "");
+        return { ...part, type: "tool-" + toolName, toolName, state: "output-available", output: part.output ?? part.result };
+      }
+      return part;
+    });
     if (parts.length) {
       return [{ id, role, parts }];
     }
@@ -179,6 +189,7 @@ export async function streamAgentMessage(messages: AgentUIMessage[], conversatio
   const response = await request(path, { method: "POST", body: JSON.stringify({ conversationId, messages }), signal });
   if (!response.body) throw new Error("Agent returned an empty response");
   const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = ""; const resultMessages = [...messages]; let current: AgentUIMessage | null = null; let approval: ApprovalRequest | undefined;
+  const toolMessages = new Map<string, AgentUIMessage>();
   const handle = (raw: string) => { const line = raw.trim(); if (!line || !line.startsWith("data:")) return; const payload = line.slice(5).trim(); if (!payload || payload === "[DONE]") return; let event: any; try { event = JSON.parse(payload); } catch { return; } onEvent?.(event);
     if (event.type === "text-start") { current = { id: String(event.id || "assistant-" + Date.now()), role: "assistant", parts: [{ type: "text", text: "" }] }; resultMessages.push(current); }
     else if (event.type === "text-delta") { if (!current) { current = { id: String(event.id || "assistant-" + Date.now()), role: "assistant", parts: [{ type: "text", text: "" }] }; resultMessages.push(current); } const p: any = current.parts.find((part) => part.type === "text"); if (p) p.text = String(p.text || "") + String(event.delta || ""); }
@@ -197,6 +208,7 @@ export async function streamAgentMessage(messages: AgentUIMessage[], conversatio
           toolName,
           input: event.input ?? event.args ?? {},
         });
+        toolMessages.set(toolCallId, current);
       }
     }
     else if (event.type === "tool-output-available" || event.type === "tool-result") {
@@ -206,12 +218,13 @@ export async function streamAgentMessage(messages: AgentUIMessage[], conversatio
       if (typeof output === "string") {
         try { output = JSON.parse(output); } catch {}
       }
-      const part: any = current?.parts.find((item: any) => item.toolCallId === toolCallId);
+      const target = toolMessages.get(toolCallId) || current;
+      const part: any = target?.parts.find((item: any) => item.toolCallId === toolCallId);
       if (part) {
         part.state = "output-available";
         part.output = output;
-      } else if (current) {
-        current.parts.push({
+      } else if (target) {
+        target.parts.push({
           type: "tool-" + String(event.toolName || ""),
           state: "output-available",
           toolCallId,
@@ -219,6 +232,15 @@ export async function streamAgentMessage(messages: AgentUIMessage[], conversatio
           input: {},
           output,
         });
+      } else if (toolCallId || event.toolName) {
+        const toolName = String(event.toolName || "");
+        const toolMessage: AgentUIMessage = {
+          id: String(event.messageId || "tool-" + (toolCallId || Date.now())),
+          role: "tool",
+          parts: [{ type: "tool-" + toolName, state: "output-available", toolCallId, toolName, input: {}, output }],
+        };
+        resultMessages.push(toolMessage);
+        if (toolCallId) toolMessages.set(toolCallId, toolMessage);
       }
     }
     else if (event.type === "tool-approval-request") { if (event.approvalId) { approval = { approvalId: String(event.approvalId), toolName: String(event.toolName || ""), input: event.input, toolCallId: event.toolCallId ? String(event.toolCallId) : undefined }; resultMessages.push({ id: "approval-request-" + String(event.approvalId), role: "assistant", parts: [{ type: "tool-approval-request", approvalId: String(event.approvalId), toolCallId: event.toolCallId, toolName: event.toolName, input: event.input }] }); } }
