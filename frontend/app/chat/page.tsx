@@ -56,9 +56,12 @@ function dedupeChatMessages(items: ChatMessage[]) {
       if (hasStructuredEmailList) {
         const looksLikeEmailSummary =
           /here are (your|the) (latest|recent)? ?emails/i.test(content) ||
-          /\*\*From:\*\*/i.test(content) ||
-          /\*\*Subject:\*\*/i.test(content) ||
-          /would you like me to (read|show) the full/i.test(content);
+          /i found \\d+ emails/i.test(content) ||
+          /\\b(?:the )?(?:latest|recent) emails\\b/i.test(content) ||
+          /\\*\\*From:\\*\\*/i.test(content) ||
+          /\\*\\*Subject:\\*\\*/i.test(content) ||
+          /would you like me to (read|show) the full/i.test(content) ||
+          /let me summarize (them|the emails)/i.test(content);
         if (looksLikeEmailSummary) return false;
       }
 
