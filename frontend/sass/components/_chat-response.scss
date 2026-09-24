@@ -48,6 +48,12 @@
       opacity ui.motion(base),
       transform ui.motion(base);
 
+    &--container {
+      padding: ui.space(4);
+      background-color: ui.color(snow-drift);
+      border: 1px solid ui.color(quill-gray);
+    }
+
     &--revealed {
       opacity: 1;
       transform: translateY(0);
