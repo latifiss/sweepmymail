@@ -350,15 +350,23 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
     };
   }
 
-  if (name.includes("schedule_email")) {
+  if (name.includes("schedule_email") || name.includes("update_scheduled_email")) {
     const e = output?.scheduledEmail || output?.event || output;
     const event: ScheduleEvent = {
-      id: String(e?.id || tool?.toolCallId || message.id),
+      id: String(e?.id || e?.scheduleId || tool?.toolCallId || message.id),
       title: String(e?.subject || e?.title || "Scheduled email"),
       when: String(e?.sendAt || e?.when || ""),
       duration: "",
     };
-    return { id: message.id, role: "agent", response: { kind: "schedule", lead: "", event } };
+    return {
+      id: message.id,
+      role: "agent",
+      response: {
+        kind: "schedule",
+        lead: name.includes("update_scheduled_email") ? "Done. I updated the scheduled email:" : "Your email is ready to be scheduled:",
+        event,
+      },
+    };
   }
 
   if (name.includes("mark_important")) {
