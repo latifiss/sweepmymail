@@ -292,7 +292,20 @@ export function createAgentTools(userId: string, userEmail: string) {
       inputSchema: scheduleInputSchema,
       execute: async ({ sendAt, timezone, ...input }) => {
         requireAgentConfiguration();
-        return scheduleEmail({ userId, ...input, sendAt, timezone });
+        const created = await scheduleEmail({ userId, ...input, sendAt, timezone });
+        return {
+          ...created,
+          ui: {
+            kind: "schedule",
+            lead: "Your email is ready to be scheduled:",
+            event: {
+              id: String(created.id || created.scheduleId || ""),
+              title: String(input.subject || "Scheduled email"),
+              when: String(sendAt || ""),
+              duration: "",
+            },
+          },
+        };
       },
     }),
 
