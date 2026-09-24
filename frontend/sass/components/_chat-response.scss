@@ -13,6 +13,13 @@
   background-color: ui.color(snow-drift);
   border: 1px solid ui.color(quill-gray);
 
+  &--plain {
+    max-width: 720px;
+    padding: 0;
+    background: transparent;
+    border: none;
+  }
+
   &__lead {
     margin: 0;
     font-family: ui.font(family-sans);
@@ -47,12 +54,6 @@
     transition:
       opacity ui.motion(base),
       transform ui.motion(base);
-
-    &--container {
-      padding: ui.space(4);
-      background-color: ui.color(snow-drift);
-      border: 1px solid ui.color(quill-gray);
-    }
 
     &--revealed {
       opacity: 1;
