@@ -302,7 +302,12 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
           : "You don't have any inbox categories yet.",
         title: "Your inbox categories",
         content: categories.length
-          ? categories.map((item: any) => `• ${item.label || item.name || "Unnamed category"}${item.email_count != null ? ` — ${item.email_count} emails` : item.emailCount != null ? ` — ${item.emailCount} emails` : ""}`).join("\\n")
+          ? categories.map((item: any) => {
+              const label = item.label || item.name || "Unnamed category";
+              const count = item.email_count ?? item.emailCount;
+              const description = item.description ? ` — ${item.description}` : "";
+              return `• ${label}${count != null ? ` — ${count} emails` : ""}${description}`;
+            }).join("\\n")
           : "Create a category to start organizing your inbox.",
         citations: [],
       },
