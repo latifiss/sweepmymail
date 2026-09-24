@@ -238,6 +238,17 @@ export function createAgentTools(userId: string, userEmail: string) {
           bcc: input.bcc || [],
           subject: input.subject,
           body: input.body,
+          ui: {
+            kind: "draft",
+            lead: "Done. I created this draft:",
+            draft: {
+              id: String(created.draftId || created.id || ""),
+              to: Array.isArray(input.to) ? input.to.join(", ") : String(input.to || ""),
+              cc: Array.isArray(input.cc) ? input.cc.join(", ") : input.cc ? String(input.cc) : undefined,
+              subject: String(input.subject || ""),
+              body: String(input.body || ""),
+            },
+          },
         };
       },
     }),
