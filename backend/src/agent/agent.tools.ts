@@ -151,6 +151,47 @@ export function createAgentTools(userId: string, userEmail: string) {
       },
     }),
 
+    get_emails_by_category: tool({
+      description:
+        "Get emails that belong to an existing inbox category. Use this for requests such as 'show me emails in the jobs category', 'give me 5 emails from jobs', or 'what emails are in this category'. This is a read-only operation and must not modify or categorize any emails.",
+      inputSchema: z.object({
+        categoryLabel: z.string().min(1).max(100),
+        limit: z.number().int().min(1).max(100).default(20),
+      }),
+      execute: async ({ categoryLabel, limit }) => {
+        const category = (await listCategoriesForUser(userId)).find(
+          (item) => item.label.toLowerCase() === categoryLabel.toLowerCase(),
+        );
+
+        if (!category) {
+          throw new Error(`Category '${categoryLabel}' does not exist`);
+        }
+
+        const emails = (await getEmailsForUser(userId))
+          .filter((email) => {
+            const labels = Array.isArray((email as any).labels)
+              ? (email as any).labels.map((label: string) => label.toLowerCase())
+              : [];
+            return (
+              labels.includes(category.label.toLowerCase()) ||
+              labels.includes(`category:${category.label.toLowerCase()}`) ||
+              labels.includes(String((category as any).id).toLowerCase())
+            );
+          });
+
+        return {
+          category: {
+            id: category.id,
+            label: category.label,
+            description: category.description,
+            emailCount: category.email_count,
+          },
+          count: Math.min(emails.length, limit),
+          emails: formatEmails(emails, limit),
+        };
+      },
+    }),
+
     read_email: tool({
       description: "Read one full email by Gmail message ID. Return the full email in the tool result; do not reproduce it as a Markdown email.",
       inputSchema: z.object({ messageId: z.string().min(1) }),
