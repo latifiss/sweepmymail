@@ -242,11 +242,11 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
       response: {
         kind: "summary",
         lead: categorized.length
-          ? \`Done. Categorized \${categorized.length} email\${categorized.length === 1 ? "" : "s"}.\`
+          ? `Done. Categorized ${categorized.length} email${categorized.length === 1 ? "" : "s"}.`
           : "Done. The emails were categorized.",
-        title: category ? \`Category: \${category}\` : "Categorized emails",
+        title: category ? `Category: ${category}` : "Categorized emails",
         content: categorized.length
-          ? \`I applied the \${category || "selected"} category to \${categorized.length} email\${categorized.length === 1 ? "" : "s"}.\`
+          ? `I applied the ${category || "selected"} category to ${categorized.length} email${categorized.length === 1 ? "" : "s"}.`
           : "The selected emails were updated successfully.",
         citations: [],
       },
@@ -262,10 +262,10 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
       role: "agent",
       response: {
         kind: "summary",
-        lead: \`Done. Created the \${category || "new"} category.\`,
-        title: category ? \`Category: \${category}\` : "New category",
+        lead: `Done. Created the ${category || "new"} category.`,
+        title: category ? `Category: ${category}` : "New category",
         content: matched.length
-          ? \`I found and categorized \${matched.length} matching email\${matched.length === 1 ? "" : "s"}.\`
+          ? `I found and categorized ${matched.length} matching email${matched.length === 1 ? "" : "s"}.`
           : "No matching emails were found.",
         citations,
       },
@@ -280,11 +280,11 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
       response: {
         kind: "summary",
         lead: categories.length
-          ? \`You have \${categories.length} inbox categor\${categories.length === 1 ? "y" : "ies"}.\`
+          ? `You have ${categories.length} inbox categor${categories.length === 1 ? "y" : "ies"}.`
           : "You don't have any inbox categories yet.",
         title: "Your inbox categories",
         content: categories.length
-          ? categories.map((item: any) => \`• \${item.label || item.name || "Unnamed category"}\${item.email_count != null ? \` — \${item.email_count} emails\` : item.emailCount != null ? \` — \${item.emailCount} emails\` : ""}\`).join("\\n")
+          ? categories.map((item: any) => `• ${item.label || item.name || "Unnamed category"}${item.email_count != null ? ` — ${item.email_count} emails` : item.emailCount != null ? ` — ${item.emailCount} emails` : ""}`).join("\\n")
           : "Create a category to start organizing your inbox.",
         citations: [],
       },
@@ -299,14 +299,14 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
       response: {
         kind: "summary",
         lead: scheduled.length
-          ? \`You have \${scheduled.length} scheduled email\${scheduled.length === 1 ? "" : "s"}.\`
+          ? `You have ${scheduled.length} scheduled email${scheduled.length === 1 ? "" : "s"}.`
           : "You don't have any scheduled emails.",
         title: "Scheduled emails",
         content: scheduled.length
           ? scheduled.map((item: any) => {
               const subject = item.subject || item.title || "Untitled email";
               const when = item.sendAt || item.when || item.scheduledFor || "";
-              return \`• \${subject}\${when ? \` — \${when}\` : ""}\`;
+              return `• ${subject}${when ? ` — ${when}` : ""}`;
             }).join("\\n")
           : "There are no pending scheduled emails.",
         citations: [],
@@ -322,11 +322,11 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
       response: {
         kind: "summary",
         lead: automations.length
-          ? \`You have \${automations.length} automation\${automations.length === 1 ? "" : "s"}.\`
+          ? `You have ${automations.length} automation${automations.length === 1 ? "" : "s"}.`
           : "You don't have any inbox automations yet.",
         title: "Inbox automations",
         content: automations.length
-          ? automations.map((item: any) => \`• \${item.name || "Unnamed automation"}\${item.status ? \` — \${item.status}\` : ""}\`).join("\\n")
+          ? automations.map((item: any) => `• ${item.name || "Unnamed automation"}${item.status ? ` — ${item.status}` : ""}`).join("\\n")
           : "Create an automation to handle repetitive inbox tasks automatically.",
         citations: [],
       },
@@ -342,7 +342,7 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
       role: "agent",
       response: {
         kind: "summary",
-        lead: \`Here’s the email from \${cleanEmailText(email?.from || email?.sender || "the sender")}:\`,
+        lead: `Here’s the email from ${cleanEmailText(email?.from || email?.sender || "the sender")}:`,
         title: cleanEmailText(email?.subject || "Email"),
         content: content || "This email has no readable body.",
         citations: citation ? [citation] : [],
