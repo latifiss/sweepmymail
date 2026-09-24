@@ -21,10 +21,26 @@ function textFromMessage(message: AgentUIMessage) { return message.parts.filter(
 function dedupeChatMessages(items: ChatMessage[]) {
   const seen = new Set<string>();
 
-  return items.filter((item) => {
+  return items.filter((item, index) => {
     if (item.role !== "agent" || !item.response) return true;
 
     const response = item.response;
+
+    // A production tool response is rendered by ChatResponse. The model often
+    // also emits a prose copy of the same result, so hide that duplicate text
+    // whenever it sits next to a structured tool response.
+    if (response.kind === "text" && !response.content.trim()) return false;
+
+    const previous = items[index - 1];
+    const next = items[index + 1];
+    const hasStructuredNeighbor = [previous, next].some(
+      (neighbor) =>
+        neighbor?.role === "agent" &&
+        neighbor.response &&
+        neighbor.response.kind !== "text",
+    );
+    if (response.kind === "text" && hasStructuredNeighbor) return false;
+
     const key =
       response.kind +
       ":" +
