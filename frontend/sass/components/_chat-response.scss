@@ -453,7 +453,9 @@
     display: flex;
     flex-direction: column;
     gap: ui.space(2);
+    width: 100%;
     padding: 12px;
+    background-color: ui.color(white);
     border: 1px solid ui.color(quill-gray);
   }
 
@@ -485,7 +487,9 @@
     display: flex;
     flex-direction: column;
     gap: ui.space(3);
+    width: 100%;
     padding: 12px;
+    background-color: ui.color(white);
     border: 1px solid ui.color(quill-gray);
   }
 
