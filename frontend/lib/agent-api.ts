@@ -48,6 +48,84 @@ function toolOutputOf(tool: any) {
   if (tool.state === "output-available" && tool.value !== undefined) return tool.value;
   return undefined;
 }
+function normalizeResponseUi(ui: any): ResponseBlock | null {
+  if (!ui || typeof ui !== "object" || typeof ui.kind !== "string") return null;
+
+  if (ui.kind === "email-list") {
+    return {
+      kind: "email-list",
+      lead: String(ui.lead || ""),
+      title: ui.title ? String(ui.title) : undefined,
+      emails: Array.isArray(ui.emails)
+        ? ui.emails.map(refFrom).filter(Boolean) as EmailRef[]
+        : [],
+    };
+  }
+
+  if (ui.kind === "summary") {
+    return {
+      kind: "summary",
+      lead: String(ui.lead || ""),
+      title: ui.title ? String(ui.title) : undefined,
+      content: String(ui.content || ""),
+      citations: Array.isArray(ui.citations)
+        ? ui.citations.map(refFrom).filter(Boolean) as EmailRef[]
+        : [],
+    };
+  }
+
+  if (ui.kind === "draft") {
+    const draft = ui.draft || {};
+    return {
+      kind: "draft",
+      lead: String(ui.lead || ""),
+      draft: {
+        id: String(draft.id || ""),
+        to: Array.isArray(draft.to) ? draft.to.join(", ") : String(draft.to || ""),
+        cc: Array.isArray(draft.cc) ? draft.cc.join(", ") : draft.cc ? String(draft.cc) : undefined,
+        subject: String(draft.subject || ""),
+        body: String(draft.body || ""),
+      },
+    };
+  }
+
+  if (ui.kind === "schedule") {
+    const event = ui.event || {};
+    return {
+      kind: "schedule",
+      lead: String(ui.lead || ""),
+      event: {
+        id: String(event.id || ""),
+        title: String(event.title || "Scheduled email"),
+        when: String(event.when || ""),
+        duration: String(event.duration || ""),
+      },
+    };
+  }
+
+  if (ui.kind === "confirm") {
+    return {
+      kind: "confirm",
+      lead: String(ui.lead || ""),
+      promptId: String(ui.promptId || ""),
+      question: String(ui.question || ""),
+    };
+  }
+
+  if (ui.kind === "text") {
+    return {
+      kind: "text",
+      lead: String(ui.lead || ""),
+      content: String(ui.content || ""),
+      citations: Array.isArray(ui.citations)
+        ? ui.citations.map(refFrom).filter(Boolean) as EmailRef[]
+        : [],
+    };
+  }
+
+  return null;
+}
+
 function decodeHtmlEntities(value: string) {
   if (!value.includes("&")) return value;
   const textarea = typeof document !== "undefined" ? document.createElement("textarea") : null;
