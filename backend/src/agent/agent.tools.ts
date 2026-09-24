@@ -106,10 +106,16 @@ export function createAgentTools(userId: string, userEmail: string) {
               new Date(String(b.date || 0)).getTime() -
               new Date(String(a.date || 0)).getTime(),
           );
+          const emails = formatEmails(sorted, limit);
           return {
             ok: true,
-            count: Math.min(sorted.length, limit),
-            emails: formatEmails(sorted, limit),
+            count: emails.length,
+            emails,
+            ui: {
+              kind: "email-list",
+              lead: emails.length ? `Here are your ${emails.length} most recent emails:` : "You don't have any recent emails.",
+              emails,
+            },
           };
         } catch (error) {
           console.error("get_recent_emails failed", {
@@ -144,9 +150,15 @@ export function createAgentTools(userId: string, userEmail: string) {
               .includes(term),
           ),
         );
+        const resultEmails = formatEmails(matches, limit);
         return {
-          count: matches.length,
-          emails: formatEmails(matches, limit),
+          count: resultEmails.length,
+          emails: resultEmails,
+          ui: {
+            kind: "email-list",
+            lead: resultEmails.length ? `Here are ${resultEmails.length} matching emails:` : "I couldn't find any matching emails.",
+            emails: resultEmails,
+          },
         };
       },
     }),
@@ -170,6 +182,7 @@ export function createAgentTools(userId: string, userEmail: string) {
         const emails = (await getEmailsForUser(userId))
           .filter((email) => emailMatchesCategory(email, category));
 
+        const resultEmails = formatEmails(emails, limit);
         return {
           category: {
             id: category.id,
@@ -177,8 +190,15 @@ export function createAgentTools(userId: string, userEmail: string) {
             description: category.description,
             emailCount: category.email_count,
           },
-          count: Math.min(emails.length, limit),
-          emails: formatEmails(emails, limit),
+          count: resultEmails.length,
+          emails: resultEmails,
+          ui: {
+            kind: "email-list",
+            lead: resultEmails.length
+              ? `Here are ${resultEmails.length} emails in the ${category.label} category:`
+              : `There are no emails in the ${category.label} category.`,
+            emails: resultEmails,
+          },
         };
       },
     }),
