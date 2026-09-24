@@ -89,7 +89,7 @@ function addressKey(value: string) {
 export function createAgentTools(userId: string, userEmail: string) {
   return {
     get_recent_emails: tool({
-      description: "Get the user's most recent inbox emails.",
+      description: "Get the user's most recent inbox emails. Return the emails in the tool result; do not reproduce them as a Markdown list in your response.",
       inputSchema: z.object({
         limit: z.number().int().min(1).max(50).default(10),
       }),
@@ -129,7 +129,7 @@ export function createAgentTools(userId: string, userEmail: string) {
 
     search_emails: tool({
       description:
-        "Search the user's synchronized inbox by sender, subject, or preview.",
+        "Search the user's synchronized inbox by sender, subject, or preview. Return matching emails in the tool result; do not reproduce them as a Markdown list.",
       inputSchema: z.object({
         query: z.string().min(1),
         limit: z.number().int().min(1).max(100).default(50),
@@ -152,7 +152,7 @@ export function createAgentTools(userId: string, userEmail: string) {
     }),
 
     read_email: tool({
-      description: "Read one full email by Gmail message ID.",
+      description: "Read one full email by Gmail message ID. Return the full email in the tool result; do not reproduce it as a Markdown email.",
       inputSchema: z.object({ messageId: z.string().min(1) }),
       execute: async ({ messageId }) => {
         requireAgentConfiguration();
@@ -174,7 +174,7 @@ export function createAgentTools(userId: string, userEmail: string) {
     }),
 
     create_draft: tool({
-      description: "Create a Gmail draft without sending.",
+      description: "Create a Gmail draft without sending. The UI will render the returned draft; keep the final response concise.",
       inputSchema: emailContentSchema,
       execute: async (input) => {
         requireAgentConfiguration();
@@ -234,7 +234,7 @@ export function createAgentTools(userId: string, userEmail: string) {
     }),
 
     list_scheduled_emails: tool({
-      description: "List the user's scheduled emails.",
+      description: "List the user's scheduled emails. Return the scheduled records in the tool result; do not reproduce them as Markdown.",
       inputSchema: z.object({}),
       execute: async () => listUserScheduledEmails(userId),
     }),
@@ -259,7 +259,7 @@ export function createAgentTools(userId: string, userEmail: string) {
     }),
 
     list_automations: tool({
-      description: "List the user's inbox automations.",
+      description: "List the user's inbox automations. Return the automation records in the tool result; do not reproduce them as Markdown.",
       inputSchema: z.object({}),
       execute: async () => listAutomationsForUser(userId),
     }),
@@ -457,7 +457,7 @@ export function createAgentTools(userId: string, userEmail: string) {
     }),
 
     categorize_emails: tool({
-      description: "Apply an existing category to specific messages.",
+      description: "Apply an existing category to specific messages. Return the affected message IDs and category in the tool result; keep the final response concise.",
       inputSchema: z.object({
         messageIds: z.array(z.string()).min(1).max(500),
         categoryLabel: z.string().min(1).max(100),
