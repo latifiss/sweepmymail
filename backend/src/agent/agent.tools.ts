@@ -106,15 +106,15 @@ export function createAgentTools(userId: string, userEmail: string) {
               new Date(String(b.date || 0)).getTime() -
               new Date(String(a.date || 0)).getTime(),
           );
-          const emails = formatEmails(sorted, limit);
+          const formattedEmails = formatEmails(sorted, limit);
           return {
             ok: true,
-            count: emails.length,
-            emails,
+            count: formattedEmails.length,
+            emails: formattedEmails,
             ui: {
               kind: "email-list",
-              lead: emails.length ? `Here are your ${emails.length} most recent emails:` : "You don't have any recent emails.",
-              emails,
+              lead: formattedEmails.length ? `Here are your ${formattedEmails.length} most recent emails:` : "You don't have any recent emails.",
+              emails: formattedEmails,
             },
           };
         } catch (error) {
