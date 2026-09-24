@@ -91,7 +91,7 @@ export default function ChatResponse({
       )}
 
       <div
-        className={`chat-response__body${response.kind !== "text" ? " chat-response__body--container" : ""}${blockRevealed ? " chat-response__body--revealed" : ""}`}
+        className={`chat-response__body${blockRevealed ? " chat-response__body--revealed" : ""}`}
       >
         {blockRevealed && renderBlock(response, onAction)}
       </div>
