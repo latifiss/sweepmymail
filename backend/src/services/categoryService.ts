@@ -63,7 +63,7 @@ export function extractKeywords(description: string): string[] {
   ).slice(0, 30);
 }
 
-function emailMatchesCategory(email: DbEmail, category: DbCategory): boolean {
+export function emailMatchesCategory(email: DbEmail, category: DbCategory): boolean {
   const haystack = `${email.sender} ${email.subject} ${email.snippet}`.toLowerCase();
   return (category.keywords || []).some((kw) => haystack.includes(kw.toLowerCase()));
 }
