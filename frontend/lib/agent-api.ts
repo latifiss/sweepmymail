@@ -181,9 +181,9 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
       id: message.id,
       role: "agent",
       response: {
-        kind: "text",
-        content: actionEmails.length === 1 ? "Marked the email as important." : "Marked the emails as important.",
-        citations: actionEmails,
+        kind: "email-list",
+        lead: actionEmails.length === 1 ? "Done. Marked the email as important." : "Done. Marked the emails as important.",
+        emails: actionEmails,
       },
     };
   }
@@ -194,9 +194,9 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
       id: message.id,
       role: "agent",
       response: {
-        kind: "text",
-        content: actionEmails.length === 1 ? "Archived the email." : "Archived the emails.",
-        citations: actionEmails,
+        kind: "email-list",
+        lead: actionEmails.length === 1 ? "Done. Archived the email." : "Done. Archived the emails.",
+        emails: actionEmails,
       },
     };
   }
