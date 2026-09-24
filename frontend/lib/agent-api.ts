@@ -216,20 +216,47 @@ export function storedMessagesToUI(messages: StoredAgentMessage[]): AgentUIMessa
   const seen = new Map<string, number>();
 
   return messages.flatMap((message) => {
-    const role = message.role === "user" ? "user" : message.role === "tool" ? "tool" : "assistant";
     const content: any = message.content;
     const baseId = String(message.id || content?.id || `message-${Date.now()}`);
     const count = seen.get(baseId) || 0;
     seen.set(baseId, count + 1);
     const id = count === 0 ? baseId : `${baseId}-${count}`;
 
+    if (message.role === "user") {
+      if (typeof content === "string") {
+        return [{ id, role: "user", parts: [{ type: "text", text: content }] }];
+      }
+
+      const parts = normalizeParts(content);
+      return parts.length ? [{ id, role: "user", parts }] : [];
+    }
+
+    if (message.role === "tool") {
+      const toolName = String(message.tool_name || "");
+      const toolCallId = String(message.tool_call_id || id);
+      const output = message.tool_result ?? content;
+
+      return [{
+        id,
+        role: "assistant",
+        parts: [{
+          type: "tool-" + toolName,
+          state: "output-available",
+          toolCallId,
+          toolName,
+          input: message.tool_input ?? {},
+          output,
+        }],
+      }];
+    }
+
     if (typeof content === "string") {
-      return [{ id, role, parts: [{ type: "text", text: content }] }];
+      return [{ id, role: "assistant", parts: [{ type: "text", text: content }] }];
     }
 
     const parts = normalizeParts(content);
     if (parts.length) {
-      return [{ id, role, parts }];
+      return [{ id, role: "assistant", parts }];
     }
 
     return [];
