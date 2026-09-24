@@ -35,7 +35,18 @@ function textOf(message: AgentUIMessage) {
   return normalizeParts(message?.parts).filter((part) => part.type === "text").map((part) => String(part.text || "")).join("");
 }
 function toolOf(message: AgentUIMessage): any {
-  return normalizeParts(message?.parts).find((part) => String(part.type || "").startsWith("tool-") || part.type === "dynamic-tool");
+  return normalizeParts(message?.parts).find((part: any) => {
+    const type = String(part?.type || "");
+    return type.startsWith("tool-") || type === "dynamic-tool";
+  });
+}
+
+function toolOutputOf(tool: any) {
+  if (!tool) return undefined;
+  if (tool.output !== undefined) return tool.output;
+  if (tool.result !== undefined) return tool.result;
+  if (tool.state === "output-available" && tool.value !== undefined) return tool.value;
+  return undefined;
 }
 function decodeHtmlEntities(value: string) {
   if (!value.includes("&")) return value;
@@ -130,8 +141,10 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
   const text = textOf(message);
   const tool = toolOf(message);
   const name = String(tool?.toolName || tool?.name || "");
-  const output = tool?.output;
-  const emails = Array.isArray(output?.emails) ? output.emails.map(refFrom).filter(Boolean) as EmailRef[] : [];
+  const output = toolOutputOf(tool);
+  const emails = Array.isArray(output?.emails)
+    ? output.emails.map(refFrom).filter(Boolean) as EmailRef[]
+    : [];
   const citation = refFrom(tool);
   const citations = citation ? [citation] : [];
 
@@ -289,7 +302,7 @@ export async function streamAgentMessage(messages: AgentUIMessage[], conversatio
     }
     else if (event.type === "tool-output-available" || event.type === "tool-result") {
       const toolCallId = String(event.toolCallId || "");
-      const rawOutput = event.output ?? event.result;
+      const rawOutput = event.output ?? event.result ?? event.value;
       let output = rawOutput;
       if (typeof output === "string") {
         try { output = JSON.parse(output); } catch {}
