@@ -19,69 +19,34 @@ const DEFAULT_STAGES = ["Thinking", "Reading your inbox", "Preparing response"];
 function textFromMessage(message: AgentUIMessage) { return message.parts.filter((part) => part.type === "text").map((part) => String(part.text || "")).join(""); }
 
 function dedupeChatMessages(items: ChatMessage[]) {
-  const hasStructuredEmailList = items.some(
-    (item) => item.role === "agent" && item.response?.kind === "email-list"
-  );
-  const hasStructuredDraft = items.some(
-    (item) => item.role === "agent" && item.response?.kind === "draft"
-  );
-  const hasStructuredSchedule = items.some(
-    (item) => item.role === "agent" && item.response?.kind === "schedule"
-  );
-  const hasStructuredAction = items.some(
-    (item) =>
-      item.role === "agent" &&
-      item.response?.kind === "text" &&
-      Boolean(item.response.citations?.length) &&
-      /\b(marked|archived)\b/i.test(item.response.content)
-  );
-
   const seen = new Set<string>();
 
   return items.filter((item) => {
     if (item.role !== "agent" || !item.response) return true;
 
-    // When Gmail returned structured email data, the cards are the complete
-    // response. Never render the model's duplicate prose alongside them.
-    if (hasStructuredEmailList) {
-      if (item.response.kind === "email-list") {
-        const emails = item.response.emails || [];
-        const fingerprint =
-          "email-list:" +
-          emails.map((email) => `${email.id}|${email.senderEmail}|${email.subject}|${email.receivedAt}`).join(";");
-        if (seen.has(fingerprint)) return false;
-        seen.add(fingerprint);
-        return true;
-      }
-      return false;
-    }
+    const response = item.response;
+    const key =
+      response.kind +
+      ":" +
+      (response.kind === "email-list"
+        ? response.emails.map((email) => email.id).join(",")
+        : response.kind === "draft"
+          ? response.draft.id
+          : response.kind === "schedule"
+            ? response.event.id
+            : response.kind === "summary"
+              ? (response.title || "") + ":" + response.content
+              : response.kind === "confirm"
+                ? response.promptId
+                : response.content);
 
-    if (item.response.kind === "text") {
-      const content = String(item.response.content || "").trim();
-
-      if (hasStructuredAction && !item.response.citations?.length && /\b(marked|archived)\b/i.test(content)) {
-        return false;
-      }
-
-      if (hasStructuredDraft || hasStructuredSchedule) {
-        const repeatsAction =
-          /^(done[.!]?|i'?ve created|i created|created|draft .* (created|saved)|the draft .* (saved|created)|would you like me to (send|review|edit)|here'?s your draft)/i.test(content);
-        if (repeatsAction) return false;
-      }
-
-      const actionKey = content
-        .toLowerCase()
-        .replace(/[^a-z0-9 ]/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
-
-      if (actionKey && seen.has("text:" + actionKey)) return false;
-      if (actionKey) seen.add("text:" + actionKey);
-    }
-
+    if (seen.has(key)) return false;
+    seen.add(key);
     return true;
   });
-}function groupAgentResponses(items: ChatMessage[]) {
+}
+
+function groupAgentResponses(items: ChatMessage[]) {
   const result: ChatMessage[] = [];
 
   for (const item of items) {
