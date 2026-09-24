@@ -165,6 +165,16 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
   const tool = toolOf(message);
   const name = String(tool?.toolName || tool?.name || "");
   const output = toolOutputOf(tool);
+
+  const ui = output?.ui;
+  if (ui && typeof ui === "object" && typeof ui.kind === "string") {
+    return {
+      id: message.id,
+      role: "agent",
+      response: ui as ResponseBlock,
+    };
+  }
+
   const emails = Array.isArray(output?.emails)
     ? output.emails.map(refFrom).filter(Boolean) as EmailRef[]
     : [];
