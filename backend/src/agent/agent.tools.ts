@@ -13,7 +13,7 @@ import {
   listAutomationsForUser,
   updateAutomationForUser,
 } from "../repositories/automationRepository";
-import { applyCategoryToEmails, extractKeywords } from "../services/categoryService";
+import { applyCategoryToEmails, emailMatchesCategory, extractKeywords } from "../services/categoryService";
 import gmailService from "../services/gmailService";
 import { unsubscribeFromLink } from "../services/unsubscribeService";
 import { env } from "../config/env";
@@ -168,16 +168,7 @@ export function createAgentTools(userId: string, userEmail: string) {
         }
 
         const emails = (await getEmailsForUser(userId))
-          .filter((email) => {
-            const labels = Array.isArray((email as any).labels)
-              ? (email as any).labels.map((label: string) => label.toLowerCase())
-              : [];
-            return (
-              labels.includes(category.label.toLowerCase()) ||
-              labels.includes(`category:${category.label.toLowerCase()}`) ||
-              labels.includes(String((category as any).id).toLowerCase())
-            );
-          });
+          .filter((email) => emailMatchesCategory(email, category));
 
         return {
           category: {
