@@ -216,6 +216,10 @@
     display: flex;
     flex-direction: column;
     gap: ui.space(4);
+    width: 100%;
+    padding: 12px;
+    background-color: ui.color(white);
+    border: 1px solid ui.color(quill-gray);
   }
 
   &__summary-title {
