@@ -233,6 +233,24 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
   }
 
 
+  if (name.includes("get_emails_by_category")) {
+    const emails = Array.isArray(output?.emails)
+      ? output.emails.map(refFrom).filter(Boolean) as EmailRef[]
+      : [];
+    const category = output?.category;
+    return {
+      id: message.id,
+      role: "agent",
+      response: {
+        kind: "email-list",
+        lead: emails.length
+          ? \`Here are \${emails.length} email\${emails.length === 1 ? "" : "s"} in the \${category?.label || "selected"} category:\`
+          : \`There are no emails in the \${category?.label || "selected"} category.\`,
+        emails,
+      },
+    };
+  }
+
   if (name.includes("categorize_emails")) {
     const category = String(output?.category || output?.categoryLabel || "");
     const categorized = Array.isArray(output?.categorized) ? output.categorized : [];
