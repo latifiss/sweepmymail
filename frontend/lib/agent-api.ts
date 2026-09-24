@@ -187,6 +187,38 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
     return { id: message.id, role: "agent", response: { kind: "email-list", lead: "", emails } };
   }
 
+
+  if (name.includes("update_draft") || name.includes("send_draft")) {
+    const d = output?.draft || output;
+    const draft: EmailDraft = {
+      id: String(d?.draftId || d?.id || tool?.toolCallId || message.id),
+      to: Array.isArray(d?.to) ? d.to.join(", ") : String(d?.to || d?.recipients || ""),
+      cc: Array.isArray(d?.cc) ? d.cc.join(", ") : d?.cc ? String(d.cc) : undefined,
+      subject: String(d?.subject || ""),
+      body: String(d?.body || ""),
+    };
+    if (draft.to || draft.subject || draft.body) {
+      return {
+        id: message.id,
+        role: "agent",
+        response: {
+          kind: "draft",
+          lead: name.includes("send_draft") ? "Done. The draft was sent." : "Done. I updated the draft:",
+          draft,
+        },
+      };
+    }
+    return {
+      id: message.id,
+      role: "agent",
+      response: {
+        kind: "text",
+        lead: name.includes("send_draft") ? "Done." : "Done. The draft was updated.",
+        content: "",
+      },
+    };
+  }
+
   if (name.includes("create_draft") || name.includes("reply_to_email") || name.includes("forward_email")) {
     const d = output?.draft || output;
     const draft: EmailDraft = {
