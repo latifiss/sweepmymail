@@ -526,16 +526,34 @@ export function createAgentTools(userId: string, userEmail: string) {
           userId,
           category.label,
         );
+        const categorized = (
+          await gmailService.modifyMessagesForUser(
+            userId,
+            messageIds,
+            [labelId],
+            [],
+          )
+        ).modified;
+        const emails = (await getEmailsForUser(userId))
+          .filter((email) => categorized.includes(email.message_id))
+          .map((email) => ({
+            messageId: email.message_id,
+            sender: email.sender,
+            subject: email.subject,
+            snippet: typeof email.snippet === "string" ? email.snippet.slice(0, 180) : "",
+            date: email.date,
+          }));
         return {
           category: category.label,
-          categorized: (
-            await gmailService.modifyMessagesForUser(
-              userId,
-              messageIds,
-              [labelId],
-              [],
-            )
-          ).modified,
+          categorized,
+          emails,
+          ui: {
+            kind: "summary",
+            lead: `Done. Categorized ${categorized.length} email${categorized.length === 1 ? "" : "s"}.`,
+            title: category.label,
+            content: `I applied the ${category.label} category to ${categorized.length} email${categorized.length === 1 ? "" : "s"}.`,
+            citations: emails,
+          },
         };
       },
     }),
