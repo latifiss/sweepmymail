@@ -244,8 +244,8 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
       response: {
         kind: "email-list",
         lead: emails.length
-          ? \`Here are \${emails.length} email\${emails.length === 1 ? "" : "s"} in the \${category?.label || "selected"} category:\`
-          : \`There are no emails in the \${category?.label || "selected"} category.\`,
+          ? `Here are ${emails.length} email${emails.length === 1 ? "" : "s"} in the ${category?.label || "selected"} category:`
+          : `There are no emails in the ${category?.label || "selected"} category.`,
         emails,
       },
     };
