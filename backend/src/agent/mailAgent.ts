@@ -3,6 +3,7 @@ import { ToolLoopAgent, stepCountIs } from "ai";
 import { env } from "../config/env";
 import { createAgentTools } from "./agent.tools";
 import { addMessage } from "./agent.persistence";
+import { finishRequest } from "./agent.runtime";
 
 const openrouter = createOpenRouter({ apiKey: env.OPENROUTER_API_KEY });
 
@@ -39,7 +40,7 @@ function removeReasoningFromContent(content: unknown) {
   return content.filter((part: any) => part?.type !== "reasoning");
 }
 
-export function createMailAgent(userId: string, userEmail: string, conversationId?: string) {
+export function createMailAgent(userId: string, userEmail: string, conversationId?: string, requestId?: string) {
   const tools = createAgentTools(userId, userEmail);
 
   return new ToolLoopAgent({
@@ -50,13 +51,29 @@ export function createMailAgent(userId: string, userEmail: string, conversationI
     stopWhen: stepCountIs(12),
     maxRetries: 2,
     onFinish: async (event: any) => {
+      if (requestId) {
+        const usage = event.usage || {};
+        await finishRequest(requestId, "completed", {
+          inputTokens: usage.inputTokens || usage.promptTokens,
+          outputTokens: usage.outputTokens || usage.completionTokens,
+        });
+      }
       if (!conversationId) return;
       for (const message of event.response?.messages || []) {
         const role = message.role === "assistant" ? "assistant" : message.role === "tool" ? "tool" : "system";
         const content = removeReasoningFromContent(message.content ?? message);
-        const firstToolPart = Array.isArray(message.content)
-          ? message.content.find((part: any) => part?.type === "tool-call" || part?.type === "tool-result")
-          : undefined;
+        const parts = Array.isArray(message.content) ? message.content : [];
+        const firstToolPart = parts.find((part: any) => part?.type === "tool-call" || part?.type === "tool-result");
+        const messageIds = Array.from(new Set(parts.flatMap((part: any) => {
+          const found: string[] = [];
+          const visit = (value: any) => {
+            if (!value || typeof value !== "object") return;
+            if (typeof value.messageId === "string") found.push(value.messageId);
+            for (const child of Object.values(value)) visit(child);
+          };
+          visit(part?.output ?? part?.result ?? part?.input);
+          return found;
+        })));
         await addMessage({
           conversationId,
           role,
@@ -65,6 +82,7 @@ export function createMailAgent(userId: string, userEmail: string, conversationI
           toolCallId: firstToolPart?.toolCallId || null,
           toolInput: firstToolPart?.input || null,
           toolResult: firstToolPart?.output || null,
+          metadata: { executionState: message.role === "tool" ? "tool_result" : "completed", citations: messageIds.map((messageId) => ({ messageId })) },
         });
       }
     },

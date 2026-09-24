@@ -15,6 +15,12 @@ export interface CupboardProps {
   mailsCount?: number;
   categoriesCount?: number;
   priorityCount?: number;
+  automationsCount?: number;
+  scheduledCount?: number;
+  requestsToday?: number;
+  requestLimit?: number;
+  tokensToday?: number;
+  tokenLimit?: number;
   categories?: string[];
   summaryDates?: string[];
   priorities?: string[];
@@ -51,6 +57,12 @@ export default function Cupboard({
   mailsCount = 132,
   categoriesCount = 183,
   priorityCount = 56,
+  automationsCount = 0,
+  scheduledCount = 0,
+  requestsToday = 0,
+  requestLimit = 0,
+  tokensToday = 0,
+  tokenLimit = 0,
   categories = DEFAULT_CATEGORIES,
   summaryDates = DEFAULT_SUMMARY_DATES,
   priorities = DEFAULT_PRIORITIES,
@@ -131,6 +143,9 @@ export default function Cupboard({
           ))}
         </ul>
       </AccordionItem>
+      <AccordionItem icon={<EmailsIcon />} title="automations" subtitle={automationsCount + " Automations"} meta="Active and paused" isAccordion={false} />
+      <AccordionItem icon={<SummaryIcon />} title="scheduled" subtitle={scheduledCount + " Scheduled emails"} meta="Pending delivery" isAccordion={false} />
+      <AccordionItem icon={<PrioritizeIcon />} title="usage" subtitle={requestsToday + "/" + requestLimit + " requests"} meta={tokensToday + "/" + tokenLimit + " tokens"} isAccordion={false} />
     </aside>
   );
 }
