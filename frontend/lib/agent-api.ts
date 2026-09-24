@@ -75,51 +75,74 @@ function parseEmailListFromText(text: string): { title?: string; lead?: string; 
     .replace(/\\r/g, "")
     .trim();
 
-  // Only parse explicit email-list rows. Never turn general prose summaries into cards.
-  const lines = normalized
-    .split(/\n+/)
-    .map((line) => line.replace(/^\s*[-•]\s*/, "").trim())
-    .filter(Boolean);
-
+  const lines = normalized.split(/\n+/).map((line) => line.trim()).filter(Boolean);
   const emails: EmailRef[] = [];
-  const rowPattern = /^(?:\\*\\*)?([^*<>\\n]+?)\\s*<([^>\\s]+)>\\s*(?:\\*\\*)?(?:[-|:]\\s*)?(?:Subject:\\s*)?(.+?)(?:\\s*[-|]\\s*(?:Date|Received|Time):\\s*(.+))?\\s*(?:\\*\\*)?$/i;
+  const nonRowLines: string[] = [];
 
   for (const line of lines) {
-    if (!line.includes("<") || !line.includes(">") || !line.includes("@")) continue;
-    const match = line.match(rowPattern);
-    if (!match) continue;
+    const markdownRow = line.match(
+      /^\d+\.\s*(?:\*\*)?([^*\n]+?)(?:\*\*)?\s*-\s*"([^"]+)"(?:\s*\(([^)]+)\))?\s*$/,
+    );
 
-    const sender = cleanEmailText(match[1]);
-    const senderEmail = cleanEmailText(match[2]);
-    const subject = cleanEmailText(match[3]).replace(/^["“]|["”]$/g, "");
-    const dateRaw = cleanEmailText(match[4] || "");
+    const angleRow = line.match(
+      /^(?:\*\*)?([^*<>\n]+?)\s*<([^>\s]+)>\s*(?:\*\*)?(?:[-|:]\s*)?(?:Subject:\s*)?(.+?)(?:\s*[-|]\s*(?:Date|Received|Time):\s*(.+))?\s*(?:\*\*)?$/i,
+    );
 
-    if (!sender || !senderEmail.includes("@") || !subject) continue;
+    if (markdownRow) {
+      const sender = cleanEmailText(markdownRow[1]);
+      const subject = cleanEmailText(markdownRow[2]);
+      const dateRaw = cleanEmailText(markdownRow[3] || "");
+      if (sender && subject) {
+        const parsedDate = new Date(dateRaw);
+        emails.push({
+          id: "parsed-email-" + emails.length + "-" + sender + "-" + subject,
+          sender,
+          senderEmail: "",
+          subject,
+          preview: "",
+          receivedAt: dateRaw && !Number.isNaN(parsedDate.getTime())
+            ? parsedDate.toISOString()
+            : new Date().toISOString(),
+        });
+        continue;
+      }
+    }
 
-    const parsedDate = new Date(dateRaw);
-    emails.push({
-      id: `parsed-email-${emails.length}-${senderEmail}-${subject}`,
-      sender,
-      senderEmail,
-      subject,
-      preview: "",
-      receivedAt: dateRaw && !Number.isNaN(parsedDate.getTime())
-        ? parsedDate.toISOString()
-        : new Date().toISOString(),
-    });
+    if (angleRow && line.includes("<") && line.includes(">") && line.includes("@")) {
+      const sender = cleanEmailText(angleRow[1]);
+      const senderEmail = cleanEmailText(angleRow[2]);
+      const subject = cleanEmailText(angleRow[3]).replace(/^["“]|["”]$/g, "");
+      const dateRaw = cleanEmailText(angleRow[4] || "");
+      if (sender && senderEmail.includes("@") && subject) {
+        const parsedDate = new Date(dateRaw);
+        emails.push({
+          id: "parsed-email-" + emails.length + "-" + senderEmail + "-" + subject,
+          sender,
+          senderEmail,
+          subject,
+          preview: "",
+          receivedAt: dateRaw && !Number.isNaN(parsedDate.getTime())
+            ? parsedDate.toISOString()
+            : new Date().toISOString(),
+        });
+        continue;
+      }
+    }
+
+    nonRowLines.push(line);
   }
 
   if (!emails.length) return null;
 
-  const lead = lines.find((line) => /^here are\\b|^i found \\d+ emails\\b/i.test(line)) || "";
-  const titleLine = lines.find(
-    (line) => /^\\*\\*[^*]+\\*\\*$/.test(line) && !line.includes("<")
-  );
-  const title = titleLine?.replace(/^\\*\\*|\\*\\*$/g, "").trim();
+  const cleanLead = (value: string) =>
+    value.replace(/^\*\*(.*?)\*\*$/, "$1").replace(/^#+\s*/, "").replace(/^[-•]\s*/, "").trim();
 
-  return { title, lead, emails };
+  const prose = nonRowLines.map(cleanLead).filter(Boolean);
+  const lead = prose.find((line) => /^done[.!]?$/i.test(line)) || "";
+  const title = prose.find((line) => /^(?:here are|i found|showing|these are)\b/i.test(line));
+
+  return { lead: lead || title || "", title: lead ? title : undefined, emails };
 }
-
 function refFrom(value: any): EmailRef | null {
   const e = value?.email || value;
   const id = e?.messageId || e?.message_id;
