@@ -34,11 +34,15 @@ function normalizeParts(value: unknown): Array<Record<string, unknown>> {
 function textOf(message: AgentUIMessage) {
   return normalizeParts(message?.parts).filter((part) => part.type === "text").map((part) => String(part.text || "")).join("");
 }
-function toolOf(message: AgentUIMessage): any {
-  return normalizeParts(message?.parts).find((part: any) => {
+function toolPartsOf(message: AgentUIMessage): Array<Record<string, unknown>> {
+  return normalizeParts(message?.parts).filter((part: any) => {
     const type = String(part?.type || "");
     return type.startsWith("tool-") || type === "dynamic-tool";
   });
+}
+
+function toolOf(message: AgentUIMessage): any {
+  return toolPartsOf(message)[0];
 }
 
 function toolOutputOf(tool: any) {
@@ -235,11 +239,24 @@ function refFrom(value: any): EmailRef | null {
   };
 }
 
-export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; role: "user" | "agent"; content?: string; response?: ResponseBlock } | null {
+export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; role: "user" | "agent"; content?: string; response?: ResponseBlock; responses?: ResponseBlock[] } | null {
   if (message.role === "user") return { id: message.id, role: "user", content: textOf(message) };
   if (message.role === "tool") return null;
 
   const text = textOf(message);
+  const toolParts = toolPartsOf(message);
+
+  // One assistant message can contain several tool calls/results. Render every
+  // structured result instead of silently keeping only the first one.
+  if (toolParts.length > 1) {
+    const responses = toolParts
+      .map((part) => uiMessageToChatMessage({ ...message, parts: [part] }))
+      .flatMap((item) => item?.responses || (item?.response ? [item.response] : []));
+    if (responses.length) {
+      return { id: message.id, role: "agent", responses };
+    }
+  }
+
   const tool = toolOf(message);
   const name = String(tool?.toolName || tool?.name || "");
   const output = toolOutputOf(tool);
