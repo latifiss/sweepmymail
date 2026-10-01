@@ -216,7 +216,7 @@ export default function ChatPage() {
     // Keep the action in the conversation so the agent receives the same
     // context as if the user had typed the follow-up themselves.
     if (action.type === "confirm-send") {
-      void handleSubmit(`Confirm and send draft ${action.draftId}`);
+      void handleSubmit("Confirm and send draft");
       return;
     }
 
