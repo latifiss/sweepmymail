@@ -16,13 +16,27 @@ export class GoogleReauthorizationRequiredError extends Error {
   }
 }
 
-function isInvalidGrantError(error: unknown) {
+function isGoogleReauthorizationError(error: unknown) {
   const err = error as any;
   const responseError = err?.response?.data?.error;
+  const responseCode = err?.response?.data?.code;
+  const bodyCode = err?.body?.code;
+  const code = err?.code;
+
+  // Better Auth intentionally hides the provider's raw OAuth error behind
+  // FAILED_TO_GET_ACCESS_TOKEN / FAILED_TO_REFRESH_ACCESS_TOKEN. For a
+  // background Gmail job there is no user session available to recover that
+  // grant, so both failures require the user to sign in with Google again.
   return (
     responseError === "invalid_grant" ||
     err?.error === "invalid_grant" ||
-    err?.code === "invalid_grant" ||
+    code === "invalid_grant" ||
+    responseCode === "FAILED_TO_GET_ACCESS_TOKEN" ||
+    responseCode === "FAILED_TO_REFRESH_ACCESS_TOKEN" ||
+    bodyCode === "FAILED_TO_GET_ACCESS_TOKEN" ||
+    bodyCode === "FAILED_TO_REFRESH_ACCESS_TOKEN" ||
+    code === "FAILED_TO_GET_ACCESS_TOKEN" ||
+    code === "FAILED_TO_REFRESH_ACCESS_TOKEN" ||
     (typeof err?.message === "string" && err.message.includes("invalid_grant"))
   );
 }
@@ -137,7 +151,7 @@ export async function getGoogleAccessTokenForEmail(email: string) {
 
     return token.accessToken;
   } catch (error) {
-    if (isInvalidGrantError(error)) {
+    if (isGoogleReauthorizationError(error)) {
       throw new GoogleReauthorizationRequiredError(email);
     }
     throw error;
@@ -161,7 +175,7 @@ export async function refreshGoogleAccessTokenForEmail(email: string) {
 
     return token.accessToken;
   } catch (error) {
-    if (isInvalidGrantError(error)) {
+    if (isGoogleReauthorizationError(error)) {
       throw new GoogleReauthorizationRequiredError(email);
     }
     throw error;
