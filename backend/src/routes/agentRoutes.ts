@@ -21,7 +21,7 @@ router.get("/usage", authMiddleware, async (req,res,next)=>{try{const user=(req 
 
 async function handleChat(req:express.Request,res:express.Response,next:express.NextFunction){
   const requestId=getRequestId(req);
-  const user=(req as any).user as {id:string;email:string};
+  const user=(req as any).user as {id:string;email:string;name?:string};
   try{
     const messages=req.body?.messages;
     validateAgentInput(messages);
