@@ -11,6 +11,7 @@ router.get("/me", authMiddleware, getCurrentUserProfile);
 
 router.post("/google/reconnect", authMiddleware, async (req, res) => {
   try {
+    const user = (req as any).user as { email?: string } | undefined;
     const frontendOrigin =
       env.AUTH_TRUSTED_ORIGINS.find((origin) => origin !== env.BETTER_AUTH_URL) ||
       env.AUTH_TRUSTED_ORIGINS[0];
@@ -26,6 +27,11 @@ router.post("/google/reconnect", authMiddleware, async (req, res) => {
           "https://www.googleapis.com/auth/gmail.modify",
           "https://mail.google.com/",
         ],
+        ...(user?.email ? { loginHint: user.email } : {}),
+        additionalParams: {
+          access_type: "offline",
+          prompt: "consent",
+        },
       },
       headers: fromNodeHeaders(req.headers),
     });
