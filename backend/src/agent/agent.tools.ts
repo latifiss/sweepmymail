@@ -226,7 +226,7 @@ export function createAgentTools(userId: string, userEmail: string) {
     }),
 
     create_draft: tool({
-      description: "Create a Gmail draft without sending. The UI will render the returned draft; keep the final response concise.",
+      description: "Create a Gmail draft without sending. ALWAYS use this tool when the user asks to draft, compose, write, or prepare an email and the recipient is known. Do not return a prose-only draft when this tool can be used. The UI will render the returned draft; keep the final response concise.",
       inputSchema: emailContentSchema,
       execute: async (input) => {
         requireAgentConfiguration();
