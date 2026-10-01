@@ -235,8 +235,17 @@ function refFrom(value: any): EmailRef | null {
   };
 }
 
+function cleanUserActionText(value: string) {
+  const text = cleanEmailText(value);
+  // Approval controls should never expose internal draft/tool IDs in the chat bubble.
+  if (/^CONFIRM\s+.*?SEND\s+.*?DRAFT\s+/i.test(text)) {
+    return "CONFIRM AND SEND EMAIL";
+  }
+  return text;
+}
+
 export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; role: "user" | "agent"; content?: string; response?: ResponseBlock } | null {
-  if (message.role === "user") return { id: message.id, role: "user", content: textOf(message) };
+  if (message.role === "user") return { id: message.id, role: "user", content: cleanUserActionText(textOf(message)) };
   if (message.role === "tool") return null;
 
   const text = textOf(message);
