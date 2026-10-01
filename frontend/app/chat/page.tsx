@@ -202,11 +202,59 @@ export default function ChatPage() {
   }, [approval, conversationId, thinking, uiMessages, runAgent]);
 
   const handleAction = useCallback((action: ResponseAction) => {
-    if (action.type === "open-email") { window.open("https://mail.google.com/mail/u/0/#all/" + encodeURIComponent(action.emailId), "_blank", "noopener,noreferrer"); return; }
-    if (action.type === "confirm-send" || action.type === "schedule-accept" || action.type === "confirm") { void handleApproval(action.type === "confirm" ? action.choice === "yes" : true); return; }
-    if (action.type === "schedule-cancel") { void handleApproval(false); return; }
-    if (action.type === "continue-draft") return;
-  }, [handleApproval]);
+    if (action.type === "open-email") {
+      window.open(
+        "https://mail.google.com/mail/u/0/#all/" +
+          encodeURIComponent(action.emailId),
+        "_blank",
+        "noopener,noreferrer",
+      );
+      return;
+    }
+
+    // Structured response buttons are shortcuts for normal chat follow-ups.
+    // Keep the action in the conversation so the agent receives the same
+    // context as if the user had typed the follow-up themselves.
+    if (action.type === "confirm-send") {
+      void handleSubmit(`Confirm and send draft ${action.draftId}`);
+      return;
+    }
+
+    if (action.type === "continue-draft") {
+      void handleSubmit(`Continue with draft ${action.draftId}`);
+      return;
+    }
+
+    if (action.type === "schedule-accept") {
+      if (approval) {
+        void handleApproval(true);
+      } else {
+        void handleSubmit(`Confirm and schedule event ${action.eventId}`);
+      }
+      return;
+    }
+
+    if (action.type === "schedule-cancel") {
+      if (approval) {
+        void handleApproval(false);
+      } else {
+        void handleSubmit(`Cancel the scheduled event ${action.eventId}`);
+      }
+      return;
+    }
+
+    if (action.type === "confirm") {
+      if (approval) {
+        void handleApproval(action.choice === "yes");
+      } else {
+        void handleSubmit(
+          action.choice === "yes"
+            ? `Confirm prompt ${action.promptId}`
+            : `Cancel prompt ${action.promptId}`,
+        );
+      }
+    }
+  }, [approval, handleApproval, handleSubmit]);
 
   const handleNewChat = useCallback(async () => {
     abortRef.current?.abort();
