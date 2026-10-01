@@ -12,7 +12,11 @@ router.get("/me", authMiddleware, getCurrentUserProfile);
 router.post("/google/reconnect", authMiddleware, async (req, res) => {
   try {
     const user = (req as any).user as { email?: string } | undefined;
+    const requestOrigin = req.headers.origin;
     const frontendOrigin =
+      (requestOrigin && env.AUTH_TRUSTED_ORIGINS.includes(requestOrigin)
+        ? requestOrigin
+        : undefined) ||
       env.AUTH_TRUSTED_ORIGINS.find((origin) => origin !== env.BETTER_AUTH_URL) ||
       env.AUTH_TRUSTED_ORIGINS[0];
 
