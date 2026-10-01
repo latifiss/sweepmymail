@@ -323,8 +323,17 @@ export function createAgentTools(userId: string, userEmail: string) {
       inputSchema: scheduleInputSchema.extend({
         id: z.string().min(1),
       }),
-      execute: async ({ id, sendAt, timezone, ...input }) =>
-        updateScheduledEmail({ userId, id, ...input, sendAt, timezone }),
+      execute: async ({ id, sendAt, timezone, ...input }) => {
+        const updated = await updateScheduledEmail({ userId, id, ...input, sendAt, timezone });
+        return {
+          ...updated,
+          ui: {
+            kind: "schedule",
+            lead: "Done. I updated the scheduled email:",
+            event: { id, title: String(input.subject || "Scheduled email"), when: String(sendAt), duration: "" },
+          },
+        };
+      },
     }),
 
     cancel_scheduled_email: tool({
@@ -332,7 +341,19 @@ export function createAgentTools(userId: string, userEmail: string) {
         "Cancel a scheduled email. ALWAYS requires explicit approval.",
       needsApproval: true,
       inputSchema: z.object({ id: z.string().min(1) }),
-      execute: async ({ id }) => cancelScheduledEmail(userId, id),
+      execute: async ({ id }) => {
+        const cancelled = await cancelScheduledEmail(userId, id);
+        return {
+          ...cancelled,
+          ui: {
+            kind: "summary",
+            lead: "Done. The scheduled email was cancelled.",
+            title: "Scheduled email cancelled",
+            content: "The scheduled email will not be sent.",
+            citations: [],
+          },
+        };
+      },
     }),
 
     list_automations: tool({
