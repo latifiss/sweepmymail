@@ -216,6 +216,42 @@ export async function getAttachmentsForMessage(userId: string, messageId: string
   });
 }
 
+
+export async function markSpamForUser(userId: string, messageIds: string[]) {
+  return withGmail(userId, async (gmail) => {
+    for (const id of messageIds) await gmail.users.messages.modify({ userId: "me", id, requestBody: { addLabelIds: ["SPAM"], removeLabelIds: [] } });
+    return { markedSpam: messageIds.length, messageIds };
+  });
+}
+
+export async function unmarkSpamForUser(userId: string, messageIds: string[]) {
+  return withGmail(userId, async (gmail) => {
+    for (const id of messageIds) await gmail.users.messages.modify({ userId: "me", id, requestBody: { addLabelIds: ["INBOX"], removeLabelIds: ["SPAM"] } });
+    return { restoredFromSpam: messageIds.length, messageIds };
+  });
+}
+
+export async function markNotImportantForUser(userId: string, messageIds: string[]) {
+  return withGmail(userId, async (gmail) => {
+    for (const id of messageIds) await gmail.users.messages.modify({ userId: "me", id, requestBody: { addLabelIds: [], removeLabelIds: ["IMPORTANT"] } });
+    return { markedNotImportant: messageIds.length, messageIds };
+  });
+}
+
+export async function muteThreadsForUser(userId: string, threadIds: string[]) {
+  return withGmail(userId, async (gmail) => {
+    for (const id of threadIds) await gmail.users.threads.modify({ userId: "me", id, requestBody: { addLabelIds: ["MUTED"], removeLabelIds: [] } });
+    return { muted: threadIds.length, threadIds };
+  });
+}
+
+export async function unmuteThreadsForUser(userId: string, threadIds: string[]) {
+  return withGmail(userId, async (gmail) => {
+    for (const id of threadIds) await gmail.users.threads.modify({ userId: "me", id, requestBody: { addLabelIds: [], removeLabelIds: ["MUTED"] } });
+    return { unmuted: threadIds.length, threadIds };
+  });
+}
+
 export default {
   searchMessagesForUser,
   getThreadForUser,
@@ -225,4 +261,9 @@ export default {
   untrashMessagesForUser,
   listLabelsForUser,
   getAttachmentsForMessage,
+  markSpamForUser,
+  unmarkSpamForUser,
+  markNotImportantForUser,
+  muteThreadsForUser,
+  unmuteThreadsForUser,
 };
