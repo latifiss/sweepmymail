@@ -120,7 +120,10 @@ export function createAdvancedAgentTools(userId: string, userEmail: string) {
       description: "Delete a Gmail draft. ALWAYS requires explicit approval.",
       needsApproval: true,
       inputSchema: z.object({ draftId: z.string().min(1) }),
-      execute: async ({ draftId }) => gmailService.deleteDraftForUser(userId, draftId),
+      execute: async ({ draftId }) => {
+        const result = await gmailService.deleteDraftForUser(userId, draftId);
+        return { ...result, ...actionUi("Done. Deleted the draft.", "Draft deleted", "I deleted the saved Gmail draft.") };
+      },
     }),
 
     archive_emails: tool({
@@ -230,33 +233,48 @@ export function createAdvancedAgentTools(userId: string, userEmail: string) {
     mark_not_important: tool({
       description: "Remove the Important marker from selected messages.",
       inputSchema: z.object({ messageIds: messageIdsSchema }),
-      execute: async ({ messageIds }) => advancedGmailService.markNotImportantForUser(userId, messageIds),
+      execute: async ({ messageIds }) => {
+        const result = await advancedGmailService.markNotImportantForUser(userId, messageIds);
+        return { ...result, ...actionUi("Done. Removed the Important marker.", "Not important", `I removed the Important marker from ${result.markedNotImportant} email${result.markedNotImportant === 1 ? "" : "s"}.`) };
+      },
     }),
 
     mark_spam: tool({
       description: "Mark selected messages as spam. ALWAYS requires explicit approval.",
       needsApproval: true,
       inputSchema: z.object({ messageIds: messageIdsSchema }),
-      execute: async ({ messageIds }) => advancedGmailService.markSpamForUser(userId, messageIds),
+      execute: async ({ messageIds }) => {
+        const result = await advancedGmailService.markSpamForUser(userId, messageIds);
+        return { ...result, ...actionUi("Done. Marked the selected email as spam.", "Spam", `I marked ${result.markedSpam} email${result.markedSpam === 1 ? "" : "s"} as spam.`) };
+      },
     }),
 
     restore_from_spam: tool({
       description: "Restore selected messages from spam. ALWAYS requires explicit approval.",
       needsApproval: true,
       inputSchema: z.object({ messageIds: messageIdsSchema }),
-      execute: async ({ messageIds }) => advancedGmailService.unmarkSpamForUser(userId, messageIds),
+      execute: async ({ messageIds }) => {
+        const result = await advancedGmailService.unmarkSpamForUser(userId, messageIds);
+        return { ...result, ...actionUi("Done. Restored the selected email from spam.", "Restored from spam", `I restored ${result.restoredFromSpam} email${result.restoredFromSpam === 1 ? "" : "s"} from spam.`) };
+      },
     }),
 
     mute_threads: tool({
       description: "Mute selected Gmail conversations.",
       inputSchema: z.object({ threadIds: messageIdsSchema }),
-      execute: async ({ threadIds }) => advancedGmailService.muteThreadsForUser(userId, threadIds),
+      execute: async ({ threadIds }) => {
+        const result = await advancedGmailService.muteThreadsForUser(userId, threadIds);
+        return { ...result, ...actionUi("Done. Muted the conversation.", "Conversation muted", `I muted ${result.muted} conversation${result.muted === 1 ? "" : "s"}.`) };
+      },
     }),
 
     unmute_threads: tool({
       description: "Unmute selected Gmail conversations.",
       inputSchema: z.object({ threadIds: messageIdsSchema }),
-      execute: async ({ threadIds }) => advancedGmailService.unmuteThreadsForUser(userId, threadIds),
+      execute: async ({ threadIds }) => {
+        const result = await advancedGmailService.unmuteThreadsForUser(userId, threadIds);
+        return { ...result, ...actionUi("Done. Unmuted the conversation.", "Conversation unmuted", `I unmuted ${result.unmuted} conversation${result.unmuted === 1 ? "" : "s"}.`) };
+      },
     }),
 
     find_unsubscribe_options: tool({
