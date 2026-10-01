@@ -114,6 +114,7 @@ export default function ChatPage() {
   const [context, setContext] = useState<any>(null);
   const [email, setEmail] = useState("Gmail");
   const abortRef = useRef<AbortController | null>(null);
+  const threadRef = useRef<HTMLDivElement | null>(null);
 
   const refreshConversations = useCallback(async () => {
     try { setConversations(await listAgentConversations()); } catch {}
@@ -276,6 +277,16 @@ export default function ChatPage() {
     await updateAgentConversation(id, { title: title.trim() }); await refreshConversations();
   }, [conversations, refreshConversations]);
 
+  useEffect(() => {
+    const thread = threadRef.current;
+    if (!thread) return;
+
+    thread.scrollTo({
+      top: thread.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [messages, thinking, approval, error]);
+
   const isEmpty = messages.length === 0 && !thinking && !error;
   const chats = useMemo(() => conversations
     .filter((item) => item.status === "active")
@@ -297,7 +308,7 @@ export default function ChatPage() {
           {isEmpty ? (
             <div className="chat-page__empty"><div className="chat-page__empty-greeting"><span className="chat-page__empty-hi">HI!</span><span className="chat-page__empty-title">I&apos;m your inbox agent.</span><p className="chat-page__empty-description">Ask me to summarize your inbox, draft a reply, archive a category, or schedule a follow-up. I&apos;ll show you what I find.</p></div></div>
           ) : (
-            <div className="chat-page__thread">
+            <div ref={threadRef} className="chat-page__thread">
               <div className="chat-page__thread-inner">
                 {messages.map((message, index) => {
   if (message.role === "user") {
