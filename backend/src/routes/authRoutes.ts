@@ -20,7 +20,8 @@ router.post("/google/reconnect", authMiddleware, async (req, res) => {
       env.AUTH_TRUSTED_ORIGINS.find((origin) => origin !== env.BETTER_AUTH_URL) ||
       env.AUTH_TRUSTED_ORIGINS[0];
 
-    const result = await auth.api.linkSocialAccount({
+    const { headers, response } = await auth.api.linkSocialAccount({
+      returnHeaders: true,
       body: {
         provider: "google",
         callbackURL: `${frontendOrigin}/reconnect-google?success=1`,
@@ -40,13 +41,19 @@ router.post("/google/reconnect", authMiddleware, async (req, res) => {
       headers: fromNodeHeaders(req.headers),
     });
 
-    if (!result?.url) {
+    const setCookies = headers.getSetCookie();
+
+    if (setCookies.length > 0) {
+      res.setHeader("Set-Cookie", setCookies);
+    }
+
+    if (!response?.url) {
       return res.status(502).json({
         error: "Failed to start Google reauthorization",
       });
     }
 
-    return res.json({ url: result.url });
+    return res.json({ url: response.url });
   } catch (error: any) {
     console.error("Google reauthorization initialization failed:", error);
 
