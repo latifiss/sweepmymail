@@ -67,7 +67,10 @@ export async function runInboxAutomations(userId?: string) {
       // one full Gmail refresh per automation and greatly reduces API quota use.
       emails = await gmailService.fetchGmailMessagesAndSave(automationUserId, true, 25);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Gmail inbox refresh failed";
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Gmail inbox refresh failed";
       for (const automation of automations) errors.push(`${automation.name}: ${message}`);
       continue;
     }
