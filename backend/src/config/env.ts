@@ -35,6 +35,10 @@ export const env = {
   JWT_SECRET: process.env.JWT_SECRET || "",
   OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY?.trim() || "",
   AGENT_MODEL: process.env.AGENT_MODEL || "cohere/north-mini-code:free",
+  AGENT_FALLBACK_MODELS: (process.env.AGENT_FALLBACK_MODELS || "openrouter/free")
+    .split(",")
+    .map((model) => model.trim())
+    .filter(Boolean),
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || "",
   DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY || "",
   SMTP_HOST: process.env.SMTP_HOST || "",
