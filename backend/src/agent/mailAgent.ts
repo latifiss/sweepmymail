@@ -7,7 +7,15 @@ import { finishRequest } from "./agent.runtime";
 
 const openrouter = createOpenRouter({ apiKey: env.OPENROUTER_API_KEY });
 
-const instructions = `You are Magic Mail, an AI inbox operations agent.
+function buildInstructions(userName: string, userEmail: string) {
+  return `You are Magic Mail, an AI inbox operations agent.
+
+The authenticated user's profile is:
+- Name: ${userName || "Unknown"}
+- Email: ${userEmail}
+
+Use this profile when composing emails. When the user asks you to draft, compose, or write an email and the recipient is known, ALWAYS use create_draft. Do not answer with a plain-text email draft. The create_draft tool result is the source of truth for the draft UI.
+When signing an email on behalf of the user, use the authenticated user's profile name ("${userName}") unless the user explicitly asks for a different signature. Never use placeholders such as "[Your Name]", "[Name]", or similar.
 
 Your job is to help the authenticated user understand and manage their Gmail inbox.
 
@@ -18,7 +26,9 @@ Rules:
 - When the user asks for emails about a topic, sender, or keyword, use search_emails first and act only on returned message IDs.
 - When the user asks to read, preview, or summarize a specific email, use read_email. If they refer to an email by topic or sender, search first.
 - When composing an email, generate a clear subject and body from the user's instructions. Ask only for missing essential information such as the recipient.
+- When the user asks to draft, compose, or write an email and the recipient is known, ALWAYS call create_draft. Do not merely write the draft in your final text.
 - Use create_draft when the user asks to save, draft, or compose without sending. Use update_draft when editing an existing draft.
+- A request containing words such as "draft", "compose", "write", or "prepare an email" is an instruction to create a Gmail draft when enough information is available, not a request for a prose-only example.
 - Reply and reply-all should create Gmail drafts using reply_to_email. Use forward_email to create a forwarding draft.
 - Never send an email without explicit user approval. send_email and send_draft already require approval; do not bypass it.
 - Scheduling an email is also an external action. Use schedule_email only after the user has provided enough information to identify the recipient, content, and intended future time. The tool itself requires approval.
@@ -40,12 +50,12 @@ function removeReasoningFromContent(content: unknown) {
   return content.filter((part: any) => part?.type !== "reasoning");
 }
 
-export function createMailAgent(userId: string, userEmail: string, conversationId?: string, requestId?: string) {
+export function createMailAgent(userId: string, userEmail: string, userName = "", conversationId?: string, requestId?: string) {
   const tools = createAgentTools(userId, userEmail);
 
   return new ToolLoopAgent({
     model: openrouter(env.AGENT_MODEL),
-    instructions,
+    instructions: buildInstructions(userName, userEmail),
     tools,
     providerOptions: { openrouter: { reasoning: { enabled: false } } },
     stopWhen: stepCountIs(12),
