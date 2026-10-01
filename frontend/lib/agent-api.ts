@@ -600,35 +600,51 @@ export async function streamAgentMessage(messages: AgentUIMessage[], conversatio
         try { output = JSON.parse(output); } catch {}
       }
 
-      const existingPart: any = current?.parts.find((item: any) => item.toolCallId === toolCallId);
+      // Tool calls and their results must stay in the same assistant UI message.
+      // Creating a second assistant message for a tool result produces an invalid
+      // UI message sequence on the next request, which breaks follow-up questions.
+      let ownerMessage = current;
+      let existingPart: any = ownerMessage?.parts.find((item: any) => item.toolCallId === toolCallId);
+
+      if (!existingPart && toolCallId) {
+        for (let index = resultMessages.length - 1; index >= 0; index -= 1) {
+          const candidate = resultMessages[index];
+          const part = candidate.parts.find((item: any) => item.toolCallId === toolCallId);
+          if (part) {
+            ownerMessage = candidate;
+            existingPart = part;
+            break;
+          }
+        }
+      }
+
       const toolName = String(
         event.toolName ||
         existingPart?.toolName ||
         (existingPart?.type ? String(existingPart.type).replace(/^tool-/, "") : "")
       );
 
+      if (!ownerMessage) {
+        ownerMessage = {
+          id: String(event.messageId || "assistant-" + Date.now()),
+          role: "assistant",
+          parts: [],
+        };
+        resultMessages.push(ownerMessage);
+      }
+
       if (existingPart) {
         existingPart.state = "output-available";
         existingPart.output = output;
         existingPart.toolName = toolName;
-      }
-
-      // Keep tool output in its own assistant message. This prevents the model's
-      // prose and the structured UI result from being merged into one broken block.
-      const toolMessageId = "tool-result-" + (toolCallId || Date.now());
-      const alreadyAdded = resultMessages.some((message) => message.id === toolMessageId);
-      if (!alreadyAdded) {
-        resultMessages.push({
-          id: toolMessageId,
-          role: "assistant",
-          parts: [{
-            type: "tool-" + toolName,
-            state: "output-available",
-            toolCallId,
-            toolName,
-            input: existingPart?.input ?? {},
-            output,
-          }],
+      } else {
+        ownerMessage.parts.push({
+          type: "tool-" + toolName,
+          state: "output-available",
+          toolCallId,
+          toolName,
+          input: event.input ?? {},
+          output,
         });
       }
     }
