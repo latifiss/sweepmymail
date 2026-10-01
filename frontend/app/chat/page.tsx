@@ -328,13 +328,17 @@ export default function ChatPage() {
 
   return (
     <div key={message.id} className="chat-page__assistant-response">
-      {group.map((item) => (
-        <ChatResponse
-          key={item.id}
-          response={item.response!}
-          onAction={handleAction}
-        />
-      ))}
+      {group.flatMap((item) =>
+        (item.responses || (item.response ? [item.response] : [])).map(
+          (response, responseIndex) => (
+            <ChatResponse
+              key={item.id + "-" + responseIndex}
+              response={response}
+              onAction={handleAction}
+            />
+          ),
+        ),
+      )}
     </div>
   );
 })}
