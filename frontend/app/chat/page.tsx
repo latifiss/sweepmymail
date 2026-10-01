@@ -12,7 +12,7 @@ import type { ResponseAction, ResponseBlock } from "@/components/chat/chat-respo
 import { getBetterAuthSession } from "@/lib/auth-session";
 import { getAgentContext, getAgentConversation, listAgentConversations, createAgentConversation, deleteAgentConversation, updateAgentConversation, streamAgentMessage, storedMessagesToUI, uiMessageToChatMessage, type AgentConversation, type AgentUIMessage, type ApprovalRequest } from "@/lib/agent-api";
 
-type ChatMessage = { id: string; role: "user" | "agent"; content?: string; response?: ResponseBlock };
+type ChatMessage = { id: string; role: "user" | "agent"; content?: string; response?: ResponseBlock; responses?: ResponseBlock[] };
 
 const DEFAULT_STAGES = ["Thinking", "Reading your inbox", "Preparing response"];
 
@@ -24,7 +24,9 @@ function dedupeChatMessages(items: ChatMessage[]) {
   return items.filter((item, index) => {
     if (item.role !== "agent" || !item.response) return true;
 
-    const response = item.response;
+    const responses = item.responses || (item.response ? [item.response] : []);
+    if (!responses.length) return false;
+    const response = responses[0];
 
     // A production tool response is rendered by ChatResponse. The model often
     // also emits a prose copy of the same result, so hide that duplicate text
