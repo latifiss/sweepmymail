@@ -2,6 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import gmailService from "../services/gmailService";
 import { getEmailsForUser, getEmailByMessageId } from "../repositories/dataRepository";
+import advancedGmailService from "../services/advancedGmailService";
 
 const messageIdsSchema = z.array(z.string().min(1)).min(1).max(100);
 
@@ -199,6 +200,38 @@ export function createAdvancedAgentTools(userId: string, userEmail: string) {
         "List attachment metadata for an email. Use when the user asks whether an email has attachments or what files were attached.",
       inputSchema: z.object({ messageId: z.string().min(1) }),
       execute: async ({ messageId }) => gmailService.getAttachmentsForMessage(userId, messageId),
+    }),
+
+    mark_not_important: tool({
+      description: "Remove the Important marker from selected messages.",
+      inputSchema: z.object({ messageIds: messageIdsSchema }),
+      execute: async ({ messageIds }) => advancedGmailService.markNotImportantForUser(userId, messageIds),
+    }),
+
+    mark_spam: tool({
+      description: "Mark selected messages as spam. ALWAYS requires explicit approval.",
+      needsApproval: true,
+      inputSchema: z.object({ messageIds: messageIdsSchema }),
+      execute: async ({ messageIds }) => advancedGmailService.markSpamForUser(userId, messageIds),
+    }),
+
+    restore_from_spam: tool({
+      description: "Restore selected messages from spam. ALWAYS requires explicit approval.",
+      needsApproval: true,
+      inputSchema: z.object({ messageIds: messageIdsSchema }),
+      execute: async ({ messageIds }) => advancedGmailService.unmarkSpamForUser(userId, messageIds),
+    }),
+
+    mute_threads: tool({
+      description: "Mute selected Gmail conversations.",
+      inputSchema: z.object({ threadIds: messageIdsSchema }),
+      execute: async ({ threadIds }) => advancedGmailService.muteThreadsForUser(userId, threadIds),
+    }),
+
+    unmute_threads: tool({
+      description: "Unmute selected Gmail conversations.",
+      inputSchema: z.object({ threadIds: messageIdsSchema }),
+      execute: async ({ threadIds }) => advancedGmailService.unmuteThreadsForUser(userId, threadIds),
     }),
 
     find_unsubscribe_options: tool({
