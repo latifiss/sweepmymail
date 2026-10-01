@@ -519,8 +519,9 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
 }
 export function storedMessagesToUI(messages: StoredAgentMessage[]): AgentUIMessage[] {
   const seen = new Map<string, number>();
+  const result: AgentUIMessage[] = [];
 
-  return messages.flatMap((message) => {
+  for (const message of messages) {
     const content: any = message.content;
     const baseId = String(message.id || content?.id || `message-${Date.now()}`);
     const count = seen.get(baseId) || 0;
@@ -529,11 +530,12 @@ export function storedMessagesToUI(messages: StoredAgentMessage[]): AgentUIMessa
 
     if (message.role === "user") {
       if (typeof content === "string") {
-        return [{ id, role: "user", parts: [{ type: "text", text: content }] }];
+        result.push({ id, role: "user", parts: [{ type: "text", text: content }] });
+      } else {
+        const parts = normalizeParts(content);
+        if (parts.length) result.push({ id, role: "user", parts });
       }
-
-      const parts = normalizeParts(content);
-      return parts.length ? [{ id, role: "user", parts }] : [];
+      continue;
     }
 
     if (message.role === "tool") {
@@ -541,33 +543,52 @@ export function storedMessagesToUI(messages: StoredAgentMessage[]): AgentUIMessa
       const toolCallId = String(message.tool_call_id || id);
       const output = message.tool_result ?? content;
 
-      return [{
-        id,
-        role: "assistant",
-        parts: [{
+      // Persisted tool results belong to the assistant message that contains
+      // the matching tool call. Keep them together so the next follow-up can
+      // be sent back to the agent as a valid UI message sequence.
+      let owner = [...result].reverse().find(
+        (candidate) => candidate.role === "assistant" &&
+          candidate.parts.some((part: any) => part.toolCallId === toolCallId),
+      );
+
+      if (!owner) {
+        owner = {
+          id: `assistant-tool-${toolCallId}`,
+          role: "assistant",
+          parts: [],
+        };
+        result.push(owner);
+      }
+
+      const existing = owner.parts.find((part: any) => part.toolCallId === toolCallId);
+      if (existing) {
+        existing.state = "output-available";
+        existing.toolName = toolName || existing.toolName;
+        existing.output = output;
+      } else {
+        owner.parts.push({
           type: "tool-" + toolName,
           state: "output-available",
           toolCallId,
           toolName,
           input: message.tool_input ?? {},
           output,
-        }],
-      }];
+        });
+      }
+      continue;
     }
 
     if (typeof content === "string") {
-      return [{ id, role: "assistant", parts: [{ type: "text", text: content }] }];
+      result.push({ id, role: "assistant", parts: [{ type: "text", text: content }] });
+      continue;
     }
 
     const parts = normalizeParts(content);
-    if (parts.length) {
-      return [{ id, role: "assistant", parts }];
-    }
+    if (parts.length) result.push({ id, role: "assistant", parts });
+  }
 
-    return [];
-  });
+  return result;
 }
-
 export async function streamAgentMessage(messages: AgentUIMessage[], conversationId?: string, path = "/agent/chat", signal?: AbortSignal, onEvent?: (event: any) => void) {
   const response = await request(path, { method: "POST", body: JSON.stringify({ conversationId, messages }), signal });
   if (!response.body) throw new Error("Agent returned an empty response");
