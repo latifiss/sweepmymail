@@ -15,6 +15,7 @@ import {
 } from "../repositories/automationRepository";
 import { applyCategoryToEmails, emailMatchesCategory, extractKeywords } from "../services/categoryService";
 import gmailService from "../services/gmailService";
+import { createAdvancedAgentTools } from "./advancedEmailTools";
 import { unsubscribeFromLink } from "../services/unsubscribeService";
 import { env } from "../config/env";
 import {
@@ -650,6 +651,8 @@ export function createAgentTools(userId: string, userEmail: string) {
       execute: async ({ messageIds }) =>
         gmailService.batchDeleteMessagesForUser(userId, messageIds),
     }),
+
+    ...createAdvancedAgentTools(userId, userEmail),
 
     unsubscribe: tool({
       description: "Unsubscribe from a sender. ALWAYS requires approval.",
