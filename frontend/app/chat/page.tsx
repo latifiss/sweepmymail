@@ -16,12 +16,18 @@ type ChatMessage = { id: string; role: "user" | "agent"; content?: string; respo
 
 const DEFAULT_STAGES = ["Thinking", "Reading your inbox", "Preparing response"];
 
-function textFromMessage(message: AgentUIMessage) { return message.parts.filter((part) => part.type === "text").map((part) => String(part.text || "")).join(""); }
+function textFromBlock(response: ResponseBlock): string {
+  if (response.kind === "text") {
+    return [response.lead, response.content].filter(Boolean).join("\n\n");
+  }
+  return response.lead || "";
+}
 
 function dedupeChatMessages(items: ChatMessage[]) {
   const seen = new Set<string>();
 
   return items.filter((item, index) => {
+    if (item.role === "agent" && !item.response) return false;
     if (item.role !== "agent" || !item.response) return true;
 
     const response = item.response;
@@ -62,37 +68,66 @@ function dedupeChatMessages(items: ChatMessage[]) {
   });
 }
 
-function groupAgentResponses(items: ChatMessage[]) {
+function mergeTextBlocks(previous: ResponseBlock, current: ResponseBlock): ResponseBlock {
+  if (previous.kind !== "text" || current.kind !== "text") return current;
+
+  const citations = [
+    ...(previous.citations || []),
+    ...(current.citations || []),
+  ];
+  const seen = new Set<string>();
+
+  return {
+    ...previous,
+    content: [previous.content, current.content].filter(Boolean).join("\n\n"),
+    citations: citations.filter((citation) => {
+      if (seen.has(citation.id)) return false;
+      seen.add(citation.id);
+      return true;
+    }),
+  };
+}
+
+function coalesceAgentTurns(items: ChatMessage[]): ChatMessage[] {
   const result: ChatMessage[] = [];
 
   for (const item of items) {
     const previous = result[result.length - 1];
 
     if (
-      previous?.role === "agent" &&
-      previous.response?.kind === "text" &&
-      item.role === "agent" &&
-      item.response?.kind === "text"
+      previous?.role !== "agent" ||
+      item.role !== "agent" ||
+      !previous.response ||
+      !item.response
     ) {
-      const previousResponse = previous.response;
-      const currentResponse = item.response;
-      const citations = [
-        ...(previousResponse.citations || []),
-        ...(currentResponse.citations || []),
-      ];
-      const seen = new Set<string>();
+      result.push({ ...item });
+      continue;
+    }
 
+    const previousResponse = previous.response;
+    const currentResponse = item.response;
+
+    if (previousResponse.kind === "text" && currentResponse.kind === "text") {
+      previous.response = mergeTextBlocks(previousResponse, currentResponse);
+      continue;
+    }
+
+    if (previousResponse.kind === "text" && currentResponse.kind !== "text") {
       previous.response = {
-        ...previousResponse,
-        content: [previousResponse.content, currentResponse.content]
-          .filter(Boolean)
-          .join("\n\n"),
-        citations: citations.filter((citation) => {
-          if (seen.has(citation.id)) return false;
-          seen.add(citation.id);
-          return true;
-        }),
+        ...currentResponse,
+        lead: currentResponse.lead?.trim() || textFromBlock(previousResponse),
       };
+      previous.id = item.id;
+      continue;
+    }
+
+    if (previousResponse.kind !== "text" && currentResponse.kind === "text") {
+      if (!previousResponse.lead?.trim()) {
+        previous.response = {
+          ...previousResponse,
+          lead: textFromBlock(currentResponse),
+        };
+      }
       continue;
     }
 
@@ -100,6 +135,14 @@ function groupAgentResponses(items: ChatMessage[]) {
   }
 
   return result;
+}
+
+function toThreadMessages(ui: AgentUIMessage[]): ChatMessage[] {
+  return dedupeChatMessages(
+    coalesceAgentTurns(
+      ui.map(uiMessageToChatMessage).filter(Boolean) as ChatMessage[],
+    ),
+  );
 }
 
 export default function ChatPage() {
@@ -125,7 +168,7 @@ export default function ChatPage() {
       const data = await getAgentConversation(id);
       const ui = storedMessagesToUI(data.messages);
       setConversationId(data.conversation.id); setUiMessages(ui);
-      setMessages(dedupeChatMessages(ui.map(uiMessageToChatMessage).filter(Boolean) as ChatMessage[]));
+      setMessages(toThreadMessages(ui));
     } catch (e) { setError(e instanceof Error ? e.message : "Unable to load conversation"); }
   }, []);
 
@@ -152,7 +195,7 @@ export default function ChatPage() {
       const result = await streamAgentMessage(nextMessages, activeConversationId ?? conversationId, path, controller.signal);
       if (result.conversationId && result.conversationId !== conversationId) setConversationId(result.conversationId);
       setUiMessages(result.messages);
-      setMessages(dedupeChatMessages(result.messages.map(uiMessageToChatMessage).filter(Boolean) as ChatMessage[]));
+      setMessages(toThreadMessages(result.messages));
       setApproval(result.approval || null);
       await refreshConversations();
     } catch (e) {
@@ -168,7 +211,7 @@ export default function ChatPage() {
     }
     const message: AgentUIMessage = { id: "user-" + Date.now(), role: "user", parts: [{ type: "text", text: content }] };
     const next = [...uiMessages, message];
-    setUiMessages(next); setMessages(next.map(uiMessageToChatMessage).filter(Boolean) as ChatMessage[]);
+    setUiMessages(next); setMessages(toThreadMessages(next));
     await runAgent(next, "/agent/chat", id);
   }, [conversationId, thinking, uiMessages, runAgent]);
 
@@ -252,32 +295,33 @@ export default function ChatPage() {
             <div className="chat-page__thread">
               <div className="chat-page__thread-inner">
                 {messages.map((message, index) => {
-  if (message.role === "user") {
-    return <UserMessage key={message.id} content={message.content || ""} />;
-  }
+                  if (message.role === "user") {
+                    return <UserMessage key={message.id} content={message.content || ""} />;
+                  }
 
-  const previous = messages[index - 1];
-  const startsAssistantGroup = !previous || previous.role === "user";
-  if (!startsAssistantGroup) return null;
+                  if (!message.response) return null;
 
-  const group = [];
-  for (let i = index; i < messages.length && messages[i].role === "agent"; i++) {
-    group.push(messages[i]);
-  }
-
-  return (
-    <div key={message.id} className="chat-page__assistant-response">
-      {group.map((item) => (
-        <ChatResponse
-          key={item.id}
-          response={item.response!}
-          onAction={handleAction}
-        />
-      ))}
-    </div>
-  );
-})}
-                {approval && <ChatResponse response={{ kind: "confirm", lead: "This action needs your approval.", promptId: approval.approvalId, question: "Allow " + approval.toolName.replaceAll("_", " ") + " to run?" }} onAction={handleAction} /> }
+                  return (
+                    <ChatResponse
+                      key={message.id}
+                      response={message.response}
+                      onAction={handleAction}
+                      stream={index === messages.length - 1 && !thinking}
+                    />
+                  );
+                })}
+                {approval && (
+                  <ChatResponse
+                    response={{
+                      kind: "confirm",
+                      lead: "This action needs your approval.",
+                      promptId: approval.approvalId,
+                      question: "Allow " + approval.toolName.replaceAll("_", " ") + " to run?",
+                    }}
+                    onAction={handleAction}
+                    stream={false}
+                  />
+                )}
                 {thinking && <ThinkingIndicator stages={DEFAULT_STAGES} stageDuration={900} onComplete={() => undefined} />}
               </div>
             </div>

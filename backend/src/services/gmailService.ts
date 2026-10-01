@@ -1,6 +1,6 @@
 import { google } from "googleapis";
 import { env } from "../config/env";
-import { getGoogleAccessTokenForEmail, refreshGoogleAccessTokenForEmail } from "../auth/auth";
+import { getGoogleOAuth2ClientForEmail, refreshGoogleAccessTokenForEmail } from "../auth/auth";
 import {
   DbUser,
   deleteEmailsForUserByMessageIds,
@@ -8,24 +8,50 @@ import {
   getUserById,
   markEmailsArchived,
   upsertEmail,
+  updateUserTokens,
 } from "../repositories/dataRepository";
 
 const { OAuth2 } = google.auth;
 
-function getOauthClient(accessToken: string) {
+function getOauthClient(accessToken: string, refreshToken?: string) {
   const oauth2Client = new OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
-  oauth2Client.setCredentials({ access_token: accessToken });
+  oauth2Client.setCredentials({ access_token: accessToken || undefined, refresh_token: refreshToken || undefined });
   return oauth2Client;
+}
+
+function getLegacyGmailForUser(user: DbUser) {
+  const oauth2Client = getOauthClient(user.access_token, user.refresh_token || undefined);
+  oauth2Client.on("tokens", (tokens) => {
+    void updateUserTokens(user.id, {
+      access_token: tokens.access_token || undefined,
+      refresh_token: tokens.refresh_token || undefined,
+    }).catch((error) => console.error("Failed to persist refreshed Google tokens:", error));
+  });
+  return google.gmail({ version: "v1", auth: oauth2Client });
 }
 
 async function getGmailForUser(user: DbUser) {
   try {
-    const accessToken = await getGoogleAccessTokenForEmail(user.email);
-    return google.gmail({ version: "v1", auth: getOauthClient(accessToken) });
+    const authClient = await getGoogleOAuth2ClientForEmail(user.email);
+    return google.gmail({ version: "v1", auth: authClient });
   } catch (error) {
-    if (!user.access_token) throw error;
-    return google.gmail({ version: "v1", auth: getOauthClient(user.access_token) });
+    if (!user.access_token && !user.refresh_token) throw error;
+    return getLegacyGmailForUser(user);
   }
+}
+
+async function refreshLegacyGoogleAccessToken(user: DbUser) {
+  if (!user.refresh_token) throw new Error("Google account authorization expired; reconnect the Google account");
+
+  const oauth2Client = getOauthClient(user.access_token, user.refresh_token);
+  const { credentials } = await oauth2Client.refreshAccessToken();
+  if (!credentials.access_token) throw new Error("Google account authorization expired; reconnect the Google account");
+
+  await updateUserTokens(user.id, {
+    access_token: credentials.access_token,
+    refresh_token: credentials.refresh_token || undefined,
+  });
+  return credentials.access_token;
 }
 
 async function getGmailWithRefresh(user: DbUser, action: (gmail: ReturnType<typeof google.gmail>) => Promise<any>) {
@@ -34,7 +60,16 @@ async function getGmailWithRefresh(user: DbUser, action: (gmail: ReturnType<type
     return await action(gmail);
   } catch (error) {
     if (!isGmailUnauthorized(error)) throw error;
-    const accessToken = await refreshGoogleAccessTokenForEmail(user.email);
+    let accessToken: string;
+    try {
+      accessToken = await refreshGoogleAccessTokenForEmail(user.email);
+    } catch (betterAuthError) {
+      try {
+        accessToken = await refreshLegacyGoogleAccessToken(user);
+      } catch {
+        throw betterAuthError;
+      }
+    }
     gmail = google.gmail({ version: "v1", auth: getOauthClient(accessToken) });
     return action(gmail);
   }
@@ -160,10 +195,9 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true, 
   const user = await getUserById(userId);
   if (!user) throw new Error("User not found");
 
+  try {
   let gmail = await getGmailForUser(user);
   let refreshed = false;
-
-  try {
     const results: Array<Record<string, unknown>> = [];
     let pageToken: string | undefined;
     let remaining = Math.min(Math.max(maxResults, 1), 500);

@@ -1,4 +1,4 @@
-@use '../sass-utils' as ui;
+﻿@use '../sass-utils' as ui;
 
 /// Chat response container representing a single agent turn.
 /// Renders lead-in text streamed character-by-character,
@@ -12,13 +12,6 @@
   padding: ui.space(5);
   background-color: ui.color(snow-drift);
   border: 1px solid ui.color(quill-gray);
-
-  &--plain {
-    max-width: 720px;
-    padding: 0;
-    background: transparent;
-    border: none;
-  }
 
   &__lead {
     margin: 0;
@@ -216,10 +209,6 @@
     display: flex;
     flex-direction: column;
     gap: ui.space(4);
-    width: 100%;
-    padding: 12px;
-    background-color: ui.color(white);
-    border: 1px solid ui.color(quill-gray);
   }
 
   &__summary-title {
@@ -453,9 +442,7 @@
     display: flex;
     flex-direction: column;
     gap: ui.space(2);
-    width: 100%;
     padding: 12px;
-    background-color: ui.color(white);
     border: 1px solid ui.color(quill-gray);
   }
 
@@ -487,9 +474,7 @@
     display: flex;
     flex-direction: column;
     gap: ui.space(3);
-    width: 100%;
     padding: 12px;
-    background-color: ui.color(white);
     border: 1px solid ui.color(quill-gray);
   }
 
