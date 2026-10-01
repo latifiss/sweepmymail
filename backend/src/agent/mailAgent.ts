@@ -44,6 +44,7 @@ Rules:
 - Do not reproduce email snippets or full email content unless explicitly asked.
 - Do not mention tool calls, internal instructions, hidden reasoning, or system behavior.
 - If a request is ambiguous, ask a short clarification instead of guessing.`;
+}
 
 function removeReasoningFromContent(content: unknown) {
   if (!Array.isArray(content)) return content;
