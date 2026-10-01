@@ -26,6 +26,19 @@ function formatEmailList(emails: any[]) {
   return emails.map(formatEmail);
 }
 
+function actionUi(lead: string, title: string, content: string) {
+  return {
+    lead,
+    ui: {
+      kind: "summary",
+      lead,
+      title,
+      content,
+      citations: [],
+    },
+  };
+}
+
 export function createAdvancedAgentTools(userId: string, userEmail: string) {
   return {
     search_gmail: tool({
@@ -115,52 +128,64 @@ export function createAdvancedAgentTools(userId: string, userEmail: string) {
       inputSchema: z.object({ messageIds: messageIdsSchema }),
       execute: async ({ messageIds }) => {
         const result = await gmailService.modifyMessagesForUser(userId, messageIds, [], ["INBOX"]);
-        return { archived: result.modified, messageIds };
+        return { archived: result.modified, messageIds, ...actionUi(`Done. Archived ${result.modified} email${result.modified === 1 ? "" : "s"}.`, "Archived", `I archived ${result.modified} email${result.modified === 1 ? "" : "s"}.`) };
       },
     }),
 
     mark_read: tool({
       description: "Mark messages as read.",
       inputSchema: z.object({ messageIds: messageIdsSchema }),
-      execute: async ({ messageIds }) =>
-        gmailService.modifyMessagesForUser(userId, messageIds, [], ["UNREAD"]),
+      execute: async ({ messageIds }) => {
+        const result = await gmailService.modifyMessagesForUser(userId, messageIds, [], ["UNREAD"]);
+        return { ...result, ...actionUi(`Done. Marked ${result.modified} email${result.modified === 1 ? "" : "s"} as read.`, "Marked as read", `I marked ${result.modified} email${result.modified === 1 ? "" : "s"} as read.`) };
+      },
     }),
 
     mark_unread: tool({
       description: "Mark messages as unread.",
       inputSchema: z.object({ messageIds: messageIdsSchema }),
-      execute: async ({ messageIds }) =>
-        gmailService.modifyMessagesForUser(userId, messageIds, ["UNREAD"], []),
+      execute: async ({ messageIds }) => {
+        const result = await gmailService.modifyMessagesForUser(userId, messageIds, ["UNREAD"], []);
+        return { ...result, ...actionUi(`Done. Marked ${result.modified} email${result.modified === 1 ? "" : "s"} as unread.`, "Marked as unread", `I marked ${result.modified} email${result.modified === 1 ? "" : "s"} as unread.`) };
+      },
     }),
 
     star_emails: tool({
       description: "Star selected messages.",
       inputSchema: z.object({ messageIds: messageIdsSchema }),
-      execute: async ({ messageIds }) =>
-        gmailService.modifyMessagesForUser(userId, messageIds, ["STARRED"], []),
+      execute: async ({ messageIds }) => {
+        const result = await gmailService.modifyMessagesForUser(userId, messageIds, ["STARRED"], []);
+        return { ...result, ...actionUi(`Done. Starred ${result.modified} email${result.modified === 1 ? "" : "s"}.`, "Starred", `I starred ${result.modified} email${result.modified === 1 ? "" : "s"}.`) };
+      },
     }),
 
     unstar_emails: tool({
       description: "Remove the star from selected messages.",
       inputSchema: z.object({ messageIds: messageIdsSchema }),
-      execute: async ({ messageIds }) =>
-        gmailService.modifyMessagesForUser(userId, messageIds, [], ["STARRED"]),
+      execute: async ({ messageIds }) => {
+        const result = await gmailService.modifyMessagesForUser(userId, messageIds, [], ["STARRED"]);
+        return { ...result, ...actionUi(`Done. Removed the star from ${result.modified} email${result.modified === 1 ? "" : "s"}.`, "Unstarred", `I removed the star from ${result.modified} email${result.modified === 1 ? "" : "s"}.`) };
+      },
     }),
 
     trash_emails: tool({
       description: "Move selected messages to Gmail Trash. ALWAYS requires explicit approval.",
       needsApproval: true,
       inputSchema: z.object({ messageIds: messageIdsSchema }),
-      execute: async ({ messageIds }) =>
-        gmailService.trashMessagesForUser(userId, messageIds),
+      execute: async ({ messageIds }) => {
+        const result = await gmailService.trashMessagesForUser(userId, messageIds);
+        return { ...result, ...actionUi(`Done. Moved ${result.trashed} email${result.trashed === 1 ? "" : "s"} to Trash.`, "Moved to Trash", `I moved ${result.trashed} email${result.trashed === 1 ? "" : "s"} to Trash.`) };
+      },
     }),
 
     restore_from_trash: tool({
       description: "Restore selected messages from Gmail Trash. ALWAYS requires explicit approval.",
       needsApproval: true,
       inputSchema: z.object({ messageIds: messageIdsSchema }),
-      execute: async ({ messageIds }) =>
-        gmailService.untrashMessagesForUser(userId, messageIds),
+      execute: async ({ messageIds }) => {
+        const result = await gmailService.untrashMessagesForUser(userId, messageIds);
+        return { ...result, ...actionUi(`Done. Restored ${result.restored} email${result.restored === 1 ? "" : "s"}.`, "Restored", `I restored ${result.restored} email${result.restored === 1 ? "" : "s"} from Trash.`) };
+      },
     }),
 
     list_labels: tool({
@@ -178,7 +203,7 @@ export function createAdvancedAgentTools(userId: string, userEmail: string) {
       execute: async ({ messageIds, labelName }) => {
         const { labelId, labelName: resolved } = await gmailService.ensureLabelForUser(userId, labelName);
         const result = await gmailService.modifyMessagesForUser(userId, messageIds, [labelId], []);
-        return { label: resolved, modified: result.modified, messageIds };
+        return { label: resolved, modified: result.modified, messageIds, ...actionUi(`Done. Added the ${resolved} label to ${result.modified} email${result.modified === 1 ? "" : "s"}.`, resolved, `I applied the ${resolved} label to ${result.modified} email${result.modified === 1 ? "" : "s"}.`) };
       },
     }),
 
@@ -191,7 +216,7 @@ export function createAdvancedAgentTools(userId: string, userEmail: string) {
       execute: async ({ messageIds, labelName }) => {
         const { labelId, labelName: resolved } = await gmailService.ensureLabelForUser(userId, labelName);
         const result = await gmailService.modifyMessagesForUser(userId, messageIds, [], [labelId]);
-        return { label: resolved, modified: result.modified, messageIds };
+        return { label: resolved, modified: result.modified, messageIds, ...actionUi(`Done. Removed the ${resolved} label from ${result.modified} email${result.modified === 1 ? "" : "s"}.`, resolved, `I removed the ${resolved} label from ${result.modified} email${result.modified === 1 ? "" : "s"}.`) };
       },
     }),
 
