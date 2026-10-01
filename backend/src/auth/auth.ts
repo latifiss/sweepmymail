@@ -4,6 +4,29 @@ import { Pool } from "pg";
 import { env } from "../config/env";
 import { supabase } from "../config/supabase";
 
+
+export class GoogleReauthorizationRequiredError extends Error {
+  readonly code = "GOOGLE_REAUTH_REQUIRED";
+
+  constructor(public readonly email: string) {
+    super(
+      `Google authorization for ${email} has expired or been revoked. Reconnect the Google account to continue using Gmail.`
+    );
+    this.name = "GoogleReauthorizationRequiredError";
+  }
+}
+
+function isInvalidGrantError(error: unknown) {
+  const err = error as any;
+  const responseError = err?.response?.data?.error;
+  return (
+    responseError === "invalid_grant" ||
+    err?.error === "invalid_grant" ||
+    err?.code === "invalid_grant" ||
+    (typeof err?.message === "string" && err.message.includes("invalid_grant"))
+  );
+}
+
 export const pool = new Pool({
   connectionString: env.DATABASE_URL,
   max: env.DATABASE_POOL_MAX,
@@ -100,35 +123,49 @@ async function getGoogleAccountForEmail(email: string) {
 export async function getGoogleAccessTokenForEmail(email: string) {
   const { authUserId, accountId } = await getGoogleAccountForEmail(email);
 
-  const token = await auth.api.getAccessToken({
-    body: {
-      accountId,
-      userId: authUserId,
-    },
-  });
+  try {
+    const token = await auth.api.getAccessToken({
+      body: {
+        accountId,
+        userId: authUserId,
+      },
+    });
 
-  if (!token?.accessToken) {
-    throw new Error("Google access token is unavailable");
+    if (!token?.accessToken) {
+      throw new Error("Google access token is unavailable");
+    }
+
+    return token.accessToken;
+  } catch (error) {
+    if (isInvalidGrantError(error)) {
+      throw new GoogleReauthorizationRequiredError(email);
+    }
+    throw error;
   }
-
-  return token.accessToken;
 }
 
 export async function refreshGoogleAccessTokenForEmail(email: string) {
   const { authUserId, accountId } = await getGoogleAccountForEmail(email);
 
-  const token = await auth.api.refreshToken({
-    body: {
-      accountId,
-      userId: authUserId,
-    },
-  });
+  try {
+    const token = await auth.api.refreshToken({
+      body: {
+        accountId,
+        userId: authUserId,
+      },
+    });
 
-  if (!token?.accessToken) {
-    throw new Error("Google access token refresh failed");
+    if (!token?.accessToken) {
+      throw new Error("Google access token refresh failed");
+    }
+
+    return token.accessToken;
+  } catch (error) {
+    if (isInvalidGrantError(error)) {
+      throw new GoogleReauthorizationRequiredError(email);
+    }
+    throw error;
   }
-
-  return token.accessToken;
 }
 
 export async function verifyGoogleGmailAccessForEmail(email: string) {
