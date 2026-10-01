@@ -510,6 +510,78 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
     };
   }
 
+  if (name.includes("send_email")) {
+    return {
+      id: message.id,
+      role: "agent",
+      response: {
+        kind: "summary",
+        lead: "Done. Your email was sent.",
+        title: "Email sent",
+        content: String(output?.message || output?.subject || "The email was sent successfully."),
+        citations: [],
+      },
+    };
+  }
+
+  if (name.includes("delete_emails")) {
+    const deleted = Array.isArray(output?.deleted) ? output.deleted : Array.isArray(output?.messageIds) ? output.messageIds : [];
+    return {
+      id: message.id,
+      role: "agent",
+      response: {
+        kind: "summary",
+        lead: "Done. The email" + (deleted.length === 1 ? "" : "s") + " was deleted.",
+        title: "Deleted emails",
+        content: deleted.length ? `Deleted ${deleted.length} email${deleted.length === 1 ? "" : "s"}.` : "The selected email was deleted successfully.",
+        citations: [],
+      },
+    };
+  }
+
+  if (name.includes("unsubscribe")) {
+    return {
+      id: message.id,
+      role: "agent",
+      response: {
+        kind: "summary",
+        lead: output?.success === false ? "I couldn't unsubscribe from this sender." : "Done. The sender was unsubscribed.",
+        title: "Unsubscribe",
+        content: String(output?.message || (output?.success === false ? "The unsubscribe request could not be completed." : "You will no longer receive messages through this unsubscribe link.")),
+        citations: [],
+      },
+    };
+  }
+
+  if (name.includes("cancel_scheduled_email")) {
+    return {
+      id: message.id,
+      role: "agent",
+      response: {
+        kind: "summary",
+        lead: "Done. The scheduled email was cancelled.",
+        title: "Scheduled email cancelled",
+        content: String(output?.message || "The scheduled email will not be sent."),
+        citations: [],
+      },
+    };
+  }
+
+  if (name.includes("pause_automation") || name.includes("resume_automation") || name.includes("update_automation") || name.includes("delete_automation") || name.includes("create_automation")) {
+    const action = name.includes("pause_automation") ? "paused" : name.includes("resume_automation") ? "resumed" : name.includes("delete_automation") ? "deleted" : name.includes("create_automation") ? "created" : "updated";
+    return {
+      id: message.id,
+      role: "agent",
+      response: {
+        kind: "summary",
+        lead: `Done. The automation was ${action}.`,
+        title: "Inbox automation",
+        content: String(output?.message || output?.name || `The automation was successfully ${action}.`),
+        citations: [],
+      },
+    };
+  }
+
   if (name.includes("archive_emails")) {
     const actionEmails = Array.isArray(output?.emails) ? output.emails.map(refFrom).filter(Boolean) as EmailRef[] : [];
     return {
