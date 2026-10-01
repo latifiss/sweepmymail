@@ -1,6 +1,10 @@
 import { google } from "googleapis";
 import { env } from "../config/env";
-import { getGoogleAccessTokenForEmail, refreshGoogleAccessTokenForEmail } from "../auth/auth";
+import {
+  getGoogleAccessTokenForEmail,
+  refreshGoogleAccessTokenForEmail,
+  GoogleReauthorizationRequiredError,
+} from "../auth/auth";
 import {
   DbUser,
   deleteEmailsForUserByMessageIds,
@@ -19,13 +23,8 @@ function getOauthClient(accessToken: string) {
 }
 
 async function getGmailForUser(user: DbUser) {
-  try {
-    const accessToken = await getGoogleAccessTokenForEmail(user.email);
-    return google.gmail({ version: "v1", auth: getOauthClient(accessToken) });
-  } catch (error) {
-    if (!user.access_token) throw error;
-    return google.gmail({ version: "v1", auth: getOauthClient(user.access_token) });
-  }
+  const accessToken = await getGoogleAccessTokenForEmail(user.email);
+  return google.gmail({ version: "v1", auth: getOauthClient(accessToken) });
 }
 
 async function getGmailWithRefresh(user: DbUser, action: (gmail: ReturnType<typeof google.gmail>) => Promise<any>) {
@@ -253,6 +252,9 @@ export async function fetchGmailMessagesAndSave(userId: string, persist = true, 
       return bTime - aTime;
     });
   } catch (error) {
+    if (error instanceof GoogleReauthorizationRequiredError) {
+      throw error;
+    }
     throw new Error(getGmailErrorMessage(error, "Gmail inbox refresh"));
   }
 }
