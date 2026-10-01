@@ -63,12 +63,18 @@ export function createMailAgent(userId: string, userEmail: string, userName = ""
   const tools = createAgentTools(userId, userEmail);
 
   return new ToolLoopAgent({
-    model: openrouter(env.AGENT_MODEL),
+    model: openrouter(env.AGENT_MODEL, {
+      extraBody: env.AGENT_FALLBACK_MODELS.length
+        ? { models: env.AGENT_FALLBACK_MODELS }
+        : undefined,
+    }),
     instructions: buildInstructions(userName, userEmail),
     tools,
     providerOptions: { openrouter: { reasoning: { enabled: false } } },
     stopWhen: stepCountIs(20),
-    maxRetries: 2,
+    // OpenRouter handles provider/model failover. Retrying the whole agent request
+    // here can repeat deterministic rate-limit failures and burn extra attempts.
+    maxRetries: 0,
     onFinish: async (event: any) => {
       if (requestId) {
         const usage = event.usage || {};
