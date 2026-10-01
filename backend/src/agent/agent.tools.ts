@@ -13,7 +13,7 @@ import {
   listAutomationsForUser,
   updateAutomationForUser,
 } from "../repositories/automationRepository";
-import { applyCategoryToEmails, extractKeywords } from "../services/categoryService";
+import { applyCategoryToEmails, emailMatchesCategory, extractKeywords } from "../services/categoryService";
 import gmailService from "../services/gmailService";
 import { unsubscribeFromLink } from "../services/unsubscribeService";
 import { env } from "../config/env";
@@ -89,7 +89,7 @@ function addressKey(value: string) {
 export function createAgentTools(userId: string, userEmail: string) {
   return {
     get_recent_emails: tool({
-      description: "Get the user's most recent inbox emails.",
+      description: "Get the user's most recent inbox emails. Return the emails in the tool result; do not reproduce them as a Markdown list in your response.",
       inputSchema: z.object({
         limit: z.number().int().min(1).max(50).default(10),
       }),
@@ -103,13 +103,19 @@ export function createAgentTools(userId: string, userEmail: string) {
           );
           const sorted = [...emails].sort(
             (a, b) =>
-              new Date(b.date || 0).getTime() -
-              new Date(a.date || 0).getTime(),
+              new Date(String(b.date || 0)).getTime() -
+              new Date(String(a.date || 0)).getTime(),
           );
+          const formattedEmails = formatEmails(sorted, limit);
           return {
             ok: true,
-            count: Math.min(sorted.length, limit),
-            emails: formatEmails(sorted, limit),
+            count: formattedEmails.length,
+            emails: formattedEmails,
+            ui: {
+              kind: "email-list",
+              lead: formattedEmails.length ? `Here are your ${formattedEmails.length} most recent emails:` : "You don't have any recent emails.",
+              emails: formattedEmails,
+            },
           };
         } catch (error) {
           console.error("get_recent_emails failed", {
@@ -129,7 +135,7 @@ export function createAgentTools(userId: string, userEmail: string) {
 
     search_emails: tool({
       description:
-        "Search the user's synchronized inbox by sender, subject, or preview.",
+        "Search the user's synchronized inbox by sender, subject, or preview. Return matching emails in the tool result; do not reproduce them as a Markdown list.",
       inputSchema: z.object({
         query: z.string().min(1),
         limit: z.number().int().min(1).max(100).default(50),
@@ -144,15 +150,61 @@ export function createAgentTools(userId: string, userEmail: string) {
               .includes(term),
           ),
         );
+        const resultEmails = formatEmails(matches, limit);
         return {
-          count: matches.length,
-          emails: formatEmails(matches, limit),
+          count: resultEmails.length,
+          emails: resultEmails,
+          ui: {
+            kind: "email-list",
+            lead: resultEmails.length ? `Here are ${resultEmails.length} matching emails:` : "I couldn't find any matching emails.",
+            emails: resultEmails,
+          },
+        };
+      },
+    }),
+
+    get_emails_by_category: tool({
+      description:
+        "Get emails that belong to an existing inbox category. Use this for requests such as 'show me emails in the jobs category', 'give me 5 emails from jobs', or 'what emails are in this category'. This is a read-only operation and must not modify or categorize any emails.",
+      inputSchema: z.object({
+        categoryLabel: z.string().min(1).max(100),
+        limit: z.number().int().min(1).max(100).default(20),
+      }),
+      execute: async ({ categoryLabel, limit }) => {
+        const category = (await listCategoriesForUser(userId)).find(
+          (item) => item.label.toLowerCase() === categoryLabel.toLowerCase(),
+        );
+
+        if (!category) {
+          throw new Error(`Category '${categoryLabel}' does not exist`);
+        }
+
+        const emails = (await getEmailsForUser(userId))
+          .filter((email) => emailMatchesCategory(email, category));
+
+        const resultEmails = formatEmails(emails, limit);
+        return {
+          category: {
+            id: category.id,
+            label: category.label,
+            description: category.description,
+            emailCount: category.email_count,
+          },
+          count: resultEmails.length,
+          emails: resultEmails,
+          ui: {
+            kind: "email-list",
+            lead: resultEmails.length
+              ? `Here are ${resultEmails.length} emails in the ${category.label} category:`
+              : `There are no emails in the ${category.label} category.`,
+            emails: resultEmails,
+          },
         };
       },
     }),
 
     read_email: tool({
-      description: "Read one full email by Gmail message ID.",
+      description: "Read one full email by Gmail message ID. Return the full email in the tool result; do not reproduce it as a Markdown email.",
       inputSchema: z.object({ messageId: z.string().min(1) }),
       execute: async ({ messageId }) => {
         requireAgentConfiguration();
@@ -174,11 +226,30 @@ export function createAgentTools(userId: string, userEmail: string) {
     }),
 
     create_draft: tool({
-      description: "Create a Gmail draft without sending.",
+      description: "Create a Gmail draft without sending. The UI will render the returned draft; keep the final response concise.",
       inputSchema: emailContentSchema,
       execute: async (input) => {
         requireAgentConfiguration();
-        return gmailService.createDraftForUser(userId, input);
+        const created = await gmailService.createDraftForUser(userId, input);
+        return {
+          ...created,
+          to: input.to,
+          cc: input.cc || [],
+          bcc: input.bcc || [],
+          subject: input.subject,
+          body: input.body,
+          ui: {
+            kind: "draft",
+            lead: "Done. I created this draft:",
+            draft: {
+              id: String(created.draftId || created.id || ""),
+              to: Array.isArray(input.to) ? input.to.join(", ") : String(input.to || ""),
+              cc: Array.isArray(input.cc) ? input.cc.join(", ") : input.cc ? String(input.cc) : undefined,
+              subject: String(input.subject || ""),
+              body: String(input.body || ""),
+            },
+          },
+        };
       },
     }),
 
@@ -221,12 +292,25 @@ export function createAgentTools(userId: string, userEmail: string) {
       inputSchema: scheduleInputSchema,
       execute: async ({ sendAt, timezone, ...input }) => {
         requireAgentConfiguration();
-        return scheduleEmail({ userId, ...input, sendAt, timezone });
+        const created = await scheduleEmail({ userId, ...input, sendAt, timezone });
+        return {
+          ...created,
+          ui: {
+            kind: "schedule",
+            lead: "Your email is ready to be scheduled:",
+            event: {
+              id: String(created.id || created.scheduleId || ""),
+              title: String(input.subject || "Scheduled email"),
+              when: String(sendAt || ""),
+              duration: "",
+            },
+          },
+        };
       },
     }),
 
     list_scheduled_emails: tool({
-      description: "List the user's scheduled emails.",
+      description: "List the user's scheduled emails. Return the scheduled records in the tool result; do not reproduce them as Markdown.",
       inputSchema: z.object({}),
       execute: async () => listUserScheduledEmails(userId),
     }),
@@ -251,7 +335,7 @@ export function createAgentTools(userId: string, userEmail: string) {
     }),
 
     list_automations: tool({
-      description: "List the user's inbox automations.",
+      description: "List the user's inbox automations. Return the automation records in the tool result; do not reproduce them as Markdown.",
       inputSchema: z.object({}),
       execute: async () => listAutomationsForUser(userId),
     }),
@@ -449,7 +533,7 @@ export function createAgentTools(userId: string, userEmail: string) {
     }),
 
     categorize_emails: tool({
-      description: "Apply an existing category to specific messages.",
+      description: "Apply an existing category to specific messages. Return the affected message IDs and category in the tool result; keep the final response concise.",
       inputSchema: z.object({
         messageIds: z.array(z.string()).min(1).max(500),
         categoryLabel: z.string().min(1).max(100),
@@ -466,16 +550,34 @@ export function createAgentTools(userId: string, userEmail: string) {
           userId,
           category.label,
         );
+        const categorized = (
+          await gmailService.modifyMessagesForUser(
+            userId,
+            messageIds,
+            [labelId],
+            [],
+          )
+        ).modified;
+        const emails = (await getEmailsForUser(userId))
+          .filter((email) => categorized.includes(email.message_id))
+          .map((email) => ({
+            messageId: email.message_id,
+            sender: email.sender,
+            subject: email.subject,
+            snippet: typeof email.snippet === "string" ? email.snippet.slice(0, 180) : "",
+            date: email.date,
+          }));
         return {
           category: category.label,
-          categorized: (
-            await gmailService.modifyMessagesForUser(
-              userId,
-              messageIds,
-              [labelId],
-              [],
-            )
-          ).modified,
+          categorized,
+          emails,
+          ui: {
+            kind: "summary",
+            lead: `Done. Categorized ${categorized.length} email${categorized.length === 1 ? "" : "s"}.`,
+            title: category.label,
+            content: `I applied the ${category.label} category to ${categorized.length} email${categorized.length === 1 ? "" : "s"}.`,
+            citations: emails,
+          },
         };
       },
     }),
@@ -485,16 +587,28 @@ export function createAgentTools(userId: string, userEmail: string) {
       inputSchema: z.object({
         messageIds: z.array(z.string()).min(1).max(500),
       }),
-      execute: async ({ messageIds }) => ({
-        archived: (
+      execute: async ({ messageIds }) => {
+        const emails = (await getEmailsForUser(userId))
+          .filter((email) => messageIds.includes(email.message_id))
+          .map((email) => ({
+            messageId: email.message_id,
+            sender: email.sender,
+            subject: email.subject,
+            snippet: typeof email.snippet === "string" ? email.snippet.slice(0, 180) : "",
+            date: email.date,
+          }));
+
+        const archived = (
           await gmailService.modifyMessagesForUser(
             userId,
             messageIds,
             [],
             ["INBOX"],
           )
-        ).modified,
-      }),
+        ).modified;
+
+        return { archived, emails };
+      },
     }),
 
     mark_important: tool({
@@ -502,16 +616,28 @@ export function createAgentTools(userId: string, userEmail: string) {
       inputSchema: z.object({
         messageIds: z.array(z.string()).min(1).max(500),
       }),
-      execute: async ({ messageIds }) => ({
-        markedImportant: (
+      execute: async ({ messageIds }) => {
+        const emails = (await getEmailsForUser(userId))
+          .filter((email) => messageIds.includes(email.message_id))
+          .map((email) => ({
+            messageId: email.message_id,
+            sender: email.sender,
+            subject: email.subject,
+            snippet: typeof email.snippet === "string" ? email.snippet.slice(0, 180) : "",
+            date: email.date,
+          }));
+
+        const modified = (
           await gmailService.modifyMessagesForUser(
             userId,
             messageIds,
             ["IMPORTANT"],
             [],
           )
-        ).modified,
-      }),
+        ).modified;
+
+        return { markedImportant: modified, emails };
+      },
     }),
 
     delete_emails: tool({

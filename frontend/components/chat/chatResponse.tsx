@@ -39,14 +39,13 @@ export default function ChatResponse({
     : "chat-response";
 
   const leadText = response.lead ?? "";
-  const [blockRevealed, setBlockRevealed] = useState(!stream);
+  const [blockRevealed, setBlockRevealed] = useState(!stream || leadText.length === 0);
 
   const handleLeadComplete = useCallback(() => {
-    const timer = setTimeout(() => {
+    setTimeout(() => {
       setBlockRevealed(true);
       onStreamComplete?.();
     }, 120);
-    return () => clearTimeout(timer);
   }, [onStreamComplete]);
 
   const lead = useTypewriter(leadText, {
