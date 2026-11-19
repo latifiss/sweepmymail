@@ -295,7 +295,7 @@ export function createAgentTools(userId: string, userEmail: string, searchIntent
             kind: "schedule",
             lead: "Your email is ready to be scheduled:",
             event: {
-              id: String(created.id || created.scheduleId || ""),
+              id: String(created.id || ""),
               title: String(input.subject || "Scheduled email"),
               when: String(sendAt || ""),
               duration: "",
@@ -576,7 +576,7 @@ export function createAgentTools(userId: string, userEmail: string, searchIntent
           )
         ).modified;
         const emails = (await getEmailsForUser(userId))
-          .filter((email) => categorized.includes(email.message_id))
+          .filter((email) => messageIds.includes(email.message_id))
           .map((email) => ({
             messageId: email.message_id,
             sender: email.sender,
@@ -590,41 +590,12 @@ export function createAgentTools(userId: string, userEmail: string, searchIntent
           emails,
           ui: {
             kind: "summary",
-            lead: `Done. Categorized ${categorized.length} email${categorized.length === 1 ? "" : "s"}.`,
+            lead: `Done. Categorized ${categorized} email${categorized === 1 ? "" : "s"}.`,
             title: category.label,
-            content: `I applied the ${category.label} category to ${categorized.length} email${categorized.length === 1 ? "" : "s"}.`,
+            content: `I applied the ${category.label} category to ${categorized} email${categorized === 1 ? "" : "s"}.`,
             citations: emails,
           },
         };
-      },
-    }),
-
-    archive_emails: tool({
-      description: "Archive specific emails.",
-      inputSchema: z.object({
-        messageIds: z.array(z.string()).min(1).max(500),
-      }),
-      execute: async ({ messageIds }) => {
-        const emails = (await getEmailsForUser(userId))
-          .filter((email) => messageIds.includes(email.message_id))
-          .map((email) => ({
-            messageId: email.message_id,
-            sender: email.sender,
-            subject: email.subject,
-            snippet: typeof email.snippet === "string" ? email.snippet.slice(0, 180) : "",
-            date: email.date,
-          }));
-
-        const archived = (
-          await gmailService.modifyMessagesForUser(
-            userId,
-            messageIds,
-            [],
-            ["INBOX"],
-          )
-        ).modified;
-
-        return { archived, emails };
       },
     }),
 
