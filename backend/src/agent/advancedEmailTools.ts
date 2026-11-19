@@ -3,6 +3,7 @@ import { z } from "zod";
 import gmailService from "../services/gmailService";
 import { getEmailsForUser, getEmailByMessageId } from "../repositories/dataRepository";
 import advancedGmailService from "../services/advancedGmailService";
+import type { EmailSearchIntent } from "./emailSearchIntent";
 
 const messageIdsSchema = z.array(z.string().min(1)).min(1).max(100);
 
@@ -39,7 +40,7 @@ function actionUi(lead: string, title: string, content: string) {
   };
 }
 
-export function createAdvancedAgentTools(userId: string, userEmail: string) {
+export function createAdvancedAgentTools(userId: string, userEmail: string, searchIntent?: EmailSearchIntent | null) {
   return {
     search_gmail: tool({
       description:
@@ -50,11 +51,10 @@ export function createAdvancedAgentTools(userId: string, userEmail: string) {
         includeSpamTrash: z.boolean().default(false),
       }),
       execute: async ({ query, limit, includeSpamTrash }) => {
+        const effectiveQuery = searchIntent?.query || query;
+        const effectiveLimit = searchIntent?.limit || limit;
         const messages = await advancedGmailService.searchMessagesForUser(
-          userId,
-          query,
-          limit,
-          includeSpamTrash,
+          userId, effectiveQuery, effectiveLimit, includeSpamTrash,
         );
         const emails = formatEmailList(messages);
         return {
