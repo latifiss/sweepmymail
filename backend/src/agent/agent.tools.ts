@@ -112,11 +112,13 @@ export function createAgentTools(userId: string, userEmail: string, searchIntent
             ok: true,
             count: formattedEmails.length,
             emails: formattedEmails,
-            ui: {
+            // search_gmail is the single source of structured UI output for
+            // deterministic searches; don't render a second list from this fallback.
+            ...(searchIntent ? {} : { ui: {
               kind: "email-list",
-              lead: formattedEmails.length ? (searchIntent ? `Here are ${formattedEmails.length} emails matching your request:` : `Here are your ${formattedEmails.length} most recent emails:`) : (searchIntent ? "I couldn't find emails matching those filters." : "You don't have any recent emails."),
+              lead: formattedEmails.length ? `Here are your ${formattedEmails.length} most recent emails:` : "You don't have any recent emails.",
               emails: formattedEmails,
-            },
+            } }),
           };
         } catch (error) {
           console.error("get_recent_emails failed", {
