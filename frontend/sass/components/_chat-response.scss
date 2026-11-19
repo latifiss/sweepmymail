@@ -517,3 +517,37 @@
     opacity: 0;
   }
 }
+
+/* Composite assistant turns keep one outer response surface. Child blocks
+   become sections within that surface instead of rendering as separate cards. */
+.chat-response__group {
+  display: flex;
+  flex-direction: column;
+  gap: ui.space(4);
+  width: 100%;
+}
+
+.chat-response__group-section {
+  display: flex;
+  flex-direction: column;
+  gap: ui.space(3);
+  min-width: 0;
+
+  & + & {
+    padding-top: ui.space(4);
+    border-top: 1px solid ui.color(quill-gray);
+  }
+
+  > .chat-response__summary,
+  > .chat-response__schedule,
+  > .chat-response__confirm,
+  > .chat-response__draft {
+    padding: 0;
+    background: transparent;
+    border: 0;
+  }
+
+  > .chat-response__summary {
+    gap: ui.space(3);
+  }
+}
