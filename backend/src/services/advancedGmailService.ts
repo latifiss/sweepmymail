@@ -117,18 +117,16 @@ export async function searchMessagesForUser(userId: string, query: string, limit
       });
       for (const item of response.data.messages || []) {
         if (!item.id) continue;
-        try {
-          const detail = await gmail.users.messages.get({
-            userId: "me",
-            id: item.id,
-            format: "metadata",
-            metadataHeaders: ["From", "To", "Cc", "Subject", "Date", "List-Unsubscribe"],
-          });
-          out.push({
-            ...metadata(detail.data),
-            unsubscribeLink: header(detail.data.payload?.headers, "List-Unsubscribe") || null,
-          });
-        } catch {}
+        const detail = await gmail.users.messages.get({
+          userId: "me",
+          id: item.id,
+          format: "metadata",
+          metadataHeaders: ["From", "To", "Cc", "Subject", "Date", "List-Unsubscribe"],
+        });
+        out.push({
+          ...metadata(detail.data),
+          unsubscribeLink: header(detail.data.payload?.headers, "List-Unsubscribe") || null,
+        });
         if (out.length >= limit) break;
       }
       pageToken = response.data.nextPageToken || undefined;
