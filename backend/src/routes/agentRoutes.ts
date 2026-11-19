@@ -2,6 +2,7 @@ import express from "express";
 import { pipeAgentUIStreamToResponse } from "ai";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { createMailAgent } from "../agent/mailAgent";
+import { parseEmailSearchIntent } from "../agent/emailSearchIntent";
 import { createConversation, deleteConversation, ensureConversationForUser, getConversationForUser, listConversationsForUser, listMessagesForConversation, setConversationStatus, setConversationTitleIfNew, updateConversationTitle, addMessage } from "../agent/agent.persistence";
 import { env } from "../config/env";
 import { getAgentContext } from "../agent/agent.context";
@@ -45,7 +46,7 @@ async function handleChat(req:express.Request,res:express.Response,next:express.
     req.on("aborted", abortIfDisconnected);
     res.on("close", abortIfDisconnected);
     try{
-      await pipeAgentUIStreamToResponse({response:res,agent:createMailAgent(user.id,user.email,user.name || "",conversation.id,requestId),uiMessages:messages,abortSignal:abortController.signal,sendReasoning:false});
+      await pipeAgentUIStreamToResponse({response:res,agent:createMailAgent(user.id,user.email,user.name || "",conversation.id,requestId,parseEmailSearchIntent(lastUserContent)),uiMessages:messages,abortSignal:abortController.signal,sendReasoning:false});
       await finishRequest(requestId,abortController.signal.aborted?"aborted":"completed");
     }catch(error){
       await finishRequest(requestId,abortController.signal.aborted?"aborted":"failed",undefined,error instanceof Error?error.name:null);
