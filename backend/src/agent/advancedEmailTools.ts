@@ -41,6 +41,11 @@ function actionUi(lead: string, title: string, content: string) {
 }
 
 export function createAdvancedAgentTools(userId: string, userEmail: string, searchIntent?: EmailSearchIntent | null) {
+  // A single user request must produce one authoritative Gmail search result.
+  // ToolLoopAgent may ask for the same search again after an empty result; cache
+  // the first execution and suppress duplicate UI payloads.
+  let searchPromise: Promise<{ count: number; emails: any[]; ui: any }> | null = null;
+
   return {
     search_gmail: tool({
       description:
@@ -51,23 +56,31 @@ export function createAdvancedAgentTools(userId: string, userEmail: string, sear
         includeSpamTrash: z.boolean().default(false),
       }),
       execute: async ({ query, limit, includeSpamTrash }) => {
+        if (searchPromise) {
+          const cached = await searchPromise;
+          return { count: cached.count, emails: cached.emails, duplicateSearch: true };
+        }
+
         const effectiveQuery = searchIntent?.query || query;
         const effectiveLimit = searchIntent?.limit || limit;
-        const messages = await advancedGmailService.searchMessagesForUser(
-          userId, effectiveQuery, effectiveLimit, includeSpamTrash,
-        );
-        const emails = formatEmailList(messages);
-        return {
-          count: emails.length,
-          emails,
-          ui: {
-            kind: "email-list",
-            lead: emails.length
-              ? `I found ${emails.length} matching email${emails.length === 1 ? "" : "s"} in Gmail:`
-              : "I couldn't find any matching emails in Gmail.",
+        searchPromise = (async () => {
+          const messages = await advancedGmailService.searchMessagesForUser(
+            userId, effectiveQuery, effectiveLimit, includeSpamTrash,
+          );
+          const emails = formatEmailList(messages);
+          return {
+            count: emails.length,
             emails,
-          },
-        };
+            ui: {
+              kind: "email-list",
+              lead: emails.length
+                ? `I found ${emails.length} matching email${emails.length === 1 ? "" : "s"} in Gmail:`
+                : "I couldn't find any matching emails in Gmail.",
+              emails,
+            },
+          };
+        })();
+        return searchPromise;
       },
     }),
 
