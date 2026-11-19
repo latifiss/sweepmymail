@@ -89,7 +89,7 @@ function addressKey(value: string) {
 }
 
 export function createAgentTools(userId: string, userEmail: string, searchIntent?: EmailSearchIntent | null) {
-  return {
+  const tools = {
     get_recent_emails: tool({
       description: "Get the user's most recent inbox emails. Return the emails in the tool result; do not reproduce them as a Markdown list in your response.",
       inputSchema: z.object({
@@ -707,4 +707,16 @@ export function createAgentTools(userId: string, userEmail: string, searchIntent
       },
     }),
   };
+  if (searchIntent) {
+    // Constrained retrieval requests must not expose inbox mutation tools.
+    return {
+      get_recent_emails: tools.get_recent_emails,
+      search_gmail: tools.search_gmail,
+      read_emails: tools.read_emails,
+      get_email: tools.get_email,
+      get_thread: tools.get_thread,
+      get_attachments: tools.get_attachments,
+    };
+  }
+  return tools;
 }
