@@ -40,9 +40,22 @@ pool.on("error", (error) => {
 });
 
 export function describeDatabaseError(error: unknown) {
-  const err = error as { code?: string; message?: string };
-  const code = err?.code || "UNKNOWN";
+  const err = error as { code?: string; message?: string; cause?: unknown };
   const message = err?.message || "Unknown database error";
+  const cause = err?.cause as { code?: string; message?: string } | undefined;
+  const combinedMessage = [message, cause?.message].filter(Boolean).join(" ");
+  // Supavisor may report this as PostgreSQL XX000 while embedding the
+  // actionable ENOTFOUND tenant/user detail in the message.
+  const code = /tenant\\/user .* not found/i.test(combinedMessage)
+    ? "SUPABASE_POOLER_TENANT_NOT_FOUND"
+    : err?.code || cause?.code || "UNKNOWN";
+  if (code === "SUPABASE_POOLER_TENANT_NOT_FOUND") {
+    return {
+      code,
+      message: "Supabase's connection pooler does not recognize this project/user. Your DATABASE_URL likely contains an outdated project reference, pooler host, or username.",
+      detail: "Open Supabase Project Settings → Database → Connection string and copy the current URI. Use the matching pooler host and username, or use the direct database host if your network supports IPv6.",
+    };
+  }
   if (code === "ENOTFOUND" || code === "EAI_AGAIN") {
     return {
       code,
@@ -71,6 +84,16 @@ export function describeDatabaseError(error: unknown) {
 }
 
 export async function checkDatabaseConnection() {
+  if (!env.DATABASE_URL.trim()) {
+    return {
+      ok: false as const,
+      error: {
+        code: "DATABASE_URL_MISSING",
+        message: "DATABASE_URL is not configured. Better Auth cannot connect to PostgreSQL.",
+        detail: "Set DATABASE_URL in backend/.env using the current connection string from Supabase Project Settings → Database.",
+      },
+    };
+  }
   try {
     await pool.query("select 1");
     return { ok: true as const };
