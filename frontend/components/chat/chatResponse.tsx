@@ -173,7 +173,17 @@ function EmailListBlock({ title, emails, onAction }: EmailListBlockProps) {
               <span className="chat-response__email-sender">
                 {email.sender}
               </span>
-              <span className="chat-response__email-subject">
+              <span
+                className="chat-response__email-subject"
+                title={email.subject}
+                style={{
+                  whiteSpace: "normal",
+                  overflow: "visible",
+                  textOverflow: "clip",
+                  overflowWrap: "anywhere",
+                  display: "block",
+                }}
+              >
                 {email.subject}
               </span>
               <span className="chat-response__email-preview">
