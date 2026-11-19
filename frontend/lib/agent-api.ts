@@ -274,6 +274,20 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
     ? output.emails.map(refFrom).filter(Boolean) as EmailRef[]
     : [];
   const citation = refFrom(tool);
+
+  if (name.includes("read_emails")) {
+    return {
+      id: message.id,
+      role: "agent",
+      response: {
+        kind: "summary",
+        lead: "",
+        title: "Summary",
+        content: "",
+        citations: emails,
+      },
+    };
+  }
   const citations = citation ? [citation] : [];
 
   if (emails.length > 0 && (
