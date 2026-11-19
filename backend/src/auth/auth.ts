@@ -46,7 +46,7 @@ export function describeDatabaseError(error: unknown) {
   const combinedMessage = [message, cause?.message].filter(Boolean).join(" ");
   // Supavisor may report this as PostgreSQL XX000 while embedding the
   // actionable ENOTFOUND tenant/user detail in the message.
-  const code = /tenant\\/user .* not found/i.test(combinedMessage)
+  const code = combinedMessage.toLowerCase().includes("tenant/user") && combinedMessage.toLowerCase().includes("not found")
     ? "SUPABASE_POOLER_TENANT_NOT_FOUND"
     : err?.code || cause?.code || "UNKNOWN";
   if (code === "SUPABASE_POOLER_TENANT_NOT_FOUND") {
