@@ -32,7 +32,8 @@ export type ResponseBlock =
   | ({ kind: "summary"; title?: string; content: string; citations: EmailRef[] } & ResponseBase)
   | ({ kind: "draft"; draft: EmailDraft } & ResponseBase)
   | ({ kind: "schedule"; event: ScheduleEvent } & ResponseBase)
-  | ({ kind: "confirm"; promptId: string; question: string } & ResponseBase);
+  | ({ kind: "confirm"; promptId: string; question: string } & ResponseBase)
+  | ({ kind: "group"; blocks: ResponseBlock[] } & ResponseBase);
 
 export type ResponseAction =
   | { type: "open-email"; emailId: string }
