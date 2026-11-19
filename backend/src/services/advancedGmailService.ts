@@ -79,7 +79,12 @@ function metadata(message: any) {
     cc: header(headers, "Cc"),
     bcc: header(headers, "Bcc"),
     subject: header(headers, "Subject"),
-    date: header(headers, "Date") || (message.internalDate ? new Date(Number(message.internalDate)).toISOString() : ""),
+    // Gmail's internalDate is the authoritative inbox-received timestamp.
+    // The RFC Date header can be stale, incorrectly set by the sender, or differ
+    // from when Gmail actually received/imported the message.
+    date: message.internalDate
+      ? new Date(Number(message.internalDate)).toISOString()
+      : header(headers, "Date"),
     snippet: message.snippet || "",
     labelIds: message.labelIds || [],
   };
