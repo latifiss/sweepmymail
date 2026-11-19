@@ -124,12 +124,7 @@ export function createAgentTools(userId: string, userEmail: string, searchIntent
             userEmail,
             error: getToolErrorMessage(error),
           });
-          return {
-            ok: false,
-            count: 0,
-            emails: [],
-            error: getToolErrorMessage(error),
-          };
+          throw error;
         }
       },
     }),
@@ -673,7 +668,7 @@ export function createAgentTools(userId: string, userEmail: string, searchIntent
         gmailService.batchDeleteMessagesForUser(userId, messageIds),
     }),
 
-    ...createAdvancedAgentTools(userId, userEmail),
+    ...createAdvancedAgentTools(userId, userEmail, searchIntent),
 
     unsubscribe: tool({
       description: "Unsubscribe from a sender. ALWAYS requires approval.",
