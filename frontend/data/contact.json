@@ -1,0 +1,45 @@
+{
+  "title": "Contact Us",
+  "lastUpdated": "May 1, 2026",
+  "intro": "We're a small team and we read every message. Whether you have a question about MagicMail, a bug to report, or just want to say hello — we'd love to hear from you.",
+  "sections": [
+    {
+      "heading": "1. General support",
+      "paragraphs": [
+        "For questions about your account, billing, or how MagicMail works, email us at hello@magicmail.app. We typically reply within one business day."
+      ]
+    },
+    {
+      "heading": "2. Bug reports and feature requests",
+      "paragraphs": [
+        "If you've found a bug or have an idea for something we should build, we'd love to hear it. Please include:"
+      ],
+      "list": [
+        "A short description of what happened",
+        "The steps you took before it happened",
+        "Your browser and operating system",
+        "A screenshot or screen recording, if you have one"
+      ]
+    },
+    {
+      "heading": "3. Security",
+      "paragraphs": [
+        "If you believe you've found a security vulnerability in MagicMail, please email security@magicmail.app directly. We take every report seriously and will respond within 48 hours.",
+        "Please don't publicly disclose the issue until we've had a chance to investigate and ship a fix."
+      ]
+    },
+    {
+      "heading": "4. Privacy and data requests",
+      "paragraphs": [
+        "For questions about your data, requests to export it, or requests to delete your account, email privacy@magicmail.app. We honor all valid data requests within 30 days."
+      ]
+    },
+    {
+      "heading": "5. Business and partnerships",
+      "paragraphs": [
+        "If you're interested in partnering with us, integrating MagicMail into your product, or exploring something else — reach out to hello@magicmail.app and we'll route your message to the right person."
+      ]
+    }
+  ],
+  "contactEmail": "hello@magicmail.app"
+}

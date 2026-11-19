@@ -35,6 +35,10 @@ export const env = {
   JWT_SECRET: process.env.JWT_SECRET || "",
   OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY?.trim() || "",
   AGENT_MODEL: process.env.AGENT_MODEL || "cohere/north-mini-code:free",
+  AGENT_FALLBACK_MODELS: (process.env.AGENT_FALLBACK_MODELS || "openrouter/free")
+    .split(",")
+    .map((model) => model.trim())
+    .filter(Boolean),
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || "",
   DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY || "",
   SMTP_HOST: process.env.SMTP_HOST || "",
@@ -47,4 +51,9 @@ export const env = {
   LEMONSQUEEZY_VARIANT_ID_STARTER: process.env.LEMONSQUEEZY_VARIANT_ID_STARTER || "",
   LEMONSQUEEZY_VARIANT_ID_GROWTH: process.env.LEMONSQUEEZY_VARIANT_ID_GROWTH || "",
   LEMONSQUEEZY_VARIANT_ID_PRO: process.env.LEMONSQUEEZY_VARIANT_ID_PRO || "",
+  AGENT_REQUESTS_PER_MINUTE: parsePositiveInt(process.env.AGENT_REQUESTS_PER_MINUTE, 20),
+  AGENT_REQUESTS_PER_DAY: parsePositiveInt(process.env.AGENT_REQUESTS_PER_DAY, 200),
+  AGENT_DAILY_TOKEN_LIMIT: parsePositiveInt(process.env.AGENT_DAILY_TOKEN_LIMIT, 200000),
+  AGENT_MAX_MESSAGES: parsePositiveInt(process.env.AGENT_MAX_MESSAGES, 100),
+  AGENT_MAX_MESSAGE_BYTES: parsePositiveInt(process.env.AGENT_MAX_MESSAGE_BYTES, 200000),
 };

@@ -1,0 +1,125 @@
+@use '../sass-utils' as ui;
+
+.simulation {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background-color: ui.color(white-snow-drift);
+}
+
+.simulation__thread {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: ui.space(5);
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.simulation__thread-inner {
+  display: flex;
+  flex-direction: column;
+  gap: ui.space(5);
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.simulation__step {
+  display: flex;
+  flex-direction: column;
+  gap: ui.space(5);
+}
+
+.simulation__typing-bubble {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  align-self: flex-end;
+  max-width: 100%;
+  padding: ui.space(3) ui.space(4);
+  background-color: ui.color(white);
+  border: 1px solid ui.color(quill-gray);
+  border-radius: ui.radius(md);
+  font-family: ui.font(family-sans);
+  font-size: 16px;
+  font-weight: ui.font(weight-medium);
+  line-height: 24px;
+  color: ui.color(matterhorn);
+}
+
+.simulation__typing-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.simulation__typing-caret {
+  display: inline-block;
+  width: 2px;
+  height: 20px;
+  margin-left: 2px;
+  background-color: ui.color(matterhorn);
+  animation: simulation-caret-blink 1s steps(2, start) infinite;
+  flex: none;
+}
+
+@keyframes simulation-caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .simulation__typing-caret {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+.simulation__response--highlight {
+  position: relative;
+  border-radius: ui.radius(md);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border: 2px solid #ffb200;
+    border-radius: ui.radius(md);
+    pointer-events: none;
+    animation: simulation-highlight-pulse 0.7s ease-out;
+  }
+}
+
+@keyframes simulation-highlight-pulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .simulation__response--highlight::after {
+    animation: none;
+    opacity: 0;
+  }
+}

@@ -1,154 +1,34 @@
-@use 'sass-utils/fonts' as *;
-@use 'sass-utils/variables' as *;
-@use 'sass-utils/functions' as *;
-@use 'sass-utils/mixins' as *;
-@use 'sass-utils/helpers' as *;
+/// Application main entry point.
+/// Load order is strictly architectural: abstracts → base → layout → components → pages.
 
-@use 'base/reset' as *;
-@use 'base/typography' as *;
+@use 'sass-utils' as ui;
 
-@use 'layout/navigation' as *;
-@use 'layout/grid' as *;
-@use 'layout/header' as *;
-@use 'layout/footer' as *;
-@use 'layout/sidebar' as *;
-@use 'layout/forms' as *;
+@use 'sass-utils/base/fonts';
+@use 'sass-utils/base/reset';
 
-@use 'components/actionsRow' as *;
-@use 'components/pricingPopup' as *;
-@use 'components/unread' as *;
-@use 'components/spot' as *;
-@use 'components/mailLine' as *;
-@use 'components/cell' as *;
-@use 'components/cellDisplay' as *;
-@use 'components/buttons' as *;
-@use 'components/guide' as *;
-@use 'components/carousel' as *;
-@use 'components/cover' as *;
-@use 'components/dropdown' as *;
-@use 'components/cards' as *;
-@use 'components/tabs' as *;
-@use 'components/bloc' as *;
-@use 'components/loader' as *;
-@use 'components/progress' as *;
+@use 'layout/header';
+@use 'layout/alt-header';
+@use 'layout/footer';
 
-@use 'pages/home' as *;
-@use 'pages/profile' as *;
-@use 'pages/categorization' as *;
-@use 'pages/summary' as *;
-@use 'pages/priority' as *;
-@use 'pages/contact' as *;
-@use 'pages/info' as *;
-@use 'pages/login' as *;
-@use 'pages/emails' as *;
-@use 'pages/subscriptions' as *;
-@use 'pages/terms' as *;
-@use './pages/cookies.scss' as *;
-@use 'pages/privacy' as *;
-@use 'pages/about' as *;
-@use 'pages/contact' as *;
-@use 'pages/terms-and-conditions' as *;
-@use 'pages/refund-policy' as *;
+@use 'components/google-button';
+@use 'components/base-button';
+@use 'components/profile-modal';
+@use 'components/sidebar';
+@use 'components/cupboard';
+@use 'components/prompt-input';
+@use 'components/reference-chip';
+@use 'components/chat-response';
+@use 'components/user-message';
+@use 'components/conditional-header';
+@use 'components/thinking-indicator';
+@use 'components/simulation';
+@use 'components/policy' as policy-component;
 
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 5px;
-
-  &:hover {
-    background: #555;
-  }
-}
-
-* {
-  &,
-  &::before,
-  &::after {
-    transition: background-color $transition-base, color $transition-base, border-color $transition-base;
-  }
-}
-
-:focus-visible {
-  outline: 2px solid $primary-color;
-  outline-offset: 2px;
-}
-
-@media print {
-  * {
-    background: transparent !important;
-    color: #000 !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
-  }
-
-  a,
-  a:visited {
-    text-decoration: underline;
-  }
-
-  a[href]::after {
-    content: ' (' attr(href) ')';
-  }
-
-  img {
-    max-width: 100% !important;
-  }
-
-  @page {
-    margin: 0.5cm;
-  }
-
-  h1,
-  h2,
-  h3 {
-    page-break-after: avoid;
-  }
-
-  p {
-    orphans: 3;
-    widows: 3;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-color: #1a1a1a;
-    --text-color: #e0e0e0;
-    --border-color: #333;
-  }
-
-  body {
-    background-color: var(--bg-color);
-    color: var(--text-color);
-  }
-
-  a {
-    color: #66b3ff;
-  }
-}
-
-@include respond-to('sm') {
-  body {
-    font-size: 0.95rem;
-  }
-}
-
-@include respond-to('md') {
-  body {
-    font-size: 0.98rem;
-  }
-}
-
-@include respond-to('lg') {
-  body {
-    font-size: 1rem;
-  }
-}
+@use 'pages/test';
+@use 'pages/try';
+@use 'pages/auth';
+@use 'pages/pricing';
+@use 'pages/chat';
+@use 'pages/about';
+@use './pages/blog';
+@use 'pages/policy' as policy-page;

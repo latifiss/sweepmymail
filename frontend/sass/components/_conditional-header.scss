@@ -1,0 +1,13 @@
+@use '../sass-utils' as ui;
+
+// ------------------------------------------------------------
+// Conditional header
+// Wraps the main Header so specific routes can hide it on
+// desktop/tablet (where an AltHeader takes over) while keeping
+// it visible on mobile (where it owns the sidebar drawer).
+// ------------------------------------------------------------
+.conditional-header--alt-route {
+  @include ui.respond-to(md) {
+    display: none;
+  }
+}

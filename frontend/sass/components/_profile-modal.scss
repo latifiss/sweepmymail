@@ -1,0 +1,80 @@
+@use '../sass-utils' as ui;
+
+/// Dropdown card anchored below the header on the top right.
+/// Renders user identity details (avatar, name, email) and plan tier badge.
+.profile-modal {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 0 12px 12px;
+  margin-top: -4px;
+  background-color: ui.color(white);
+  border: 1px solid ui.color(quill-gray);
+  min-width: 330px;
+
+  @include ui.respond-to(md) {
+    margin-right: 0;
+  }
+
+  &__avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: ui.color(wild-sand);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    svg {
+      width: 12px;
+      height: 12px;
+    }
+  }
+
+  &__details {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__name {
+    font-family: ui.font(family-sans);
+    font-size: 16.2px;
+    font-weight: ui.font(weight-medium);
+    line-height: 24px;
+    color: ui.color(matterhorn);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__email {
+    font-family: ui.font(family-sans);
+    font-size: 12px;
+    font-weight: ui.font(weight-normal);
+    line-height: 13px;
+    color: ui.color(matterhorn);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__plan {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+  }
+}

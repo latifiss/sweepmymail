@@ -1,0 +1,52 @@
+{
+  "title": "Cookie Policy",
+  "lastUpdated": "May 1, 2026",
+  "intro": "This policy explains what cookies are, which ones MagicMail uses, and how you can control them. By using MagicMail, you agree to the use of cookies as described here.",
+  "sections": [
+    {
+      "heading": "1. What are cookies?",
+      "paragraphs": [
+        "Cookies are small text files that websites place on your device when you visit them. They help sites remember your preferences, keep you signed in, and understand how the product is being used.",
+        "Cookies aren't programs and can't run code on your device. They're just pieces of data that a site you've visited can read on a later visit."
+      ]
+    },
+    {
+      "heading": "2. How we use cookies",
+      "paragraphs": [
+        "MagicMail uses a small number of cookies, all of which fall into one of the following categories:"
+      ],
+      "list": [
+        "Essential cookies — required for you to sign in and use the product. Without these, MagicMail can't function.",
+        "Preference cookies — remember settings like your theme, language, and default inbox view.",
+        "Analytics cookies — help us understand which features are used and where people get stuck, so we can improve the product."
+      ]
+    },
+    {
+      "heading": "3. What we don't do",
+      "paragraphs": [
+        "We never use cookies to serve you ads. We don't sell or share cookie data with advertising networks. We don't track you across other websites, and we don't build advertising profiles from your activity inside MagicMail."
+      ]
+    },
+    {
+      "heading": "4. Third-party cookies",
+      "paragraphs": [
+        "A small number of cookies are set by trusted third parties who help us operate the service. These include our authentication provider (for sign-in), our payment processor (for billing), and our analytics provider (for usage statistics).",
+        "Each of these providers has its own privacy policy, and none of them use cookies on MagicMail for advertising purposes."
+      ]
+    },
+    {
+      "heading": "5. Managing cookies",
+      "paragraphs": [
+        "You can control or delete cookies at any time from your browser settings. Every major browser lets you block cookies entirely, block only third-party cookies, or clear existing cookies on demand.",
+        "If you block essential cookies, you won't be able to sign in or use MagicMail. The rest can be blocked without affecting the core product."
+      ]
+    },
+    {
+      "heading": "6. Changes to this policy",
+      "paragraphs": [
+        "We may update this Cookie Policy from time to time. When we do, we'll update the date at the top of this page and, for significant changes, notify you by email."
+      ]
+    }
+  ],
+  "contactEmail": "hello@magicmail.app"
+}

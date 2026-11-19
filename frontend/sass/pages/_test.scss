@@ -1,0 +1,85 @@
+// sass/pages/_test.scss
+@use '../sass-utils' as ui;
+
+// ------------------------------------------------------------
+// Test bench
+// Full-viewport layout with a sidebar on the left and a
+// content column (main + footer) on the right. On desktop the
+// cupboard slides in next to the sidebar without affecting the
+// content column's width.
+// ------------------------------------------------------------
+.test-page {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+// ------------------------------------------------------------
+// Rail
+// Wraps the sidebar. `position: relative` anchors the cupboard
+// to the rail's right edge so it can overlay the content
+// without affecting layout width.
+// ------------------------------------------------------------
+.test-page__rail {
+  position: relative;
+  flex: none;
+}
+
+// ------------------------------------------------------------
+// Cupboard
+// Absolutely positioned to the rail's right edge. Slides in
+// from left to right on open, and out from right to left on
+// close. Both directions animate the same `transform` property.
+// ------------------------------------------------------------
+.test-page__cupboard {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  bottom: 0;
+  width: 365px;
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform ui.motion(base),
+    opacity ui.motion(base);
+  will-change: transform, opacity;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.test-page__cupboard--open {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+// ------------------------------------------------------------
+// Content column
+// Fills remaining width. Content scrolls, footer stays put.
+// ------------------------------------------------------------
+.test-page__main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.test-page__content {
+  flex: 1;
+  min-height: 0;
+  padding: ui.space(6);
+  overflow-y: auto;
+}
+
+// ------------------------------------------------------------
+// Prompt input wrapper
+// Centers the input in the content area with breathing room.
+// ------------------------------------------------------------
+.test-page__prompt {
+  display: flex;
+  justify-content: center;
+  margin-top: ui.space(8);
+  width: 100%;
+}

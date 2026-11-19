@@ -24,13 +24,14 @@ function validate(body: any) {
   const actionConfig = body?.actionConfig && typeof body.actionConfig === "object" ? body.actionConfig : {};
   if (actionType === "categorize" && !String(actionConfig.label || "").trim()) throw new Error("Category label is required");
   if (actionType === "forward" && (!Array.isArray(actionConfig.to) || !actionConfig.to.length)) throw new Error("Forwarding recipients are required");
+  const status: "active" | "paused" = body?.status === "paused" ? "paused" : "active";
   return {
     name: required(body?.name, "name"),
     trigger_type: triggerType,
     trigger_config: triggerConfig,
     action_type: actionType,
     action_config: actionConfig,
-    status: body?.status === "paused" ? "paused" : "active" as const,
+    status,
   };
 }
 
