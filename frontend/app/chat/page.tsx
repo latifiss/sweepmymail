@@ -18,87 +18,113 @@ const DEFAULT_STAGES = ["Thinking", "Reading your inbox", "Preparing response"];
 
 function textFromMessage(message: AgentUIMessage) { return message.parts.filter((part) => part.type === "text").map((part) => String(part.text || "")).join(""); }
 
+function responseKey(response: ResponseBlock): string {
+  switch (response.kind) {
+    case "email-list":
+      return "email-list:" + response.emails.map((email) => email.id).join(",");
+    case "draft":
+      return "draft:" + response.draft.id;
+    case "schedule":
+      return "schedule:" + response.event.id;
+    case "summary":
+      return "summary:" + (response.title || "") + ":" + response.content;
+    case "confirm":
+      return "confirm:" + response.promptId;
+    case "group":
+      return "group:" + response.blocks.map(responseKey).join("|");
+    case "text":
+      return "text:" + response.content;
+  }
+}
+
 function dedupeChatMessages(items: ChatMessage[]) {
-  const seen = new Set<string>();
-
-  return items.filter((item, index) => {
-    if (item.role !== "agent" || !item.response) return true;
-
+  return items.map((item) => {
+    if (item.role !== "agent") return item;
     const responses = item.responses || (item.response ? [item.response] : []);
-    if (!responses.length) return false;
-    const response = responses[0];
-
-    // A production tool response is rendered by ChatResponse. The model often
-    // also emits a prose copy of the same result, so hide that duplicate text
-    // whenever it sits next to a structured tool response.
-    if (response.kind === "text" && !response.content.trim()) return false;
-
-    const previous = items[index - 1];
-    const next = items[index + 1];
-    const hasStructuredNeighbor = [previous, next].some(
-      (neighbor) =>
-        neighbor?.role === "agent" &&
-        neighbor.response &&
-        neighbor.response.kind !== "text",
-    );
-    if (response.kind === "text" && hasStructuredNeighbor) return false;
-
-    const key =
-      response.kind +
-      ":" +
-      (response.kind === "email-list"
-        ? response.emails.map((email) => email.id).join(",")
-        : response.kind === "draft"
-          ? response.draft.id
-          : response.kind === "schedule"
-            ? response.event.id
-            : response.kind === "summary"
-              ? (response.title || "") + ":" + response.content
-              : response.kind === "confirm"
-                ? response.promptId
-                : response.content);
-
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+    const seen = new Set<string>();
+    const unique = responses.filter((response) => {
+      const key = responseKey(response);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    return {
+      ...item,
+      response: unique.length === 1 ? unique[0] : undefined,
+      responses: unique.length > 1 ? unique : undefined,
+    };
+  }).filter((item) => item.role !== "agent" || Boolean(item.response || item.responses?.length));
 }
 
 function groupAgentResponses(items: ChatMessage[]) {
   const result: ChatMessage[] = [];
 
-  for (const item of items) {
-    const previous = result[result.length - 1];
-
-    if (
-      previous?.role === "agent" &&
-      previous.response?.kind === "text" &&
-      item.role === "agent" &&
-      item.response?.kind === "text"
-    ) {
-      const previousResponse = previous.response;
-      const currentResponse = item.response;
-      const citations = [
-        ...(previousResponse.citations || []),
-        ...(currentResponse.citations || []),
-      ];
-      const seen = new Set<string>();
-
-      previous.response = {
-        ...previousResponse,
-        content: [previousResponse.content, currentResponse.content]
-          .filter(Boolean)
-          .join("\n\n"),
-        citations: citations.filter((citation) => {
-          if (seen.has(citation.id)) return false;
-          seen.add(citation.id);
-          return true;
-        }),
-      };
+  for (let index = 0; index < items.length;) {
+    const item = items[index];
+    if (item.role === "user") {
+      result.push(item);
+      index += 1;
       continue;
     }
 
-    result.push({ ...item });
+    const turn: ResponseBlock[] = [];
+    while (index < items.length && items[index].role === "agent") {
+      const current = items[index];
+      turn.push(...(current.responses || (current.response ? [current.response] : [])));
+      index += 1;
+    }
+
+    const flattened = turn.flatMap((response) =>
+      response.kind === "group" ? response.blocks : [response],
+    );
+    const citationContext = flattened.filter(
+      (response) => response.kind === "summary" && !response.content.trim() && response.citations.length,
+    );
+    const prose = flattened.filter(
+      (response) => response.kind === "text" && Boolean(response.content.trim()),
+    );
+    const listResponses = flattened.filter((response) => response.kind === "email-list");
+
+    // A read_emails tool result is citation context, not a second email-list card.
+    // Attach those source references to the assistant's actual natural-language summary.
+    let blocks = flattened.filter(
+      (response) => !(response.kind === "summary" && !response.content.trim() && response.citations.length),
+    );
+    if (citationContext.length && prose.length) {
+      const citations = citationContext.flatMap((response) =>
+        response.kind === "summary" ? response.citations : [],
+      );
+      const uniqueCitations = Array.from(
+        new Map(citations.map((citation) => [citation.id, citation])).values(),
+      );
+      const summaryText = prose.map((response) => response.content).join("\\n\\n");
+      const summaryLead = prose.map((response) => response.lead).find(Boolean) || "";
+      blocks = blocks.filter((response) => response.kind !== "text" && response.kind !== "email-list");
+      blocks.push({
+        kind: "summary",
+        lead: summaryLead,
+        title: "Summary",
+        content: summaryText,
+        citations: uniqueCitations,
+      });
+    } else if (listResponses.length) {
+      // The structured list is authoritative; suppress model-generated prose copies.
+      blocks = blocks.filter((response) => response.kind !== "text");
+    }
+
+    const seen = new Set<string>();
+    blocks = blocks.filter((response) => {
+      const key = responseKey(response);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    if (blocks.length === 1) {
+      result.push({ id: item.id, role: "agent", response: blocks[0] });
+    } else if (blocks.length > 1) {
+      result.push({ id: item.id, role: "agent", response: { kind: "group", blocks } });
+    }
   }
 
   return result;
@@ -312,7 +338,7 @@ export default function ChatPage() {
           ) : (
             <div ref={threadRef} className="chat-page__thread">
               <div className="chat-page__thread-inner">
-                {messages.map((message, index) => {
+                {groupAgentResponses(messages).map((message, index) => {
   if (message.role === "user") {
     return <UserMessage key={message.id} content={message.content || ""} />;
   }
@@ -321,23 +347,10 @@ export default function ChatPage() {
   const startsAssistantGroup = !previous || previous.role === "user";
   if (!startsAssistantGroup) return null;
 
-  const group = [];
-  for (let i = index; i < messages.length && messages[i].role === "agent"; i++) {
-    group.push(messages[i]);
-  }
-
   return (
     <div key={message.id} className="chat-page__assistant-response">
-      {group.flatMap((item) =>
-        (item.responses || (item.response ? [item.response] : [])).map(
-          (response, responseIndex) => (
-            <ChatResponse
-              key={item.id + "-" + responseIndex}
-              response={response}
-              onAction={handleAction}
-            />
-          ),
-        ),
+      {message.response && (
+        <ChatResponse response={message.response} onAction={handleAction} />
       )}
     </div>
   );
