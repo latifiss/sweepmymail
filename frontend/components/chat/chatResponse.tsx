@@ -146,6 +146,20 @@ function renderBlock(
           onAction={onAction}
         />
       );
+
+    case "group":
+      return (
+        <div className="chat-response__group">
+          {response.blocks.map((block, index) => (
+            <section className="chat-response__group-section" key={index}>
+              {block.lead && (
+                <p className="chat-response__lead">{block.lead}</p>
+              )}
+              {renderBlock({ ...block, lead: undefined } as ResponseBlock, onAction)}
+            </section>
+          ))}
+        </div>
+      );
   }
 }
 
