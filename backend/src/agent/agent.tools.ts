@@ -15,6 +15,8 @@ import {
 } from "../repositories/automationRepository";
 import { applyCategoryToEmails, emailMatchesCategory, extractKeywords } from "../services/categoryService";
 import gmailService from "../services/gmailService";
+import advancedGmailService from "../services/advancedGmailService";
+import type { EmailSearchIntent } from "./emailSearchIntent";
 import { createAdvancedAgentTools } from "./advancedEmailTools";
 import { unsubscribeFromLink } from "../services/unsubscribeService";
 import { env } from "../config/env";
@@ -32,15 +34,14 @@ function requireAgentConfiguration() {
 }
 
 function formatEmails(emails: any[], limit: number) {
-  return emails.slice(0, limit).map((email) => ({
-    messageId: email.message_id,
-    sender: email.sender,
-    subject: email.subject,
-    snippet:
-      typeof email.snippet === "string" ? email.snippet.slice(0, 180) : "",
-    date: email.date,
-    hasUnsubscribeLink: Boolean(email.unsubscribe_link),
-  }));
+  return emails.slice(0, limit).map((email) => {
+    const sender = email.sender || email.from || "";
+    const senderEmail = sender.match(/<([^>]+)>/)?.[1] || sender;
+    const messageId = email.message_id || email.messageId || email.id || "";
+    const date = email.date || email.receivedAt || "";
+    const preview = typeof email.snippet === "string" ? email.snippet.slice(0, 180) : "";
+    return { id: messageId, messageId, sender, senderEmail, subject: email.subject || "(no subject)", snippet: preview, preview, date, receivedAt: date, hasUnsubscribeLink: Boolean(email.unsubscribe_link || email.unsubscribeLink) };
+  });
 }
 
 function getToolErrorMessage(error: unknown) {
@@ -87,7 +88,7 @@ function addressKey(value: string) {
   return (match?.[1] || value).trim().toLowerCase();
 }
 
-export function createAgentTools(userId: string, userEmail: string) {
+export function createAgentTools(userId: string, userEmail: string, searchIntent?: EmailSearchIntent | null) {
   return {
     get_recent_emails: tool({
       description: "Get the user's most recent inbox emails. Return the emails in the tool result; do not reproduce them as a Markdown list in your response.",
@@ -97,17 +98,16 @@ export function createAgentTools(userId: string, userEmail: string) {
       execute: async ({ limit }) => {
         requireAgentConfiguration();
         try {
-          const emails = await gmailService.fetchGmailMessagesAndSave(
-            userId,
-            true,
-            Math.max(limit, 20),
-          );
+          // Preserve parsed sender/unread/date filters even if the model chooses the generic recent-emails tool.
+          const emails = searchIntent
+            ? await advancedGmailService.searchMessagesForUser(userId, searchIntent.query, searchIntent.limit)
+            : await gmailService.fetchGmailMessagesAndSave(userId, true, Math.max(limit, 20));
           const sorted = [...emails].sort(
             (a, b) =>
               new Date(String(b.date || 0)).getTime() -
               new Date(String(a.date || 0)).getTime(),
           );
-          const formattedEmails = formatEmails(sorted, limit);
+          const formattedEmails = formatEmails(sorted, searchIntent ? searchIntent.limit : limit);
           return {
             ok: true,
             count: formattedEmails.length,
