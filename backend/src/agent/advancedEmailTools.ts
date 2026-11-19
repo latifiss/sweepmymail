@@ -56,7 +56,18 @@ export function createAdvancedAgentTools(userId: string, userEmail: string) {
           limit,
           includeSpamTrash,
         );
-        return { count: messages.length, emails: formatEmailList(messages) };
+        const emails = formatEmailList(messages);
+        return {
+          count: emails.length,
+          emails,
+          ui: {
+            kind: "email-list",
+            lead: emails.length
+              ? `I found ${emails.length} matching email${emails.length === 1 ? "" : "s"} in Gmail:`
+              : "I couldn't find any matching emails in Gmail.",
+            emails,
+          },
+        };
       },
     }),
 
