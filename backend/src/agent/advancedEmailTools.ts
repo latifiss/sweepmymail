@@ -50,7 +50,7 @@ export function createAdvancedAgentTools(userId: string, userEmail: string) {
         includeSpamTrash: z.boolean().default(false),
       }),
       execute: async ({ query, limit, includeSpamTrash }) => {
-        const messages = await gmailService.searchMessagesForUser(
+        const messages = await advancedGmailService.searchMessagesForUser(
           userId,
           query,
           limit,
@@ -90,7 +90,7 @@ export function createAdvancedAgentTools(userId: string, userEmail: string) {
         limit: z.number().int().min(1).max(50).default(20),
       }),
       execute: async ({ threadId, limit }) =>
-        gmailService.getThreadForUser(userId, threadId, limit),
+        advancedGmailService.getThreadForUser(userId, threadId, limit),
     }),
 
     get_current_time: tool({
@@ -113,7 +113,7 @@ export function createAdvancedAgentTools(userId: string, userEmail: string) {
     list_drafts: tool({
       description: "List the user's Gmail drafts when they ask about drafts or want to edit/delete/send a saved draft.",
       inputSchema: z.object({ limit: z.number().int().min(1).max(50).default(20) }),
-      execute: async ({ limit }) => gmailService.listDraftsForUser(userId, limit),
+      execute: async ({ limit }) => advancedGmailService.listDraftsForUser(userId, limit),
     }),
 
     delete_draft: tool({
@@ -121,7 +121,7 @@ export function createAdvancedAgentTools(userId: string, userEmail: string) {
       needsApproval: true,
       inputSchema: z.object({ draftId: z.string().min(1) }),
       execute: async ({ draftId }) => {
-        const result = await gmailService.deleteDraftForUser(userId, draftId);
+        const result = await advancedGmailService.deleteDraftForUser(userId, draftId);
         return { ...result, ...actionUi("Done. Deleted the draft.", "Draft deleted", "I deleted the saved Gmail draft.") };
       },
     }),
@@ -176,7 +176,7 @@ export function createAdvancedAgentTools(userId: string, userEmail: string) {
       needsApproval: true,
       inputSchema: z.object({ messageIds: messageIdsSchema }),
       execute: async ({ messageIds }) => {
-        const result = await gmailService.trashMessagesForUser(userId, messageIds);
+        const result = await advancedGmailService.trashMessagesForUser(userId, messageIds);
         return { ...result, ...actionUi(`Done. Moved ${result.trashed} email${result.trashed === 1 ? "" : "s"} to Trash.`, "Moved to Trash", `I moved ${result.trashed} email${result.trashed === 1 ? "" : "s"} to Trash.`) };
       },
     }),
@@ -186,7 +186,7 @@ export function createAdvancedAgentTools(userId: string, userEmail: string) {
       needsApproval: true,
       inputSchema: z.object({ messageIds: messageIdsSchema }),
       execute: async ({ messageIds }) => {
-        const result = await gmailService.untrashMessagesForUser(userId, messageIds);
+        const result = await advancedGmailService.untrashMessagesForUser(userId, messageIds);
         return { ...result, ...actionUi(`Done. Restored ${result.restored} email${result.restored === 1 ? "" : "s"}.`, "Restored", `I restored ${result.restored} email${result.restored === 1 ? "" : "s"} from Trash.`) };
       },
     }),
@@ -194,7 +194,7 @@ export function createAdvancedAgentTools(userId: string, userEmail: string) {
     list_labels: tool({
       description: "List Gmail labels available to the user.",
       inputSchema: z.object({}),
-      execute: async () => gmailService.listLabelsForUser(userId),
+      execute: async () => advancedGmailService.listLabelsForUser(userId),
     }),
 
     label_emails: tool({
@@ -227,7 +227,7 @@ export function createAdvancedAgentTools(userId: string, userEmail: string) {
       description:
         "List attachment metadata for an email. Use when the user asks whether an email has attachments or what files were attached.",
       inputSchema: z.object({ messageId: z.string().min(1) }),
-      execute: async ({ messageId }) => gmailService.getAttachmentsForMessage(userId, messageId),
+      execute: async ({ messageId }) => advancedGmailService.getAttachmentsForMessage(userId, messageId),
     }),
 
     mark_not_important: tool({
