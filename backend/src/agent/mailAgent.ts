@@ -74,7 +74,7 @@ export function createMailAgent(userId: string, userEmail: string, userName = ""
     }),
     instructions: buildInstructions(userName, userEmail, searchIntent),
     tools,
-    providerOptions: { openrouter: { reasoning: { enabled: false } } },
+    providerOptions: { openrouter: { reasoning: { enabled: true } } },
     stopWhen: stepCountIs(20),
     // OpenRouter handles provider/model failover. Retrying the whole agent request
     // here can repeat deterministic rate-limit failures and burn extra attempts.
