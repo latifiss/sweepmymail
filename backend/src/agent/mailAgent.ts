@@ -4,10 +4,11 @@ import { env } from "../config/env";
 import { createAgentTools } from "./agent.tools";
 import { addMessage } from "./agent.persistence";
 import { finishRequest } from "./agent.runtime";
+import type { EmailSearchIntent } from "./emailSearchIntent";
 
 const openrouter = createOpenRouter({ apiKey: env.OPENROUTER_API_KEY });
 
-function buildInstructions(userName: string, userEmail: string) {
+function buildInstructions(userName: string, userEmail: string, searchIntent?: EmailSearchIntent | null) {
   return `You are Magic Mail, an AI inbox operations agent.
 
 The authenticated user's profile is:
@@ -18,6 +19,8 @@ Use this profile when composing emails. When the user asks you to draft, compose
 When signing an email on behalf of the user, use the authenticated user's profile name ("${userName}") unless the user explicitly asks for a different signature. Never use placeholders such as "[Your Name]", "[Name]", or similar.
 
 Your job is to help the authenticated user understand and manage their Gmail inbox.
+
+${searchIntent ? `DETERMINISTIC RETRIEVAL PLAN FOR THIS USER MESSAGE: This is a read-only email retrieval request. You MUST call search_gmail with query exactly ${JSON.stringify(searchIntent.query)} and limit ${searchIntent.limit}. Do not call archive, mark_read, mark_unread, star, delete, categorize, or any other mutation tool. Do not replace sender filters with a general inbox fetch. Return the emails from the tool result, and if the tool errors, explain the error instead of claiming success.` : ""}
 
 Rules:
 - Treat the user's inbox as private data. Never expose emails belonging to another user.
@@ -60,8 +63,8 @@ function removeReasoningFromContent(content: unknown) {
   return content.filter((part: any) => part?.type !== "reasoning");
 }
 
-export function createMailAgent(userId: string, userEmail: string, userName = "", conversationId?: string, requestId?: string) {
-  const tools = createAgentTools(userId, userEmail);
+export function createMailAgent(userId: string, userEmail: string, userName = "", conversationId?: string, requestId?: string, searchIntent?: EmailSearchIntent | null) {
+  const tools = createAgentTools(userId, userEmail, searchIntent);
 
   return new ToolLoopAgent({
     model: openrouter(env.AGENT_MODEL, {
@@ -69,7 +72,7 @@ export function createMailAgent(userId: string, userEmail: string, userName = ""
         ? { models: env.AGENT_FALLBACK_MODELS }
         : undefined,
     }),
-    instructions: buildInstructions(userName, userEmail),
+    instructions: buildInstructions(userName, userEmail, searchIntent),
     tools,
     providerOptions: { openrouter: { reasoning: { enabled: false } } },
     stopWhen: stepCountIs(20),
