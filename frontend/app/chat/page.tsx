@@ -338,14 +338,10 @@ export default function ChatPage() {
           ) : (
             <div ref={threadRef} className="chat-page__thread">
               <div className="chat-page__thread-inner">
-                {groupAgentResponses(messages).map((message, index) => {
+                {groupAgentResponses(messages).map((message) => {
   if (message.role === "user") {
     return <UserMessage key={message.id} content={message.content || ""} />;
   }
-
-  const previous = messages[index - 1];
-  const startsAssistantGroup = !previous || previous.role === "user";
-  if (!startsAssistantGroup) return null;
 
   return (
     <div key={message.id} className="chat-page__assistant-response">
