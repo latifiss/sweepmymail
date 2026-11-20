@@ -86,15 +86,34 @@ export function createAdvancedAgentTools(userId: string, userEmail: string, sear
 
     read_emails: tool({
       description:
-        "Read several full emails at once. Use this for summaries, comparisons, extracting action items, or any request involving multiple emails. Do not dump all bodies into the final response unless explicitly asked.",
+        "Read up to 10 full emails at once. Use this for summaries, comparisons, and action items. Prefer the most relevant/recent message IDs; do not request more than 10 in one call. Each body is capped to control token use. Do not dump all bodies into the final response unless explicitly asked.",
       inputSchema: z.object({
         messageIds: messageIdsSchema,
       }),
       execute: async ({ messageIds }) => {
+        // Full email bodies are expensive context. Read a bounded batch and
+        // cap each body while preserving headers and message metadata.
+        const MAX_EMAILS_PER_READ = 10;
+        const MAX_BODY_CHARS = 6000;
+        const selectedIds = messageIds.slice(0, MAX_EMAILS_PER_READ);
         const emails = await Promise.all(
-          messageIds.map((id) => gmailService.getFullMessageForUser(userId, id)),
+          selectedIds.map(async (id) => {
+            const email = await gmailService.getFullMessageForUser(userId, id);
+            const body = typeof email.body === "string" ? email.body : "";
+            return {
+              ...email,
+              body: body.length > MAX_BODY_CHARS
+                ? `${body.slice(0, MAX_BODY_CHARS)}\\n\\n[Email body truncated to control context size.]`
+                : body,
+            };
+          }),
         );
-        return { count: emails.length, emails };
+        return {
+          count: emails.length,
+          requestedCount: messageIds.length,
+          omittedCount: Math.max(0, messageIds.length - emails.length),
+          emails,
+        };
       },
     }),
 
