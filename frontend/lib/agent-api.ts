@@ -282,7 +282,7 @@ export function uiMessageToChatMessage(message: AgentUIMessage): { id: string; r
       response: {
         kind: "summary",
         lead: "",
-        title: "Summary",
+        title: undefined,
         content: "",
         citations: emails,
       },
