@@ -72,20 +72,23 @@ export function createMailAgent(userId: string, userEmail: string, userName = ""
 
   return new ToolLoopAgent({
     model: openrouter(env.AGENT_MODEL, {
-      extraBody: env.AGENT_FALLBACK_MODELS.length
-        ? { models: env.AGENT_FALLBACK_MODELS }
-        : undefined,
+      extraBody: {
+        ...(env.AGENT_FALLBACK_MODELS.length ? { models: env.AGENT_FALLBACK_MODELS } : {}),
+        ...(conversationId ? { session_id: conversationId } : requestId ? { session_id: requestId } : {}),
+      },
     }),
     instructions: buildInstructions(userName, userEmail, searchIntent),
     tools,
     providerOptions: { openrouter: { reasoning: { enabled: true } } },
-    stopWhen: stepCountIs(20),
+    stopWhen: stepCountIs(8),
     // OpenRouter handles provider/model failover. Retrying the whole agent request
     // here can repeat deterministic rate-limit failures and burn extra attempts.
     maxRetries: 0,
     onFinish: async (event: any) => {
       if (requestId) {
-        const usage = event.usage || {};
+        // ToolLoopAgent exposes aggregate usage separately from the final step's usage.
+        // Prefer the aggregate so daily accounting reflects the whole agent run.
+        const usage = event.totalUsage || event.usage || {};
         await finishRequest(requestId, "completed", {
           inputTokens: usage.inputTokens || usage.promptTokens,
           outputTokens: usage.outputTokens || usage.completionTokens,
