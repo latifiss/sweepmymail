@@ -16,7 +16,18 @@ export function ChatResponseContent({
 }: ContentProps): ReactNode {
   if (!content) return null;
 
-  const parts = content.split(/(\[\d+\])/g);
+  // Keep the chat typography consistent: model Markdown must never leak
+  // through as literal asterisks, headings, or list markers.
+  const cleanContent = content
+    .replace(/\*\*(.*?)\*\*/gs, "$1")
+    .replace(/(^|\s)\*([^*\n]+)\*(?=\s|[.,!?]|$)/g, "$1$2")
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/^\s*[-•]\s+/gm, "")
+    .replace(/^\s*\d+[.)]\s+/gm, "")
+    .replace(/[ \t]+/g, " ")
+    .trim();
+
+  const parts = cleanContent.split(/(\[\d+\])/g);
 
   return (
     <p className="chat-response__text">
