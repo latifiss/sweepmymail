@@ -237,29 +237,7 @@ function SummaryBlock({
         onAction={onAction}
       />
 
-      <div className="chat-response__sources">
-        <p className="chat-response__sources-label">Sources</p>
-        <ol className="chat-response__sources-list">
-          {citations.map((ref) => (
-            <li key={ref.id} className="chat-response__source">
-              <button
-                type="button"
-                className="chat-response__source-link"
-                onClick={() =>
-                  onAction?.({ type: "open-email", emailId: ref.id })
-                }
-              >
-                <span className="chat-response__source-subject">
-                  {ref.subject}
-                </span>
-                <span className="chat-response__source-meta">
-                  {ref.sender} · {formatTime(ref.receivedAt)}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ol>
-      </div>
+
     </div>
   );
 }
