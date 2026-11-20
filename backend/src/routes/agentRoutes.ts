@@ -20,6 +20,21 @@ router.delete("/conversations/:conversationId", authMiddleware, async (req,res,n
 router.get("/context", authMiddleware, async (req,res,next)=>{try{const user=(req as any).user;res.json({context:await getAgentContext(user.id)});}catch(e){next(e);}});
 router.get("/usage", authMiddleware, async (req,res,next)=>{try{const user=(req as any).user;res.json({usage:await getAgentUsage(user.id)});}catch(e){next(e);}});
 
+function selectRecentAgentMessages(messages: any[], maxUserTurns = 5) {
+  let userTurns = 0;
+  let startIndex = 0;
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (messages[index]?.role === "user") {
+      userTurns += 1;
+      if (userTurns === maxUserTurns) {
+        startIndex = index;
+        break;
+      }
+    }
+  }
+  return messages.slice(startIndex);
+}
+
 async function handleChat(req:express.Request,res:express.Response,next:express.NextFunction){
   const requestId=getRequestId(req);
   const user=(req as any).user as {id:string;email:string;name?:string};
@@ -46,7 +61,8 @@ async function handleChat(req:express.Request,res:express.Response,next:express.
     req.on("aborted", abortIfDisconnected);
     res.on("close", abortIfDisconnected);
     try{
-      await pipeAgentUIStreamToResponse({response:res,agent:createMailAgent(user.id,user.email,user.name || "",conversation.id,requestId,parseEmailSearchIntent(lastUserContent)),uiMessages:messages,abortSignal:abortController.signal,sendReasoning:false});
+      const recentMessages = selectRecentAgentMessages(messages);
+      await pipeAgentUIStreamToResponse({response:res,agent:createMailAgent(user.id,user.email,user.name || "",conversation.id,requestId,parseEmailSearchIntent(lastUserContent)),uiMessages:recentMessages,abortSignal:abortController.signal,sendReasoning:false});
       await finishRequest(requestId,abortController.signal.aborted?"aborted":"completed");
     }catch(error){
       await finishRequest(requestId,abortController.signal.aborted?"aborted":"failed",undefined,error instanceof Error?error.name:null);
