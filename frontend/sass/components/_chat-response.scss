@@ -245,11 +245,22 @@
 
   &__email-subject {
     grid-area: subject;
+    width: fit-content;
     font-family: ui.font(family-sans);
     font-size: 14px;
     font-weight: ui.font(weight-medium);
     line-height: 1.4;
     color: ui.color(matterhorn);
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: ui.color(empress);
+    text-underline-offset: 3px;
+
+    .chat-response__email-row:hover & {
+      color: ui.semantic(primary);
+      text-decoration-style: solid;
+      text-decoration-color: ui.semantic(primary);
+    }
   }
 
   &__email-preview {
