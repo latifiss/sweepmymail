@@ -57,8 +57,8 @@ function dedupeChatMessages(items: ChatMessage[]) {
 }
 
 function explicitlyRequestsEmailList(message: string) {
-  return /\\b(show|list|display|give me|fetch|pull up|bring up)\\b/i.test(message)
-    && /\\b(emails?|messages?|inbox)\\b/i.test(message);
+  return /\b(show|list|display|give me|fetch|pull up|bring up)\b/i.test(message)
+    && /\b(emails?|messages?|inbox)\b/i.test(message);
 }
 
 function groupAgentResponses(items: ChatMessage[]) {
