@@ -40,7 +40,7 @@ function renderInline(
     if (token.startsWith("*") && token.endsWith("*")) {
       return <em key={index}>{token.slice(1, -1)}</em>;
     }
-    return <span key={index}>{token}</span>;
+    return renderSubjectReferences(token, citations, onAction, `inline-${index}`);
   });
 }
 
