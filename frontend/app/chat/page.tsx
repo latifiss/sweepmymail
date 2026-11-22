@@ -107,7 +107,7 @@ function groupAgentResponses(items: ChatMessage[]) {
       const uniqueCitations = Array.from(
         new Map([...citations, ...searchEmails].map((citation) => [citation.id, citation])).values(),
       );
-      const summaryText = prose.map((response) => response.content).join("\\n\\n");
+      const summaryText = prose.map((response) => response.content).join("\n\n");
       const summaryLead = prose.map((response) => response.lead).find(Boolean) || "";
       blocks = blocks.filter((response) => response.kind !== "text" && response.kind !== "email-list");
       blocks.push({
