@@ -77,6 +77,30 @@
     white-space: pre-wrap;
   }
 
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: ui.space(3);
+    min-width: 0;
+  }
+
+  &__prose-list {
+    display: flex;
+    flex-direction: column;
+    gap: ui.space(2);
+    margin: 0;
+    padding-left: 1.4rem;
+    font-family: ui.font(family-sans);
+    font-size: 16px;
+    font-weight: ui.font(weight-medium);
+    line-height: 1.5;
+    color: ui.color(matterhorn);
+
+    li {
+      padding-left: 2px;
+    }
+  }
+
   &__citation {
     display: inline-flex;
     align-items: center;
