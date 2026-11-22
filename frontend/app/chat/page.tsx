@@ -56,12 +56,19 @@ function dedupeChatMessages(items: ChatMessage[]) {
   }).filter((item) => item.role !== "agent" || Boolean(item.response || item.responses?.length));
 }
 
+function explicitlyRequestsEmailList(message: string) {
+  return /\\b(show|list|display|give me|fetch|pull up|bring up)\\b/i.test(message)
+    && /\\b(emails?|messages?|inbox)\\b/i.test(message);
+}
+
 function groupAgentResponses(items: ChatMessage[]) {
   const result: ChatMessage[] = [];
+  let latestUserMessage = "";
 
   for (let index = 0; index < items.length;) {
     const item = items[index];
     if (item.role === "user") {
+      latestUserMessage = item.content || "";
       result.push(item);
       index += 1;
       continue;
@@ -107,8 +114,26 @@ function groupAgentResponses(items: ChatMessage[]) {
         content: summaryText,
         citations: uniqueCitations,
       });
+    } else if (listResponses.length && !explicitlyRequestsEmailList(latestUserMessage)) {
+      // Search results are evidence by default, not a command to render a list.
+      // Keep the model's conversational answer unless the user explicitly asked
+      // to see the matching emails.
+      blocks = blocks.filter((response) => response.kind !== "email-list");
+      if (!blocks.length) {
+        const total = listResponses.reduce(
+          (count, response) => count + (response.kind === "email-list" ? response.emails.length : 0),
+          0,
+        );
+        blocks.push({
+          kind: "text",
+          content: total
+            ? `I found ${total} matching email${total === 1 ? "" : "s"} in your inbox.`
+            : "I couldn't find any matching emails in your inbox.",
+        });
+      }
     } else if (listResponses.length) {
-      // The structured list is authoritative; suppress model-generated prose copies.
+      // The user explicitly asked to see emails; render the structured list
+      // instead of duplicating the same rows in assistant prose.
       blocks = blocks.filter((response) => response.kind !== "text");
     }
 
