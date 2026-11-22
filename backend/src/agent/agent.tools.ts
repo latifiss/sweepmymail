@@ -91,7 +91,7 @@ function addressKey(value: string) {
 export function createAgentTools(userId: string, userEmail: string, searchIntent?: EmailSearchIntent | null) {
   const tools = {
     get_recent_emails: tool({
-      description: "Get the user's most recent inbox emails. Return the emails in the tool result; do not reproduce them as a Markdown list in your response.",
+      description: "Get the user's most recent inbox emails with message IDs, sender, exact subject, received date, and preview. Use this first for inbox catch-up/overview requests, then read the most relevant message IDs with read_emails before summarizing. A count alone is not an adequate answer to an inbox overview. Return the emails in the tool result; do not reproduce them as a Markdown list unless the user asks to see the emails.",
       inputSchema: z.object({
         limit: z.number().int().min(1).max(50).default(10),
       }),
