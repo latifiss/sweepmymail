@@ -101,6 +101,34 @@
     }
   }
 
+  &__email-reference {
+    display: inline;
+    padding: 0;
+    border: 0;
+    border-bottom: 1px dotted ui.color(empress);
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: ui.font(weight-medium);
+    text-align: inherit;
+    cursor: pointer;
+    transition:
+      color ui.motion(fast),
+      border-color ui.motion(fast);
+
+    &:hover {
+      color: ui.semantic(primary);
+      border-bottom-color: ui.semantic(primary);
+      border-bottom-style: solid;
+    }
+
+    &:focus-visible {
+      outline: 2px solid ui.semantic(primary);
+      outline-offset: 2px;
+    }
+  }
+
   &__citation {
     display: inline-flex;
     align-items: center;
