@@ -110,7 +110,7 @@ function groupAgentResponses(items: ChatMessage[]) {
       blocks.push({
         kind: "summary",
         lead: summaryLead,
-        title: "Summary",
+        title: undefined,
         content: summaryText,
         citations: uniqueCitations,
       });
