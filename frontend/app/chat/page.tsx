@@ -101,8 +101,11 @@ function groupAgentResponses(items: ChatMessage[]) {
       const citations = citationContext.flatMap((response) =>
         response.kind === "summary" ? response.citations : [],
       );
+      const searchEmails = listResponses.flatMap((response) =>
+        response.kind === "email-list" ? response.emails : [],
+      );
       const uniqueCitations = Array.from(
-        new Map(citations.map((citation) => [citation.id, citation])).values(),
+        new Map([...citations, ...searchEmails].map((citation) => [citation.id, citation])).values(),
       );
       const summaryText = prose.map((response) => response.content).join("\\n\\n");
       const summaryLead = prose.map((response) => response.lead).find(Boolean) || "";
@@ -116,19 +119,29 @@ function groupAgentResponses(items: ChatMessage[]) {
       });
     } else if (listResponses.length && !explicitlyRequestsEmailList(latestUserMessage)) {
       // Search results are evidence by default, not a command to render a list.
-      // Keep the model's conversational answer unless the user explicitly asked
-      // to see the matching emails.
-      blocks = blocks.filter((response) => response.kind !== "email-list");
-      if (!blocks.length) {
-        const total = listResponses.reduce(
-          (count, response) => count + (response.kind === "email-list" ? response.emails.length : 0),
-          0,
+      // Keep the assistant's natural-language answer and attach the retrieved
+      // messages as references so exact subject mentions can open in Gmail.
+      const searchEmails = listResponses.flatMap((response) =>
+        response.kind === "email-list" ? response.emails : [],
+      );
+      const uniqueCitations = Array.from(
+        new Map(searchEmails.map((email) => [email.id, email])).values(),
+      );
+      blocks = blocks
+        .filter((response) => response.kind !== "email-list")
+        .map((response) =>
+          response.kind === "text"
+            ? { ...response, citations: [...(response.citations || []), ...uniqueCitations] }
+            : response,
         );
+      if (!blocks.length) {
+        const total = searchEmails.length;
         blocks.push({
           kind: "text",
           content: total
             ? `I found ${total} matching email${total === 1 ? "" : "s"} in your inbox.`
             : "I couldn't find any matching emails in your inbox.",
+          citations: uniqueCitations,
         });
       }
     } else if (listResponses.length) {
