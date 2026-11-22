@@ -9,6 +9,41 @@ interface ContentProps {
   onAction?: (action: ResponseAction) => void;
 }
 
+function renderInline(
+  value: string,
+  citations: EmailRef[],
+  onAction?: (action: ResponseAction) => void,
+): ReactNode[] {
+  const tokens = value.split(/(\[\d+\]|\*\*[^*]+\*\*|\*[^*]+\*)/g).filter(Boolean);
+  return tokens.map((token, index) => {
+    const citation = token.match(/^\[(\d+)\]$/);
+    if (citation) {
+      const ref = citations[Number(citation[1]) - 1];
+      if (ref) {
+        return (
+          <button
+            key={`cite-${index}`}
+            type="button"
+            className="chat-response__citation"
+            aria-label={`Open citation ${citation[1]}: ${ref.subject}`}
+            onClick={() => onAction?.({ type: "open-email", emailId: ref.id })}
+          >
+            {citation[1]}
+          </button>
+        );
+      }
+      return <span key={index}>{token}</span>;
+    }
+    if (token.startsWith("**") && token.endsWith("**")) {
+      return <strong key={index}>{token.slice(2, -2)}</strong>;
+    }
+    if (token.startsWith("*") && token.endsWith("*")) {
+      return <em key={index}>{token.slice(1, -1)}</em>;
+    }
+    return <span key={index}>{token}</span>;
+  });
+}
+
 export function ChatResponseContent({
   content,
   citations = [],
@@ -16,44 +51,46 @@ export function ChatResponseContent({
 }: ContentProps): ReactNode {
   if (!content) return null;
 
-  // Keep the chat typography consistent: model Markdown must never leak
-  // through as literal asterisks, headings, or list markers.
-  const cleanContent = content
-    .replace(/\*\*(.*?)\*\*/gs, "$1")
-    .replace(/(^|\s)\*([^*\n]+)\*(?=\s|[.,!?]|$)/g, "$1$2")
-    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
-    .replace(/^\s*[-•]\s+/gm, "")
-    .replace(/^\s*\d+[.)]\s+/gm, "")
-    .replace(/[ \t]+/g, " ")
+  const normalized = content
+    .replace(/[\u200B-\u200D\u2060\uFEFF\u00AD\u034F]/g, "")
+    .replace(/[\u202A-\u202E\u2066-\u2069]/g, "")
+    .replace(/\r\n?/g, "\n")
     .trim();
 
-  const parts = cleanContent.split(/(\[\d+\])/g);
-
+  const blocks = normalized.split(/\n\s*\n/).filter((block) => block.trim());
   return (
-    <p className="chat-response__text">
-      {parts.map((part, index) => {
-        const match = part.match(/^\[(\d+)\]$/);
-        if (match) {
-          const refIndex = Number(match[1]) - 1;
-          const ref = citations[refIndex];
-          if (ref) {
-            return (
-              <button
-                key={`cite-${index}`}
-                type="button"
-                className="chat-response__citation"
-                aria-label={`Open citation ${match[1]}: ${ref.subject}`}
-                onClick={() =>
-                  onAction?.({ type: "open-email", emailId: ref.id })
-                }
-              >
-                {match[1]}
-              </button>
-            );
-          }
+    <div className="chat-response__content">
+      {blocks.map((block, blockIndex) => {
+        const lines = block.split("\n").map((line) => line.trim()).filter(Boolean);
+        const bulletLines = lines.map((line) => line.match(/^[-*•]\s+(.+)$/));
+        const numberedLines = lines.map((line) => line.match(/^\d+[.)]\s+(.+)$/));
+
+        if (bulletLines.every(Boolean)) {
+          return (
+            <ul className="chat-response__prose-list" key={blockIndex}>
+              {bulletLines.map((match, index) => (
+                <li key={index}>{renderInline(match![1], citations, onAction)}</li>
+              ))}
+            </ul>
+          );
         }
-        return <span key={`txt-${index}`}>{part}</span>;
+
+        if (numberedLines.every(Boolean)) {
+          return (
+            <ol className="chat-response__prose-list" key={blockIndex}>
+              {numberedLines.map((match, index) => (
+                <li key={index}>{renderInline(match![1], citations, onAction)}</li>
+              ))}
+            </ol>
+          );
+        }
+
+        return (
+          <p className="chat-response__text" key={blockIndex}>
+            {renderInline(lines.map((line) => line.replace(/^#{1,6}\s+/, "")).join(" "), citations, onAction)}
+          </p>
+        );
       })}
-    </p>
+    </div>
   );
 }
