@@ -32,15 +32,13 @@ function renderSubjectReferences(
   while (cursor < value.length) {
     let nextIndex = -1;
     let matchedEmail: EmailRef | undefined;
-    let matchedLength = 0;
 
     for (const email of subjects) {
       const index = value.toLocaleLowerCase().indexOf(email.subject.toLocaleLowerCase(), cursor);
       if (index >= 0 && (nextIndex < 0 || index < nextIndex ||
-        (index === nextIndex && email.subject.length > matchedLength))) {
+        (index === nextIndex && email.subject.length > (matchedEmail?.subject.length ?? 0)))) {
         nextIndex = index;
         matchedEmail = email;
-        matchedLength = email.subject.length;
       }
     }
 
@@ -50,19 +48,20 @@ function renderSubjectReferences(
       nodes.push(<span key={`${keyPrefix}-text-${partIndex++}`}>{value.slice(cursor, nextIndex)}</span>);
     }
 
+    const subject = matchedEmail.subject;
     nodes.push(
       <button
         key={`${keyPrefix}-email-${partIndex++}`}
         type="button"
         className="chat-response__email-reference"
-        aria-label={`Open email: ${matchedEmail.subject}`}
+        aria-label={`Open email: ${subject}`}
         title="Open this email in Gmail"
         onClick={() => onAction?.({ type: "open-email", emailId: matchedEmail!.id })}
       >
-        {value.slice(nextIndex, nextIndex + matchedLength)}
+        {value.slice(nextIndex, nextIndex + subject.length)}
       </button>,
     );
-    cursor = nextIndex + matchedLength;
+    cursor = nextIndex + subject.length;
   }
 
   if (!partIndex) return [<span key={keyPrefix}>{value}</span>];
@@ -82,21 +81,19 @@ function renderInline(
     const citation = token.match(/^\[(\d+)\]$/);
     if (citation) {
       const ref = citations[Number(citation[1]) - 1];
-      if (ref) {
-        return (
-          <button
-            key={`cite-${index}`}
-            type="button"
-            className="chat-response__citation"
-            aria-label={`Open citation ${citation[1]}: ${ref.subject}`}
-            onClick={() => onAction?.({ type: "open-email", emailId: ref.id })}
-          >
-            {citation[1]}
-          </button>
-        );
-      }
-      return <span key={index}>{token}</span>;
+      return ref ? (
+        <button
+          key={`cite-${index}`}
+          type="button"
+          className="chat-response__citation"
+          aria-label={`Open citation ${citation[1]}: ${ref.subject}`}
+          onClick={() => onAction?.({ type: "open-email", emailId: ref.id })}
+        >
+          {citation[1]}
+        </button>
+      ) : <span key={index}>{token}</span>;
     }
+
     if (token.startsWith("**") && token.endsWith("**")) {
       return <strong key={index}>{renderSubjectReferences(token.slice(2, -2), citations, onAction, `bold-${index}`)}</strong>;
     }
@@ -107,6 +104,29 @@ function renderInline(
   });
 }
 
+function renderParagraph(
+  text: string,
+  key: string | number,
+  citations: EmailRef[],
+  onAction?: (action: ResponseAction) => void,
+): ReactNode {
+  const heading = text.match(/^#{1,3}\s+(.+)$/) ||
+    text.match(/^\*\*(.{2,70})\*\*\s*$/);
+  if (heading) {
+    return (
+      <h4 className="chat-response__section-heading" key={key}>
+        {renderInline(heading[1].replace(/\*\*/g, ""), citations, onAction)}
+      </h4>
+    );
+  }
+
+  return (
+    <p className="chat-response__text" key={key}>
+      {renderInline(text.replace(/^#{1,6}\s+/, ""), citations, onAction)}
+    </p>
+  );
+}
+
 export function ChatResponseContent({
   content,
   citations = [],
@@ -114,44 +134,59 @@ export function ChatResponseContent({
 }: ContentProps): ReactNode {
   if (!content) return null;
 
-  const normalized = content
+  let normalized = content
     .replace(/[\u200B-\u200D\u2060\uFEFF\u00AD\u034F]/g, "")
     .replace(/[\u202A-\u202E\u2066-\u2069]/g, "")
     .replace(/\r\n?/g, "\n")
     .trim();
 
+  // Some model responses put several dash-separated items on one line.
+  // Split only when the next phrase looks like a titled email/topic item.
+  normalized = normalized
+    .replace(/(\*\*[^*\n]{2,70}:)\s+-\s+/g, "$1**\n- ")
+    .replace(/\s+-\s+(?=[A-Z][^.!?\n]{0,100}(?:—|–|:))/g, "\n- ");
+
   const blocks = normalized.split(/\n\s*\n/).filter((block) => block.trim());
+
   return (
     <div className="chat-response__content">
       {blocks.map((block, blockIndex) => {
         const lines = block.split("\n").map((line) => line.trim()).filter(Boolean);
-        const bulletLines = lines.map((line) => line.match(/^[-*•]\s+(.+)$/));
-        const numberedLines = lines.map((line) => line.match(/^\d+[.)]\s+(.+)$/));
+        const items = lines.flatMap((line) => {
+          const bulletParts = line.match(/^[-*•]\s+(.+)$/);
+          if (bulletParts) return [{ type: "bullet" as const, text: bulletParts[1] }];
+          const numbered = line.match(/^\d+[.)]\s+(.+)$/);
+          if (numbered) return [{ type: "numbered" as const, text: numbered[1] }];
+          return [{ type: "text" as const, text: line }];
+        });
 
-        if (bulletLines.every(Boolean)) {
-          return (
-            <ul className="chat-response__prose-list" key={blockIndex}>
-              {bulletLines.map((match, index) => (
-                <li key={index}>{renderInline(match![1], citations, onAction)}</li>
-              ))}
-            </ul>
-          );
-        }
+        const allBullets = items.length > 0 && items.every((item) => item.type === "bullet");
+        const allNumbered = items.length > 0 && items.every((item) => item.type === "numbered");
 
-        if (numberedLines.every(Boolean)) {
+        if (allBullets || allNumbered) {
+          const List = allNumbered ? "ol" : "ul";
           return (
-            <ol className="chat-response__prose-list" key={blockIndex}>
-              {numberedLines.map((match, index) => (
-                <li key={index}>{renderInline(match![1], citations, onAction)}</li>
+            <List className="chat-response__prose-list" key={blockIndex}>
+              {items.map((item, index) => (
+                <li key={index}>{renderInline(item.text, citations, onAction)}</li>
               ))}
-            </ol>
+            </List>
           );
         }
 
         return (
-          <p className="chat-response__text" key={blockIndex}>
-            {renderInline(lines.map((line) => line.replace(/^#{1,6}\s+/, "")).join(" "), citations, onAction)}
-          </p>
+          <div className="chat-response__prose-block" key={blockIndex}>
+            {items.map((item, index) => {
+              if (item.type === "bullet" || item.type === "numbered") {
+                return (
+                  <ul className="chat-response__prose-list chat-response__prose-list--mixed" key={index}>
+                    <li>{renderInline(item.text, citations, onAction)}</li>
+                  </ul>
+                );
+              }
+              return renderParagraph(item.text, index, citations, onAction);
+            })}
+          </div>
         );
       })}
     </div>
