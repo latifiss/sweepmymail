@@ -2,17 +2,18 @@ import { tool } from "ai";
 import { z } from "zod";
 import gmailService from "../services/gmailService";
 import { getEmailsForUser, getEmailByMessageId } from "../repositories/dataRepository";
-import advancedGmailService from "../services/advancedGmailService";
+import advancedGmailService, { getSenderPhotoUrlsForUser } from "../services/advancedGmailService";
 import type { EmailSearchIntent } from "./emailSearchIntent";
 
 const messageIdsSchema = z.array(z.string().min(1)).min(1).max(100);
 
-function formatEmail(email: any) {
+function formatEmail(email: any, senderAvatarUrl?: string | null) {
   return {
     id: email.messageId || email.message_id,
     messageId: email.messageId || email.message_id,
     threadId: email.threadId || null,
     sender: email.from || email.sender || "",
+    senderAvatarUrl: senderAvatarUrl || null,
     to: email.to || "",
     cc: email.cc || "",
     subject: email.subject || "(no subject)",
@@ -23,8 +24,13 @@ function formatEmail(email: any) {
   };
 }
 
-function formatEmailList(emails: any[]) {
-  return emails.map(formatEmail);
+async function formatEmailList(userId: string, emails: any[]) {
+  const photos = await getSenderPhotoUrlsForUser(userId, emails.map((email) => email.from || email.sender || ""));
+  return emails.map((email) => {
+    const sender = email.from || email.sender || "";
+    const address = (sender.match(/<([^>]+)>/)?.[1] || sender).trim().toLowerCase();
+    return formatEmail(email, photos[address] || null);
+  });
 }
 
 function actionUi(lead: string, title: string, content: string) {
@@ -67,7 +73,7 @@ export function createAdvancedAgentTools(userId: string, userEmail: string, sear
           const messages = await advancedGmailService.searchMessagesForUser(
             userId, effectiveQuery, effectiveLimit, includeSpamTrash,
           );
-          const emails = formatEmailList(messages);
+          const emails = await formatEmailList(userId, messages);
           return {
             count: emails.length,
             emails,
@@ -108,11 +114,17 @@ export function createAdvancedAgentTools(userId: string, userEmail: string, sear
             };
           }),
         );
+        const photos = await getSenderPhotoUrlsForUser(userId, emails.map((email) => email.from || email.sender || ""));
+        const enrichedEmails = emails.map((email) => {
+          const sender = email.from || email.sender || "";
+          const address = (sender.match(/<([^>]+)>/)?.[1] || sender).trim().toLowerCase();
+          return { ...email, senderAvatarUrl: photos[address] || null };
+        });
         return {
-          count: emails.length,
+          count: enrichedEmails.length,
           requestedCount: messageIds.length,
-          omittedCount: Math.max(0, messageIds.length - emails.length),
-          emails,
+          omittedCount: Math.max(0, messageIds.length - enrichedEmails.length),
+          emails: enrichedEmails,
         };
       },
     }),
