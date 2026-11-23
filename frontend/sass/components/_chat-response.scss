@@ -122,6 +122,14 @@
     }
   }
 
+  &__email-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: ui.space(2);
+    margin-top: ui.space(2);
+  }
+
   &__email-reference {
     display: inline;
     padding: 0;
