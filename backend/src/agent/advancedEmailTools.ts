@@ -133,8 +133,13 @@ export function createAdvancedAgentTools(userId: string, userEmail: string, sear
       description:
         "Get one full email by message ID, including headers, body, thread ID, labels, and attachment metadata.",
       inputSchema: z.object({ messageId: z.string().min(1) }),
-      execute: async ({ messageId }) =>
-        gmailService.getFullMessageForUser(userId, messageId),
+      execute: async ({ messageId }) => {
+        const email = await gmailService.getFullMessageForUser(userId, messageId);
+        const photos = await getSenderPhotoUrlsForUser(userId, [email.from || email.sender || ""]);
+        const sender = email.from || email.sender || "";
+        const address = (sender.match(/<([^>]+)>/)?.[1] || sender).trim().toLowerCase();
+        return { ...email, senderAvatarUrl: photos[address] || null };
+      },
     }),
 
     get_thread: tool({
@@ -144,8 +149,18 @@ export function createAdvancedAgentTools(userId: string, userEmail: string, sear
         threadId: z.string().min(1),
         limit: z.number().int().min(1).max(50).default(20),
       }),
-      execute: async ({ threadId, limit }) =>
-        advancedGmailService.getThreadForUser(userId, threadId, limit),
+      execute: async ({ threadId, limit }) => {
+        const thread = await advancedGmailService.getThreadForUser(userId, threadId, limit);
+        const photos = await getSenderPhotoUrlsForUser(userId, thread.messages.map((email: any) => email.from || email.sender || ""));
+        return {
+          ...thread,
+          messages: thread.messages.map((email: any) => {
+            const sender = email.from || email.sender || "";
+            const address = (sender.match(/<([^>]+)>/)?.[1] || sender).trim().toLowerCase();
+            return { ...email, senderAvatarUrl: photos[address] || null };
+          }),
+        };
+      },
     }),
 
     get_current_time: tool({
