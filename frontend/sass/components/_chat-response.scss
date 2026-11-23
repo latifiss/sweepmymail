@@ -127,10 +127,10 @@
     padding: 0;
     margin: 0;
     border: 0;
-    border-bottom: 1px dotted ui.color(royal-blue);
+    border-bottom: 1px dotted ui.color(lucky-point);
     border-radius: 0;
     background: transparent;
-    color: ui.color(royal-blue);
+    color: ui.color(lucky-point);
     font: inherit;
     font-weight: ui.font(weight-medium);
     line-height: inherit;
@@ -275,10 +275,10 @@
     font-size: 14px;
     font-weight: ui.font(weight-medium);
     line-height: 1.4;
-    color: ui.color(royal-blue);
+    color: ui.color(lucky-point);
     text-decoration-line: underline;
     text-decoration-style: dotted;
-    text-decoration-color: ui.color(royal-blue);
+    text-decoration-color: ui.color(lucky-point);
     text-underline-offset: 3px;
 
     .chat-response__email-row:hover & {
