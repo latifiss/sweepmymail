@@ -15,7 +15,7 @@ import {
 } from "../repositories/automationRepository";
 import { applyCategoryToEmails, emailMatchesCategory, extractKeywords } from "../services/categoryService";
 import gmailService from "../services/gmailService";
-import advancedGmailService from "../services/advancedGmailService";
+import advancedGmailService, { getSenderPhotoUrlsForUser } from "../services/advancedGmailService";
 import type { EmailSearchIntent } from "./emailSearchIntent";
 import { createAdvancedAgentTools } from "./advancedEmailTools";
 import { unsubscribeFromLink } from "../services/unsubscribeService";
@@ -33,14 +33,16 @@ function requireAgentConfiguration() {
   }
 }
 
-function formatEmails(emails: any[], limit: number) {
-  return emails.slice(0, limit).map((email) => {
+async function formatEmails(userId: string, emails: any[], limit: number) {
+  const selected = emails.slice(0, limit);
+  const photos = await getSenderPhotoUrlsForUser(userId, selected.map((email) => email.sender || email.from || ""));
+  return selected.map((email) => {
     const sender = email.sender || email.from || "";
     const senderEmail = sender.match(/<([^>]+)>/)?.[1] || sender;
     const messageId = email.message_id || email.messageId || email.id || "";
     const date = email.date || email.receivedAt || "";
     const preview = typeof email.snippet === "string" ? email.snippet.slice(0, 180) : "";
-    return { id: messageId, messageId, sender, senderEmail, subject: email.subject || "(no subject)", snippet: preview, preview, date, receivedAt: date, hasUnsubscribeLink: Boolean(email.unsubscribe_link || email.unsubscribeLink) };
+    return { id: messageId, messageId, sender, senderEmail, senderAvatarUrl: photos[senderEmail.toLowerCase()] || null, subject: email.subject || "(no subject)", snippet: preview, preview, date, receivedAt: date, hasUnsubscribeLink: Boolean(email.unsubscribe_link || email.unsubscribeLink) };
   });
 }
 
@@ -107,7 +109,7 @@ export function createAgentTools(userId: string, userEmail: string, searchIntent
               new Date(String(b.date || 0)).getTime() -
               new Date(String(a.date || 0)).getTime(),
           );
-          const formattedEmails = formatEmails(sorted, searchIntent ? searchIntent.limit : limit);
+          const formattedEmails = await formatEmails(userId, sorted, searchIntent ? searchIntent.limit : limit);
           return {
             ok: true,
             count: formattedEmails.length,
@@ -148,7 +150,7 @@ export function createAgentTools(userId: string, userEmail: string, searchIntent
               .includes(term),
           ),
         );
-        const resultEmails = formatEmails(matches, limit);
+        const resultEmails = await formatEmails(userId, matches, limit);
         return {
           count: resultEmails.length,
           emails: resultEmails,
@@ -180,7 +182,7 @@ export function createAgentTools(userId: string, userEmail: string, searchIntent
         const emails = (await getEmailsForUser(userId))
           .filter((email) => emailMatchesCategory(email, category));
 
-        const resultEmails = formatEmails(emails, limit);
+        const resultEmails = await formatEmails(userId, emails, limit);
         return {
           category: {
             id: category.id,
