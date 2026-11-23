@@ -162,6 +162,78 @@
     }
   }
 
+  &__email-paragraph {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: ui.space(2);
+    min-width: 0;
+  }
+
+  &__citation-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: ui.space(2);
+    margin-top: 2px;
+  }
+
+  &__citation-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    max-width: 100%;
+    min-height: 34px;
+    padding: 4px 10px 4px 5px;
+    border: 1px solid ui.color(quill-gray);
+    border-radius: 999px;
+    background: ui.color(white);
+    color: ui.color(matterhorn);
+    font-family: ui.font(family-sans);
+    font-size: 12px;
+    font-weight: ui.font(weight-medium);
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background-color ui.motion(fast), border-color ui.motion(fast);
+
+    &:hover {
+      background: ui.color(wild-sand);
+      border-color: ui.color(empress);
+    }
+
+    &:focus-visible {
+      outline: 2px solid ui.semantic(primary);
+      outline-offset: 2px;
+    }
+  }
+
+  &__citation-avatar,
+  &__email-avatar {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  &__citation-avatar--fallback,
+  &__email-avatar--fallback {
+    background: ui.color(wild-sand);
+    color: ui.color(matterhorn);
+    font-size: 10px;
+    font-weight: ui.font(weight-semibold);
+  }
+
+  &__citation-name {
+    overflow: hidden;
+    max-width: 180px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   &__citation {
     display: inline-flex;
     align-items: center;
@@ -260,6 +332,10 @@
 
   &__email-sender {
     grid-area: sender;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
     font-family: ui.font(family-sans);
     font-size: 14px;
     font-weight: ui.font(weight-semibold);
