@@ -359,17 +359,7 @@
     font-size: 14px;
     font-weight: ui.font(weight-medium);
     line-height: 1.4;
-    color: ui.color(lucky-point);
-    text-decoration-line: underline;
-    text-decoration-style: dotted;
-    text-decoration-color: ui.color(lucky-point);
-    text-underline-offset: 3px;
-
-    .chat-response__email-row:hover & {
-      color: ui.semantic(primary);
-      text-decoration-style: solid;
-      text-decoration-color: ui.semantic(primary);
-    }
+    color: ui.color(matterhorn);
   }
 
   &__email-preview {
