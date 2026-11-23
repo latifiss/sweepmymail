@@ -51,17 +51,7 @@ function renderInline(
     const citation = token.match(/^\[(\d+)\]$/);
     if (citation) {
       const ref = citations[Number(citation[1]) - 1];
-      return ref ? (
-        <button
-          key={`cite-${index}`}
-          type="button"
-          className="chat-response__citation"
-          aria-label={`Open citation ${citation[1]}: ${ref.subject}`}
-          onClick={() => onAction?.({ type: "open-email", emailId: ref.id })}
-        >
-          {citation[1]}
-        </button>
-      ) : <span key={index}>{token}</span>;
+      return ref ? <span key={`cite-${index}`} className="chat-response__citation-marker" aria-hidden="true" /> : null;
     }
 
     if (token.startsWith("**") && token.endsWith("**")) {
@@ -161,7 +151,6 @@ export function ChatResponseContent({
           </div>
         );
       })}
-}
     </div>
   );
 }
