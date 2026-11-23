@@ -70,9 +70,9 @@
   &__text {
     margin: 0;
     font-family: ui.font(family-sans);
-    font-size: 16px;
-    font-weight: ui.font(weight-medium);
-    line-height: 1.5;
+    font-size: 15px;
+    font-weight: ui.font(weight-normal);
+    line-height: 1.75;
     color: ui.color(matterhorn);
     white-space: pre-wrap;
   }
@@ -80,46 +80,73 @@
   &__content {
     display: flex;
     flex-direction: column;
+    gap: ui.space(4);
+    min-width: 0;
+  }
+
+  &__prose-block {
+    display: flex;
+    flex-direction: column;
     gap: ui.space(3);
     min-width: 0;
+  }
+
+  &__section-heading {
+    margin: 0;
+    font-family: ui.font(family-sans);
+    font-size: 14px;
+    font-weight: ui.font(weight-semibold);
+    line-height: 1.5;
+    color: ui.color(matterhorn);
   }
 
   &__prose-list {
     display: flex;
     flex-direction: column;
-    gap: ui.space(2);
+    gap: ui.space(3);
     margin: 0;
-    padding-left: 1.4rem;
+    padding-left: 1.25rem;
     font-family: ui.font(family-sans);
-    font-size: 16px;
-    font-weight: ui.font(weight-medium);
-    line-height: 1.5;
+    font-size: 15px;
+    font-weight: ui.font(weight-normal);
+    line-height: 1.7;
     color: ui.color(matterhorn);
 
     li {
-      padding-left: 2px;
+      padding-left: 4px;
+      overflow-wrap: anywhere;
+    }
+
+    &--mixed {
+      margin-top: 0;
     }
   }
 
   &__email-reference {
     display: inline;
-    padding: 0;
-    border: 0;
+    padding: 1px 5px 2px;
+    margin: 0 1px;
+    border: 1px solid ui.color(quill-gray);
     border-bottom: 1px dotted ui.color(empress);
-    border-radius: 0;
-    background: transparent;
-    color: inherit;
+    border-radius: ui.radius(sm);
+    background: ui.color(blue-chalk);
+    color: ui.color(lucky-point);
     font: inherit;
     font-weight: ui.font(weight-medium);
+    line-height: inherit;
     text-align: inherit;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
     cursor: pointer;
     transition:
       color ui.motion(fast),
+      background-color ui.motion(fast),
       border-color ui.motion(fast);
 
     &:hover {
       color: ui.semantic(primary);
-      border-bottom-color: ui.semantic(primary);
+      background-color: ui.color(perfume);
+      border-color: ui.semantic(primary);
       border-bottom-style: solid;
     }
 
@@ -280,18 +307,18 @@
     flex-direction: column;
     gap: ui.space(4);
     width: 100%;
-    padding: 12px;
-    background-color: ui.color(white);
-    border: 1px solid ui.color(quill-gray);
+    min-width: 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
   }
 
   &__summary-title {
     margin: 0;
-    font-family: ui.font(family-head);
-    font-size: 16px;
-    font-weight: ui.font(weight-normal);
-    line-height: 1.2;
-    text-transform: uppercase;
+    font-family: ui.font(family-sans);
+    font-size: 14px;
+    font-weight: ui.font(weight-semibold);
+    line-height: 1.5;
     color: ui.color(matterhorn);
   }
 
