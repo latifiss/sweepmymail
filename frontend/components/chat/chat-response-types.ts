@@ -2,6 +2,7 @@ export interface EmailRef {
   id: string;
   sender: string;
   senderEmail: string;
+  senderAvatarUrl?: string | null;
   subject: string;
   preview: string;
   receivedAt: string;
