@@ -108,6 +108,80 @@ async function getFull(gmail: ReturnType<typeof google.gmail>, id: string) {
   };
 }
 
+
+const senderPhotoCache = new Map<string, { url: string | null; expiresAt: number }>();
+
+function extractEmailAddress(value: string) {
+  const match = value.match(/<([^>]+)>/);
+  const address = (match?.[1] || value).trim().toLowerCase();
+  return address.includes("@") ? address : "";
+}
+
+/**
+ * Resolve sender photos from the user's Google Contacts.
+ * People API only exposes contacts the user can access; unknown senders safely
+ * fall back to initials in the UI. Photo lookup failures never block email reads.
+ */
+export async function getSenderPhotoUrlsForUser(userId: string, senders: string[]) {
+  const user = await getUserById(userId);
+  if (!user) return {};
+  const addresses = Array.from(new Set(senders.map(extractEmailAddress).filter(Boolean)));
+  const result: Record<string, string | null> = {};
+  const missing = addresses.filter((email) => {
+    const cached = senderPhotoCache.get(email);
+    if (cached && cached.expiresAt > Date.now()) {
+      result[email] = cached.url;
+      return false;
+    }
+    return true;
+  });
+  if (!missing.length) return result;
+
+  try {
+    const accessToken = await getGoogleAccessTokenForEmail(user.email);
+    const authClient = new OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET);
+    authClient.setCredentials({ access_token: accessToken });
+    const people = google.people({ version: "v1", auth: authClient });
+
+    // Keep contact lookups bounded and independent so one unavailable contact
+    // does not prevent photos for the remaining senders from being displayed.
+    await Promise.all(missing.map(async (email) => {
+      let photoUrl: string | null = null;
+      try {
+        const response = await people.people.searchContacts({
+          query: email,
+          readMask: "emailAddresses,photos",
+          pageSize: 10,
+        });
+        const matches = response.data.results || [];
+        const person = matches.find((entry) =>
+          (entry.person?.emailAddresses || []).some(
+            (item) => String(item.value || "").toLowerCase() === email,
+          ),
+        )?.person;
+        photoUrl = person?.photos?.find((photo) => photo.default !== true)?.url
+          || person?.photos?.[0]?.url
+          || null;
+      } catch (error: any) {
+        // People API may not be enabled, the scope may need re-consent, or the
+        // sender may not exist in Contacts. Avatar lookup is always optional.
+        if (error?.response?.status !== 403 && error?.response?.status !== 404) {
+          console.warn("[gmail] Sender photo lookup unavailable:", error?.message || error);
+        }
+      }
+      senderPhotoCache.set(email, { url: photoUrl, expiresAt: Date.now() + 6 * 60 * 60 * 1000 });
+      result[email] = photoUrl;
+    }));
+  } catch (error: any) {
+    console.warn("[gmail] Sender photo lookup skipped:", error?.message || error);
+    for (const email of missing) {
+      senderPhotoCache.set(email, { url: null, expiresAt: Date.now() + 15 * 60 * 1000 });
+      result[email] = null;
+    }
+  }
+  return result;
+}
+
 export async function searchMessagesForUser(userId: string, query: string, limit = 20, includeSpamTrash = false) {
   return withGmail(userId, async (gmail) => {
     const out: any[] = [];
