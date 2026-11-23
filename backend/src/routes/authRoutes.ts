@@ -54,6 +54,14 @@ router.post("/google/reconnect", authMiddleware, async (req, res) => {
       });
     }
 
+    const authorizationUrl = new URL(response.url);
+    const requestedScopes = authorizationUrl.searchParams.get("scope")?.split(/\s+/) ?? [];
+    console.log("[Google OAuth] Requested scopes:", requestedScopes);
+    console.log(
+      "[Google OAuth] Contacts scope included:",
+      requestedScopes.includes("https://www.googleapis.com/auth/contacts.readonly")
+    );
+
     return res.json({ url: response.url });
   } catch (error: any) {
     console.error("Google reauthorization initialization failed:", error);
