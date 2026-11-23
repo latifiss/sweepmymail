@@ -208,7 +208,11 @@ export function createAgentTools(userId: string, userEmail: string, searchIntent
       inputSchema: z.object({ messageId: z.string().min(1) }),
       execute: async ({ messageId }) => {
         requireAgentConfiguration();
-        return gmailService.getFullMessageForUser(userId, messageId);
+        const email = await gmailService.getFullMessageForUser(userId, messageId);
+        const photos = await getSenderPhotoUrlsForUser(userId, [email.from || email.sender || ""]);
+        const sender = email.from || email.sender || "";
+        const senderEmail = (sender.match(/<([^>]+)>/)?.[1] || sender).trim().toLowerCase();
+        return { ...email, senderAvatarUrl: photos[senderEmail] || null };
       },
     }),
 
