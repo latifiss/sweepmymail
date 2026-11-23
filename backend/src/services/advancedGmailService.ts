@@ -128,7 +128,8 @@ export async function getSenderPhotoUrlsForUser(userId: string, senders: string[
   const addresses = Array.from(new Set(senders.map(extractEmailAddress).filter(Boolean)));
   const result: Record<string, string | null> = {};
   const missing = addresses.filter((email) => {
-    const cached = senderPhotoCache.get(email);
+    const cacheKey = `${userId}:${email}`;
+    const cached = senderPhotoCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
       result[email] = cached.url;
       return false;
@@ -169,13 +170,13 @@ export async function getSenderPhotoUrlsForUser(userId: string, senders: string[
           console.warn("[gmail] Sender photo lookup unavailable:", error?.message || error);
         }
       }
-      senderPhotoCache.set(email, { url: photoUrl, expiresAt: Date.now() + 6 * 60 * 60 * 1000 });
+      senderPhotoCache.set(`${userId}:${email}`, { url: photoUrl, expiresAt: Date.now() + 60 * 60 * 1000 });
       result[email] = photoUrl;
     }));
   } catch (error: any) {
     console.warn("[gmail] Sender photo lookup skipped:", error?.message || error);
     for (const email of missing) {
-      senderPhotoCache.set(email, { url: null, expiresAt: Date.now() + 15 * 60 * 1000 });
+      senderPhotoCache.set(`${userId}:${email}`, { url: null, expiresAt: Date.now() + 15 * 60 * 1000 });
       result[email] = null;
     }
   }
