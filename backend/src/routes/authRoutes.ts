@@ -31,6 +31,7 @@ router.post("/google/reconnect", authMiddleware, async (req, res) => {
           "profile",
           "https://www.googleapis.com/auth/gmail.modify",
           "https://mail.google.com/",
+          "https://www.googleapis.com/auth/contacts.readonly",
         ],
         ...(user?.email ? { loginHint: user.email } : {}),
         additionalParams: {

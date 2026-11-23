@@ -23,6 +23,7 @@ export const googleAuthUrl = (req: Request, res: Response) => {
     scope: [
       "https://www.googleapis.com/auth/gmail.modify",
       "https://mail.google.com/",
+      "https://www.googleapis.com/auth/contacts.readonly",
       "email",
       "profile",
     ],
