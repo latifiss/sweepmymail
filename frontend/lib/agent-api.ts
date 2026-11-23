@@ -233,6 +233,7 @@ function refFrom(value: any): EmailRef | null {
     id: String(id),
     sender: cleanEmailText(e.sender || e.from || "Unknown sender"),
     senderEmail: cleanEmailText(e.senderEmail || e.fromEmail || ""),
+    senderAvatarUrl: typeof e.senderAvatarUrl === "string" ? e.senderAvatarUrl : null,
     subject: cleanEmailText(e.subject || "(no subject)"),
     preview: cleanEmailText(e.snippet || e.preview || "").slice(0, 180),
     receivedAt: String(e.date || e.receivedAt || new Date().toISOString()),
