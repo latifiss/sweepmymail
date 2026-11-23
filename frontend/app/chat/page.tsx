@@ -129,11 +129,17 @@ function groupAgentResponses(items: ChatMessage[]) {
       );
       blocks = blocks
         .filter((response) => response.kind !== "email-list")
-        .map((response) =>
-          response.kind === "text"
-            ? { ...response, citations: [...(response.citations || []), ...uniqueCitations] }
-            : response,
-        );
+        .map((response) => {
+          if (response.kind === "text" || response.kind === "summary") {
+            const merged = Array.from(
+              new Map(
+                [...(response.citations || []), ...uniqueCitations].map((email) => [email.id, email]),
+              ).values(),
+            );
+            return { ...response, citations: merged };
+          }
+          return response;
+        });
       if (!blocks.length) {
         const total = searchEmails.length;
         blocks.push({
