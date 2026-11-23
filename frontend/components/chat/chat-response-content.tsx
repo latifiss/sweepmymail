@@ -147,6 +147,12 @@ export function ChatResponseContent({
     .replace(/\s+-\s+(?=[A-Z][^.!?\n]{0,100}(?:—|–|:))/g, "\n- ");
 
   const blocks = normalized.split(/\n\s*\n/).filter((block) => block.trim());
+  const fallbackEmailLinks = citations.filter((email, index) => {
+    const subjectMentioned = email.subject.trim().length >= 5 &&
+      normalized.toLocaleLowerCase().includes(email.subject.trim().toLocaleLowerCase());
+    const citationMentioned = normalized.includes(`[${index + 1}]`);
+    return !subjectMentioned && !citationMentioned;
+  });
 
   return (
     <div className="chat-response__content">
@@ -189,6 +195,22 @@ export function ChatResponseContent({
           </div>
         );
       })}
+      {fallbackEmailLinks.length > 0 && (
+        <div className="chat-response__email-links" aria-label="Related emails">
+          {fallbackEmailLinks.map((email) => (
+            <button
+              key={email.id}
+              type="button"
+              className="chat-response__email-reference"
+              aria-label={`Open email: ${email.subject}`}
+              title="Open this email in Gmail"
+              onClick={() => onAction?.({ type: "open-email", emailId: email.id })}
+            >
+              Open email: {email.subject}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
