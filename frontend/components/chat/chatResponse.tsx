@@ -185,7 +185,14 @@ function EmailListBlock({ title, emails, onAction }: EmailListBlockProps) {
               }
             >
               <span className="chat-response__email-sender">
-                {email.sender}
+                {email.senderAvatarUrl ? (
+                  <img className="chat-response__email-avatar" src={email.senderAvatarUrl} alt="" loading="lazy" referrerPolicy="no-referrer" />
+                ) : (
+                  <span className="chat-response__email-avatar chat-response__email-avatar--fallback" aria-hidden="true">
+                    {email.sender.replace(/<[^>]+>/g, "").trim().split(/\\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "?"}
+                  </span>
+                )}
+                <span>{email.sender.replace(/<[^>]+>/g, "").trim()}</span>
               </span>
               <span
                 className="chat-response__email-subject"
