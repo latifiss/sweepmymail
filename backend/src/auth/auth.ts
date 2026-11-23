@@ -115,7 +115,7 @@ export const auth = betterAuth({
       clientSecret: env.GOOGLE_CLIENT_SECRET,
       accessType: "offline",
       prompt: "select_account consent",
-      scope: ["openid", "email", "profile", "https://www.googleapis.com/auth/gmail.modify", "https://mail.google.com/"],
+      scope: ["openid", "email", "profile", "https://www.googleapis.com/auth/gmail.modify", "https://mail.google.com/", "https://www.googleapis.com/auth/contacts.readonly"],
     },
   },
   account: {
